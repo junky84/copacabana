@@ -60,6 +60,13 @@ export class CpSchematic extends LitElement {
   private _connect: PortRef | null = null;
   private _pointers = new Map<number, { x: number; y: number }>();
   private _gesture: any = null;
+  private _segments: { x1: number; x2: number; y1: number; y2: number }[] = [];
+
+  /** Does any pipe pass through the given pixel rectangle (with a small margin)? */
+  private _hitsPipe(x1: number, y1: number, x2: number, y2: number): boolean {
+    const m = 5;
+    return this._segments.some((s) => s.x1 <= x2 + m && s.x2 >= x1 - m && s.y1 <= y2 + m && s.y2 >= y1 - m);
+  }
   private _lastMoved = false;
   private _structureKey = "";
   private _resizeObs?: ResizeObserver;
@@ -218,6 +225,12 @@ export class CpSchematic extends LitElement {
     const flags = new Map(this.plant.components.map((c) => [c.id, componentFlags(c, this.src)]));
     const temps = pipeTemps(this.plant, this.src);
     const routes = this.plant.pipes.map((p) => ({ pipe: p, route: routePipe(p, byId) }));
+    this._segments = routes.flatMap(({ route }) =>
+      (route?.pts || []).slice(1).map((b, i) => {
+        const a = route!.pts[i];
+        return { x1: Math.min(a.x, b.x) * CELL, x2: Math.max(a.x, b.x) * CELL, y1: Math.min(a.y, b.y) * CELL, y2: Math.max(a.y, b.y) * CELL };
+      }),
+    );
 
     return html`
       <svg
@@ -301,7 +314,30 @@ export class CpSchematic extends LitElement {
     } else body = renderDefaultIcon({ c, w: wpx, h: hpx, flags, num, text });
 
     const showLabel = !["junction", "label", "value_tile"].includes(c.type);
-    const labelY = (c.y + h) * CELL + (def.badges === "above" ? 16 : 18);
+    // a pipe leaving downwards near the middle would cross a centred label: put it beside the part
+    const bottomPipe = def.ports.some((p) => {
+      const pos = portPos(c, p.id);
+      return pos?.dir === "b" && Math.abs(pos.x - (c.x + w / 2)) < Math.max(0.6, w * 0.35);
+    });
+    let labelX = (c.x + w / 2) * CELL;
+    let labelY = (c.y + h) * CELL + (def.badges === "above" ? 16 : 18);
+    let anchor = "middle";
+    if (bottomPipe) {
+      // beside the part, on whichever side no pipe runs through
+      const textW = Math.min(28, c.label.length) * 7.5;
+      labelY = (c.y + h) * CELL + 4;
+      const right = (c.x + w) * CELL + 6;
+      const left = c.x * CELL - 6;
+      const rightBlocked = this._hitsPipe(right, labelY - 12, right + textW, labelY + 3);
+      const leftBlocked = this._hitsPipe(left - textW, labelY - 12, left, labelY + 3);
+      if (rightBlocked && !leftBlocked) {
+        labelX = left;
+        anchor = "end";
+      } else {
+        labelX = right;
+        anchor = "start";
+      }
+    }
     return svg`
       <g class="comp ${sel ? "selected" : ""}" data-id=${c.id}
          @pointerdown=${(e: PointerEvent) => this._onCompDown(e, c)}>
@@ -311,7 +347,7 @@ export class CpSchematic extends LitElement {
         <rect class="comp-hit" x=${c.x * CELL - (c.type === "junction" ? 8 : 0)} y=${c.y * CELL - (c.type === "junction" ? 8 : 0)}
           width=${Math.max(16, w * CELL)} height=${Math.max(16, h * CELL)} rx="8" />
         ${sel ? svg`<rect class="sel-outline" x=${c.x * CELL - 6} y=${c.y * CELL - 6} width=${w * CELL + 12} height=${h * CELL + 12} rx="10" />` : nothing}
-        ${showLabel ? svg`<text class="comp-label" x=${(c.x + w / 2) * CELL} y=${labelY} text-anchor="middle">${short(c.label, 28)}</text>` : nothing}
+        ${showLabel ? svg`<text class="comp-label" x=${labelX} y=${labelY} text-anchor=${anchor}>${short(c.label, 28)}</text>` : nothing}
       </g>
       ${this._badgeLayout(c).map((b) => (b.w ? this._pill(c, b.slot, b.x, b.y, b.w) : this._chip(c, b.slot, b.x, b.y)))}
     `;
@@ -587,7 +623,10 @@ export class CpSchematic extends LitElement {
     svg.edit .comp { cursor: grab; }
     .comp-hit { fill: transparent; }
     .sel-outline { fill: none; stroke: var(--cp-select); stroke-width: 2; stroke-dasharray: 6 4; pointer-events: none; }
-    .comp-label { fill: var(--cp-text); font-size: 13px; font-weight: 600; letter-spacing: 0.2px; pointer-events: none; }
+    .comp-label {
+      fill: var(--cp-text); font-size: 13px; font-weight: 600; letter-spacing: 0.2px; pointer-events: none;
+      paint-order: stroke; stroke: var(--cp-surface); stroke-width: 4px; stroke-linejoin: round;
+    }
     .casing { fill: var(--cp-casing); stroke: var(--cp-casing-stroke); stroke-width: 1.5; }
     .casing.light { fill: var(--cp-casing-light); }
     .sheen { fill: var(--cp-sheen); pointer-events: none; }
@@ -630,7 +669,10 @@ export class CpSchematic extends LitElement {
     .valve-tri.on { fill: var(--cp-accent); stroke: var(--cp-accent); opacity: 0.85; }
     .actuator { fill: var(--cp-casing-light); stroke: var(--cp-casing-stroke); }
     .stem { stroke: var(--cp-casing-stroke); stroke-width: 2; }
-    .valve-tag { fill: var(--cp-text); font-size: 9px; font-weight: 800; }
+    .valve-tag {
+      fill: var(--cp-accent); font-size: 12px; font-weight: 800;
+      paint-order: stroke; stroke: var(--cp-surface); stroke-width: 3px; stroke-linejoin: round;
+    }
     .rad-frame { fill: var(--cp-casing); stroke: var(--cp-casing-stroke); }
     .fin { stroke: rgba(255, 255, 255, 0.15); }
     .heat-wave { fill: none; stroke: #ff8a3d; stroke-width: 2; stroke-linecap: round; opacity: 0; animation: cp-rise 2.4s ease-in infinite; }

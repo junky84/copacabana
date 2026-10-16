@@ -197,7 +197,7 @@ function valve(ctx: IconCtx, mixer = false): SVGTemplateResult {
     <path class=${fill(true)} d="M ${cx - s} ${cy - s * 0.6} L ${cx} ${cy} L ${cx - s} ${cy + s * 0.6} Z" />
     <path class=${fill(!b)} d="M ${cx + s} ${cy - s * 0.6} L ${cx} ${cy} L ${cx + s} ${cy + s * 0.6} Z" />
     <path class=${fill(b)} d="M ${cx - s * 0.6} ${cy + s} L ${cx} ${cy} L ${cx + s * 0.6} ${cy + s} Z" />
-    ${mixer ? "" : svg`<text class="valve-tag" x=${cx + s * 0.55} y=${cy - s * 0.85}>${b ? "B" : "A"}</text>`}
+    ${mixer ? "" : svg`<text class="valve-tag" x=${cx + s * 0.5} y=${cy - s * 0.75}>${b ? "B" : "A"}</text>`}
   `;
 }
 
