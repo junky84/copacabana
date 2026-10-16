@@ -3232,7 +3232,8 @@ Ct.properties = {
     .bend-handle.ns { cursor: ns-resize; }
 
     /* animation helpers */
-    .spin { animation: cp-spin var(--dur, 1.2s) linear infinite; transform-box: fill-box; transform-origin: center; }
+    /* spinning parts are drawn around their local origin (0,0); rotate exactly there, not around the bbox centre */
+    .spin { animation: cp-spin var(--dur, 1.2s) linear infinite; transform-box: view-box; transform-origin: 0 0; }
     .pulse { animation: cp-pulse 2.2s ease-in-out infinite; }
     @keyframes cp-spin { to { transform: rotate(360deg); } }
     @keyframes cp-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
