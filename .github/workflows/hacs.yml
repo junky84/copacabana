@@ -1,0 +1,13 @@
+name: HACS validation
+
+# Run manually once the repository is public (HACS rejects private repositories).
+on:
+  workflow_dispatch:
+
+jobs:
+  hacs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: hacs/action@main
+        with:
+          category: integration

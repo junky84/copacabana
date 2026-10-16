@@ -1,0 +1,40 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "COPilot",
+        "description": "Heat pump SCADA dashboard. The plant layout itself is configured in the COPilot panel after setup.",
+        "data": {
+          "source": "Data source",
+          "mqtt_base": "EMS-ESP MQTT base"
+        },
+        "data_description": {
+          "source": "Gateway whose entities are used for automatic mapping.",
+          "mqtt_base": "Only needed if EMS-ESP uses the 'multiple instances' entity ID format."
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "COPilot is already set up."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "COPilot options",
+        "data": {
+          "source": "Data source",
+          "mqtt_base": "EMS-ESP MQTT base",
+          "sidebar_title": "Sidebar title"
+        }
+      }
+    }
+  },
+  "selector": {
+    "source": {
+      "options": {
+        "ems_esp": "EMS-ESP (BBQKees gateway)"
+      }
+    }
+  }
+}

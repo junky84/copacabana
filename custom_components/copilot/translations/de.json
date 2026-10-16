@@ -1,0 +1,40 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "COPilot",
+        "description": "SCADA-Dashboard für Wärmepumpen. Die Anlage selbst wird nach der Einrichtung im COPilot-Panel konfiguriert.",
+        "data": {
+          "source": "Datenquelle",
+          "mqtt_base": "EMS-ESP MQTT-Basis"
+        },
+        "data_description": {
+          "source": "Gateway, dessen Entitäten automatisch zugeordnet werden.",
+          "mqtt_base": "Nur nötig, wenn EMS-ESP das Entity-ID-Format „mehrere Instanzen“ verwendet."
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "COPilot ist bereits eingerichtet."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "COPilot-Optionen",
+        "data": {
+          "source": "Datenquelle",
+          "mqtt_base": "EMS-ESP MQTT-Basis",
+          "sidebar_title": "Titel in der Seitenleiste"
+        }
+      }
+    }
+  },
+  "selector": {
+    "source": {
+      "options": {
+        "ems_esp": "EMS-ESP (BBQKees-Gateway)"
+      }
+    }
+  }
+}

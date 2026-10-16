@@ -1,0 +1,14 @@
+{
+  "domain": "copilot",
+  "name": "COPilot",
+  "codeowners": ["@junky84"],
+  "config_flow": true,
+  "dependencies": ["http", "frontend", "panel_custom", "websocket_api"],
+  "documentation": "https://github.com/junky84/copilot",
+  "integration_type": "service",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/junky84/copilot/issues",
+  "requirements": [],
+  "single_config_entry": true,
+  "version": "0.1.0"
+}

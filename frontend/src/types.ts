@@ -1,0 +1,141 @@
+/** Shared data model. Grid coordinates are in cells (see CELL in catalog.ts). */
+
+export type ComponentType =
+  | "outdoor_unit"
+  | "indoor_unit"
+  | "buffer"
+  | "dhw_tank"
+  | "pump"
+  | "valve_3way"
+  | "mixer"
+  | "radiators"
+  | "floor_heating"
+  | "tap"
+  | "water_inlet"
+  | "separator"
+  | "expansion_vessel"
+  | "junction"
+  | "value_tile"
+  | "label";
+
+export type Rotation = 0 | 90 | 180 | 270;
+export type Dir = "l" | "r" | "t" | "b";
+
+export type PipeKind = "supply" | "return" | "dhw_hot" | "dhw_cold" | "circulation";
+
+export interface PlantComponent {
+  id: string;
+  type: ComponentType;
+  label: string;
+  x: number;
+  y: number;
+  rot?: Rotation;
+  model?: string;
+  icon?: string;
+  bindings: Record<string, string>;
+  props: Record<string, any>;
+  /** slots shown as value badges; undefined = type defaults */
+  show?: string[];
+}
+
+export interface PortRef {
+  c: string;
+  p: string;
+}
+
+/** Pipe is animated when all conditions hold. `s` is a component state flag. */
+export interface FlowCond {
+  c: string;
+  s: string;
+}
+
+export interface Pipe {
+  id: string;
+  from: PortRef;
+  to: PortRef;
+  kind: PipeKind;
+  /** absolute grid coordinate of the middle segment (x for horizontal starts, y for vertical) */
+  bend?: number;
+  flow?: FlowCond[];
+  /** additionally at least one of these must hold (OR group) */
+  flowAny?: FlowCond[];
+  bindings?: { temp?: string; flow?: string };
+}
+
+export interface PlantSettings {
+  style: "flat" | "iso";
+  demo: boolean;
+  language?: "auto" | "de" | "en";
+  typeIcons?: Partial<Record<ComponentType, string>>;
+  /** heat load at design temperature in kW (simulator) */
+  heat_load?: number;
+  /** last wizard answers, to reopen the wizard pre-filled */
+  wizard?: any;
+}
+
+export interface Plant {
+  version: 1;
+  name: string;
+  grid: { w: number; h: number };
+  components: PlantComponent[];
+  pipes: Pipe[];
+  settings: PlantSettings;
+}
+
+export type Level = "info" | "notice" | "warning" | "error";
+
+export interface PlantMessage {
+  id: string;
+  ts: number;
+  level: Level;
+  key: string;
+  params: Record<string, any>;
+  component_id: string | null;
+  active: boolean;
+  end_ts: number | null;
+}
+
+export interface UserIcon {
+  id: string;
+  name: string;
+  mime: string;
+  iso: boolean;
+  size: number;
+  data_url: string;
+}
+
+/** A resolved value of a component slot. */
+export interface SlotValue {
+  raw: string | number | boolean | null;
+  num: number | null;
+  unit?: string;
+  entity?: string;
+  available: boolean;
+}
+
+export interface HistoryPoint {
+  t: number;
+  v: number | null;
+}
+
+/** Minimal subset of the Home Assistant frontend `hass` object that we use. */
+export interface HassEntity {
+  entity_id: string;
+  state: string;
+  attributes: Record<string, any>;
+  last_changed: string;
+  last_updated: string;
+}
+
+export interface Hass {
+  states: Record<string, HassEntity>;
+  language: string;
+  themes?: { darkMode?: boolean };
+  user?: { is_admin: boolean; name?: string };
+  callWS<T = any>(msg: Record<string, any>): Promise<T>;
+  connection?: {
+    subscribeMessage<T = any>(cb: (msg: T) => void, msg: Record<string, any>): Promise<() => void>;
+  };
+  /** set by the standalone demo page */
+  __standalone?: boolean;
+}
