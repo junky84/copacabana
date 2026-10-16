@@ -59,7 +59,7 @@ Backend tests:
 
 ```bash
 uv venv --python 3.13 .venv
-VIRTUAL_ENV=.venv uv pip install pytest-homeassistant-custom-component
+VIRTUAL_ENV=.venv uv pip install -r requirements_test.txt
 .venv/bin/python -m pytest
 ```
 
