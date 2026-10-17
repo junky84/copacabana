@@ -4,6 +4,7 @@ import { t } from "./i18n";
 import { icon, logo, tokens, ui } from "./styles";
 import type { Hass, Plant } from "./types";
 import { examplePlant } from "./templates";
+import "./views/maintenance";
 import "./views/overview";
 import "./views/editor";
 import "./views/config";
@@ -13,7 +14,7 @@ import "./views/check";
 import "./views/curve";
 import "./card";
 
-type View = "overview" | "efficiency" | "check" | "curve" | "messages" | "config";
+type View = "overview" | "efficiency" | "check" | "curve" | "maintenance" | "messages" | "config";
 type Sub = "wizard" | "editor" | "mapping" | "icons" | "settings";
 
 const LS_VIEW = "copilot.view";
@@ -59,7 +60,7 @@ export class CopilotPanel extends LitElement {
     const saved = lsGet(LS_VIEW);
     if (saved) {
       const [v, s] = saved.split(":");
-      if (["overview", "efficiency", "check", "curve", "messages", "config"].includes(v)) this._view = v as View;
+      if (["overview", "efficiency", "check", "curve", "maintenance", "messages", "config"].includes(v)) this._view = v as View;
       if (s) this._sub = s as Sub;
     }
   }
@@ -103,9 +104,9 @@ export class CopilotPanel extends LitElement {
           : nothing}
         <div class="brand">${logo}<span>COP<b>ilot</b></span></div>
         <nav>
-          ${(["overview", "efficiency", "check", "curve", "messages", "config"] as View[]).map(
+          ${(["overview", "efficiency", "check", "curve", "maintenance", "messages", "config"] as View[]).map(
             (v) => html`<button class="tab ${this._view === v ? "on" : ""}" title=${t(`nav.${v}`)} @click=${() => this._go(v)}>
-              ${icon(v === "overview" ? "grid" : v === "efficiency" ? "chart" : v === "check" ? "check" : v === "curve" ? "curve" : v === "messages" ? "bell" : "gear")}
+              ${icon(v === "overview" ? "grid" : v === "efficiency" ? "chart" : v === "check" ? "check" : v === "curve" ? "curve" : v === "maintenance" ? "wrench" : v === "messages" ? "bell" : "gear")}
               <span class="tl">${t(`nav.${v}`)}</span>
               ${v === "messages" && alerts ? html`<span class="badge">${alerts}</span>` : nothing}
             </button>`,
@@ -153,6 +154,9 @@ export class CopilotPanel extends LitElement {
     }
     if (this._view === "curve") {
       return html`<cp-curve .plant=${plant} .src=${src} .hass=${this.hass} .sim=${this._ctl.sim} .version=${this._ctl.version} ?admin=${this._ctl.admin}></cp-curve>`;
+    }
+    if (this._view === "maintenance") {
+      return html`<cp-maintenance .plant=${plant} ?admin=${this._ctl.admin} @save=${(e: CustomEvent) => this._save(e.detail)}></cp-maintenance>`;
     }
     if (this._view === "messages") {
       return html`<div class="card pad"><cp-messages

@@ -166,3 +166,32 @@ async def test_update_keeps_a_backup(hass: HomeAssistant, hass_ws_client, hass_s
     assert backups[0]["reason"] == "update" and backups[0]["version"] == "0.0.1"
     await ws.send_json({"id": 2, "type": "copilot/config/get"})
     assert (await ws.receive_json())["result"]["plant"] == PLANT
+
+
+async def test_maintenance_due_message(hass: HomeAssistant, hass_ws_client) -> None:
+    import time as _time
+
+    await _setup(hass)
+    ws = await hass_ws_client(hass)
+    tasks = [
+        {"id": "sep", "key": "separator", "interval_days": 180, "last_done": _time.time() - 200 * 86400},
+        {"id": "mag", "key": "expansion", "interval_days": 365, "last_done": _time.time() - 10 * 86400},
+        {"id": "new", "key": "service", "interval_days": 365},
+    ]
+    plant = {**PLANT, "settings": {"maintenance": {"tasks": tasks}}}
+    await ws.send_json({"id": 1, "type": "copilot/config/save", "plant": plant})
+    assert (await ws.receive_json())["success"]
+    await ws.send_json({"id": 2, "type": "copilot/messages/list"})
+    msgs = (await ws.receive_json())["result"]["messages"]
+    due = [m for m in msgs if m["key"] == "maintenance_due" and m["active"]]
+    assert len(due) == 1 and due[0]["params"]["task_key"] == "separator" and due[0]["params"]["since"] == 20
+    # marking the task done closes the message
+    tasks[0]["last_done"] = _time.time()
+    await ws.send_json({"id": 3, "type": "copilot/config/save", "plant": {**PLANT, "settings": {"maintenance": {"tasks": tasks}}}})
+    assert (await ws.receive_json())["success"]
+    await ws.send_json({"id": 4, "type": "copilot/messages/list"})
+    msgs = (await ws.receive_json())["result"]["messages"]
+    assert not [m for m in msgs if m["key"] == "maintenance_due" and m["active"]]
+    # only the first save (PLANT → PLANT with tasks) is not a layout change either: no backups
+    await ws.send_json({"id": 5, "type": "copilot/backups/list"})
+    assert (await ws.receive_json())["result"]["backups"] == []

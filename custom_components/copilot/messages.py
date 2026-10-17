@@ -16,7 +16,9 @@ from typing import Any
 
 from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import CALLBACK_TYPE, Event, EventStateChangedData, HomeAssistant, State, callback
-from homeassistant.helpers.event import async_call_later, async_track_state_change_event
+from datetime import timedelta
+
+from homeassistant.helpers.event import async_call_later, async_track_state_change_event, async_track_time_interval
 from homeassistant.helpers.storage import Store
 
 from .const import EVENT_MESSAGE, MESSAGES_MAX, STORAGE_KEY_MESSAGES, STORAGE_VERSION
@@ -98,6 +100,8 @@ class MessageEngine:
         self._bindings: dict[str, list[Binding]] = {}
         self._unsub_track: CALLBACK_TYPE | None = None
         self._unsub_avail: CALLBACK_TYPE | None = None
+        self._unsub_maint: CALLBACK_TYPE | None = None
+        self._maintenance: list[dict[str, Any]] = []
         self._listeners: list[Callable[[dict[str, Any]], None]] = []
 
     # ------------------------------------------------------------ lifecycle
@@ -116,6 +120,9 @@ class MessageEngine:
         if self._unsub_avail:
             self._unsub_avail()
             self._unsub_avail = None
+        if self._unsub_maint:
+            self._unsub_maint()
+            self._unsub_maint = None
 
     @callback
     def async_set_plant(self, plant: dict[str, Any] | None) -> None:
@@ -150,6 +157,31 @@ class MessageEngine:
         for entity_id in self._bindings:
             self._evaluate(entity_id, None, self.hass.states.get(entity_id), initial=True)
         self._schedule_availability_check()
+        settings = (plant or {}).get("settings") or {}
+        self._maintenance = list(((settings.get("maintenance") or {}).get("tasks")) or [])
+        self._check_maintenance()
+        self._unsub_maint = async_track_time_interval(self.hass, self._check_maintenance, timedelta(hours=1))
+
+    # ----------------------------------------------------- maintenance
+
+    @callback
+    def _check_maintenance(self, _now: Any = None) -> None:
+        """Open a message for every maintenance task that is due."""
+        now = time.time()
+        idents = set()
+        for task in self._maintenance:
+            task_id = str(task.get("id", ""))
+            last = task.get("last_done")
+            days = task.get("interval_days")
+            if not task_id or not isinstance(last, (int, float)) or not isinstance(days, (int, float)) or days <= 0:
+                continue
+            ident = f"maint|_plant|{task_id}"
+            idents.add(ident)
+            due = last + days * 86400
+            params = {"task_key": task.get("key"), "title": task.get("title") or "", "since": round(max(0.0, now - due) / 86400)}
+            self._condition(ident, now >= due, LEVEL_NOTICE, "maintenance_due", params, task.get("component"))
+        for ident in [i for i in self._active if i.startswith("maint|") and i not in idents]:
+            self._close(ident)
 
     # ----------------------------------------------------------- listeners
 

@@ -38,6 +38,13 @@ _MAGIC = {
 }
 
 
+def _without_maintenance(plant: dict[str, Any]) -> dict[str, Any]:
+    """Plant without the maintenance log: ticking off a task is no reason for a backup."""
+    settings = dict(plant.get("settings") or {})
+    settings.pop("maintenance", None)
+    return {**plant, "settings": settings}
+
+
 class IconError(ValueError):
     """Raised when an uploaded icon is rejected."""
 
@@ -72,7 +79,7 @@ class CopilotStore:
 
     async def async_save_plant(self, plant: dict[str, Any], reason: str = "save") -> None:
         """Persist the plant; the previous layout is kept as a backup."""
-        if self.plant is not None and self.plant != plant:
+        if self.plant is not None and _without_maintenance(self.plant) != _without_maintenance(plant):
             self._push_backup(self.plant, reason, VERSION)
             await self._save_backups()
         self.plant = plant

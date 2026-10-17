@@ -165,6 +165,7 @@ const LEVEL_ICON: Record<string, string> = { info: "info", notice: "notice", war
 export function messageText(m: PlantMessage): string {
   const params = { ...m.params };
   params.label_sfx = params.label ? ` (${params.label})` : "";
+  if (m.key === "maintenance_due") params.task = params.task_key ? t(`mt.${params.task_key}`) : params.title;
   return t(`msgk.${m.key}`, params);
 }
 

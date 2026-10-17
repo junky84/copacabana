@@ -96,6 +96,17 @@ export interface TariffConfig {
   gas_eff?: number;
 }
 
+export interface MaintenanceTask {
+  id: string;
+  /** preset key (texts mt.<key>); custom tasks carry a title instead */
+  key?: string;
+  title?: string;
+  interval_days: number;
+  /** epoch seconds */
+  last_done?: number;
+  component?: string;
+}
+
 export interface PlantSettings {
   style: "flat" | "iso";
   demo: boolean;
@@ -104,6 +115,7 @@ export interface PlantSettings {
   /** heat load at design temperature in kW (simulator) */
   heat_load?: number;
   tariff?: TariffConfig;
+  maintenance?: { tasks: MaintenanceTask[] };
   /** energy layer (PV, grid, battery, house, wallbox) */
   energy?: EnergyConfig;
   /** layout changed by hand in the editor: never regenerate it automatically */
