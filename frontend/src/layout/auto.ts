@@ -204,8 +204,18 @@ function layered(plant: Plant, gap: number, sweeps: number, mirrorRows: boolean)
 
 /** The curated wizard layout, applied to the components that still exist. */
 function fromTemplate(plant: Plant): Plant | null {
-  const cfg = plant.settings?.wizard;
-  if (!cfg) return null;
+  const wiz = plant.settings?.wizard;
+  if (!wiz) return null;
+  // the editor may have changed units since the wizard ran: lay out what is there now
+  const iu = plant.components.find((c) => c.type === "indoor_unit");
+  const has = (type: ComponentType) => plant.components.some((c) => c.type === type);
+  const cfg = {
+    ...wiz,
+    indoorModel: iu?.model || wiz.indoorModel,
+    dhw: has("dhw_tank") ? ("tank" as const) : wiz.dhw,
+    buffer: has("buffer") ? (wiz.buffer === "none" ? ("parallel" as const) : wiz.buffer) : ("none" as const),
+    circulation: has("tap") ? plant.components.some((c) => c.id === "circ") : wiz.circulation,
+  };
   const gen = generatePlant(cfg, plant);
   const genById = new Map(gen.components.map((c) => [c.id, c]));
   const p = clone(plant);
@@ -290,12 +300,16 @@ function refine(plant: Plant, rounds = 400): Plant {
 }
 
 export function autoArrange(plant: Plant): ArrangeResult {
-  const candidates: { plant: Plant; kind: ArrangeResult["kind"] }[] = [];
+  // the curated wizard layout follows the real connection positions; generic layered
+  // layouts only serve plants without one (they look technical rather than tidy)
   const tpl = fromTemplate(plant);
+  const candidates: { plant: Plant; kind: ArrangeResult["kind"] }[] = [];
   if (tpl) candidates.push({ plant: tpl, kind: "template" });
-  for (const gap of [3, 5]) {
-    for (const sweeps of [0, 3]) {
-      for (const mirror of [false, true]) candidates.push({ plant: layered(plant, gap, sweeps, mirror), kind: "layered" });
+  else {
+    for (const gap of [3, 5]) {
+      for (const sweeps of [0, 3]) {
+        for (const mirror of [false, true]) candidates.push({ plant: layered(plant, gap, sweeps, mirror), kind: "layered" });
+      }
     }
   }
   let best: ArrangeResult | null = null;
@@ -303,7 +317,6 @@ export function autoArrange(plant: Plant): ArrangeResult {
     const score = scoreLayout(c.plant);
     if (!best || score.total < best.score.total) best = { plant: c.plant, kind: c.kind, score };
   }
-  // the curated template is already tuned; generic layouts get a refinement pass
   if (best!.kind === "layered" || best!.score.crossings > 2) {
     const refined = refine(best!.plant);
     const score = scoreLayout(refined);

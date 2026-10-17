@@ -102,21 +102,70 @@ export function generatePlant(cfg: WizardConfig, previous?: Plant | null): Plant
     buffer_l: im?.buffer,
   };
   const top = variant !== "wall_e";
+  // TP70 with one direct circuit: dedicated layout (outdoor unit top left, circuit left, DHW right)
+  const tp70 = variant === "tp70" && cfg.circuits.length <= 1 && !cfg.circuits[0]?.mixed;
   // wall units: outdoor connections level with the two rows below the indoor unit
-  const oy = top ? 12 : 2 + 14 - 4;
+  const oy = tp70 ? 3 : top ? 12 : 2 + 14 - 4;
   b.add("ou", "outdoor_unit", cfg.outdoorLabel || t("type.outdoor_unit"), 1, oy, {
     model: cfg.outdoorModel,
     props: { nominal_kw: cfg.nominalKw },
   });
   // generous gap between outdoor unit (x 1..10) and indoor unit
   const ix = top ? 14 : 16;
-  const iy = top ? 12 : 2;
+  const iy = tp70 ? 22 : top ? 12 : 2;
   b.add("iu", "indoor_unit", cfg.indoorLabel || t("type.indoor_unit"), ix, iy, { model: cfg.indoorModel, props: indoorProps });
   const iu = b.components.find((c) => c.id === "iu")!;
   const port = (id: string) => portPos(iu, id)!;
   const ouOut = { x: 10, y: oy + 5 };
 
-  if (!top) {
+  if (tp70) {
+    // ------------------------------------------------ TP70: connections on top, PC1 and buffer built in
+    // ports (x): HK1 flow, HK1 return, HK2 flow, HK2 return, from HP, to HP, DHW flow, DHW return
+    const yTop = iy;
+    const xs = (id: string) => port(id).x;
+    const IPC1: FlowCond = { c: "iu", s: "pc1" };
+    // outdoor connections above the unit: straight runs without crossings
+    b.pipe(P("iu", "src_out"), P("ou", "in"), "return", [IU], { via: [[xs("src_out"), oy + 5]] });
+    b.pipe(P("ou", "out"), P("iu", "src_in"), "supply", [IU], { via: [[xs("src_in"), oy + 6]] });
+    // heating circuit left of the unit, fed around its left side
+    const hc = cfg.circuits[0] ?? { emitter: "radiators", mixed: false, label: "" };
+    const ex = ix - 9;
+    b.add("hc1", hc.emitter, hc.label || t("wz.circuit", { n: 1 }), ex, yTop - 2, { props: { circuit: 1 } });
+    const supRow = yTop - 4;
+    const retRow = yTop - 7;
+    b.pipe(P("iu", "sup"), P("hc1", "sup"), "supply", [IPC1], { via: [[xs("sup"), supRow], [ex - 2, supRow], [ex - 2, yTop - 1]] });
+    // return accessories (separator, SC1, MAG) in front of the indoor unit
+    let from: PortRef = P("hc1", "ret");
+    let via: [number, number][] = [[ex - 3, yTop + 3], [ex - 3, retRow]];
+    let x = ex + 1;
+    if (cfg.separator) {
+      b.add("sep", "separator", t("wz.separator_short"), x, retRow - 1);
+      b.add("sc1", "separator", "SC1", x + 3, retRow - 1, { props: { filter: true } });
+      b.pipe(from, P("sep", "in"), "return", [IPC1], { via });
+      b.pipe(P("sep", "out"), P("sc1", "in"), "return", [IPC1]);
+      from = P("sc1", "out");
+      via = [];
+      x += 7;
+    }
+    if (cfg.expansion) {
+      b.add("jmag", "junction", "", x + 1, retRow);
+      b.add("mag", "expansion_vessel", "MAG", x, retRow - 3);
+      b.pipe(P("mag", "conn"), P("jmag", "t"), "return", []);
+      b.pipe(from, P("jmag", "l"), "return", [IPC1], { via });
+      from = P("jmag", "r");
+      via = [];
+    }
+    b.pipe(from, P("iu", "ret"), "return", [IPC1], { via: [...via, [xs("ret"), retRow]] });
+    if (extDhw) {
+      // cylinder right of the unit, coil fed over the top; drinking water between unit and cylinder
+      const tx = ix + 22;
+      const ty = yTop + 2;
+      b.add("dhw", "dhw_tank", cfg.dhwLabel || t("type.dhw_tank"), tx, ty, { props: { volume: cfg.dhwVolume } });
+      b.pipe(P("iu", "dhw_sup"), P("dhw", "coil_in"), "supply", [IU, B], { via: [[xs("dhw_sup"), yTop - 3], [tx + 9, yTop - 3], [tx + 9, ty + 4]] });
+      b.pipe(P("dhw", "coil_out"), P("iu", "dhw_ret"), "return", [IU, B], { via: [[tx + 8, ty + 9], [tx + 8, yTop - 2], [xs("dhw_ret"), yTop - 2]] });
+      drinkingWater(b, cfg, P("dhw", "hot"), P("dhw", "circ"), P("dhw", "cold"), tx, ty);
+    }
+  } else if (!top) {
     // ------------------------------------------------ wall-hung unit, connections at the bottom
     // ports (x): to HP, from HP | DHW flow, DHW return | heating return, heating flow
     const bot = iy + 14;
@@ -237,7 +286,7 @@ export function generatePlant(cfg: WizardConfig, previous?: Plant | null): Plant
   const plant: Plant = {
     version: 5,
     name: cfg.name,
-    grid: { w: n > 1 ? 76 : 66, h: Math.max(38, (top ? 46 : 38) + (n - 1) * 10) },
+    grid: tp70 ? { w: 50, h: 44 } : { w: n > 1 ? 76 : 66, h: Math.max(38, (top ? 46 : 38) + (n - 1) * 10) },
     components: b.components,
     pipes: b.pipes,
     settings: previous?.settings ?? { style: "flat", demo: true },
@@ -352,5 +401,12 @@ function drinkingWater(b: Builder, cfg: WizardConfig, hot: PortRef, circ: PortRe
 }
 
 export function examplePlant(): Plant {
-  return generatePlant(exampleConfig());
+  // standalone demo: ?indoor=<model id> previews other indoor units
+  const indoor = typeof location !== "undefined" ? new URLSearchParams(location.search).get("indoor") : null;
+  const cfg = exampleConfig();
+  if (indoor && indoorModel(indoor)) {
+    cfg.indoorModel = indoor;
+    cfg.indoorLabel = indoorModel(indoor)!.label.replace(/^Logatherm /, "").split(" – ")[0];
+  }
+  return generatePlant(cfg);
 }
