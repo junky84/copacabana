@@ -135,10 +135,6 @@ function iheater([x, y]: P, len: number, on: boolean): SVGTemplateResult {
   </g>`;
 }
 
-function imanometer([x, y]: P): SVGTemplateResult {
-  return svg`<g transform="translate(${x * C} ${y * C})"><circle class="gauge" r="7" /><line class="gauge-needle" x1="0" y1="0" x2="4" y2="-4" /></g>`;
-}
-
 function zigzagV(x: number, y: number, len: number, amp: number, n: number): string {
   const step = len / n;
   let d = `M${x} ${y}`;
@@ -181,8 +177,7 @@ function indoor(ctx: IconCtx, variant: string): SVGTemplateResult {
       ${iheater([6, 1.4], 4, aux)}
       ${ivalve([4.6, 6.2], b)}
       ${ipump([4.2, 7.6], run, "r")}
-      ${pc1 || true ? svg`<g transform="translate(${3 * C} ${3.4 * C})"><circle class=${pc1 ? "pump-body on" : "pump-body"} r="8" /><text class="itag" x="12" y="4">PC1</text></g>` : nothing}
-      ${imanometer([0.6, 8.2])}`;
+      ${pc1 || true ? svg`<g transform="translate(${3 * C} ${3.4 * C})"><circle class=${pc1 ? "pump-body on" : "pump-body"} r="8" /><text class="itag" x="12" y="4">PC1</text></g>` : nothing}`;
   } else if (variant === "tp70") {
     const bufC = tempColor(ctx.num("buffer_temp"), "#ff9f45");
     body = svg`
@@ -203,8 +198,7 @@ function indoor(ctx: IconCtx, variant: string): SVGTemplateResult {
       ${ivalve([5, 5.2], b)}
       ${ipump([6.5, 6.4], run, "u")}
       <g transform="translate(${1.6 * C} ${6.4 * C})"><circle class=${pc1 ? "pump-body on" : "pump-body"} r="8" />
-        ${pc1 ? svg`<circle class="impeller spin" style="--dur:0.9s" r="3.5" />` : nothing}<text class="itag" x="11" y="4">PC1</text></g>
-      ${imanometer([0.7, 6.6])}`;
+        ${pc1 ? svg`<circle class="impeller spin" style="--dur:0.9s" r="3.5" />` : nothing}<text class="itag" x="11" y="4">PC1</text></g>`;
   } else if (variant === "brine") {
     body = svg`
       ${screen(ctx, 1.6 * C, 0.8 * C, 4.6 * C)}
@@ -219,8 +213,7 @@ function indoor(ctx: IconCtx, variant: string): SVGTemplateResult {
       ${ipipe([[5, 0], [5, 3.4]], ret, run && b)}
       ${iheater([4, 3], 3, aux)}
       ${ivalve([5.5, 9], b)}
-      ${ipump([5.5, 11.6], run, "l")}
-      ${imanometer([0.7, 9])}`;
+      ${ipump([5.5, 11.6], run, "l")}`;
   } else {
     // wall_e: everything enters and leaves at the bottom (ports at x 2,3 | 5,6 | 8,9)
     body = svg`
@@ -233,8 +226,7 @@ function indoor(ctx: IconCtx, variant: string): SVGTemplateResult {
       ${ipipe([[6, 12.8], [2, 12.8], [2, 14]], ret, run)}
       ${iheater([4.3, 3.4], 5.4, aux)}
       ${ivalve([7.6, 10.6], b)}
-      ${ipump([4.3, 12.8], run, "l")}
-      ${imanometer([1.3, 9])}`;
+      ${ipump([4.3, 12.8], run, "l")}`;
   }
   return svg`
     ${casing(w, h, 10, "casing light")}
