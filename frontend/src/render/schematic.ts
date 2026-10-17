@@ -186,9 +186,13 @@ export class CpSchematic extends LitElement {
     } else if (badges === "left") {
       slots.forEach((slot, i) => out.push({ slot, x: x - 12 - CHIP_W, y: y + 4 + i * (CHIP_H + CHIP_GAP) }));
     } else if (badges === "above") {
-      const total = slots.length * (CHIP_W + CHIP_GAP) - CHIP_GAP;
+      // rows of three in catalog order, stacked upwards; further rows start flush with the first one
+      const order = slotsOf(c).map((s) => s.key);
+      slots.sort((p, q) => order.indexOf(p) - order.indexOf(q));
+      const total = Math.min(3, slots.length) * (CHIP_W + CHIP_GAP) - CHIP_GAP;
+      const x0 = x + wpx / 2 - total / 2;
       slots.forEach((slot, i) =>
-        out.push({ slot, x: x + wpx / 2 - total / 2 + i * (CHIP_W + CHIP_GAP), y: y - CHIP_H - 10 }),
+        out.push({ slot, x: x0 + (i % 3) * (CHIP_W + CHIP_GAP), y: y - CHIP_H - 10 - Math.floor(i / 3) * (CHIP_H + CHIP_GAP) }),
       );
     } else {
       const cols = Math.max(2, Math.floor((wpx + 40) / (CHIP_W + CHIP_GAP)));

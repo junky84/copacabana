@@ -105,14 +105,14 @@ export function generatePlant(cfg: WizardConfig, previous?: Plant | null): Plant
   // TP70 with one direct circuit: dedicated layout (outdoor unit top left, circuit left, DHW right)
   const tp70 = variant === "tp70" && cfg.circuits.length <= 1 && !cfg.circuits[0]?.mixed;
   // wall units: outdoor connections level with the two rows below the indoor unit
-  const oy = tp70 ? 3 : top ? 12 : 2 + 14 - 4;
+  const oy = tp70 ? 5 : top ? 12 : 2 + 14 - 4;
   b.add("ou", "outdoor_unit", cfg.outdoorLabel || t("type.outdoor_unit"), 1, oy, {
     model: cfg.outdoorModel,
     props: { nominal_kw: cfg.nominalKw },
   });
   // generous gap between outdoor unit (x 1..10) and indoor unit
   const ix = tp70 ? 22 : top ? 14 : 16;
-  const iy = tp70 ? 25 : top ? 12 : 2;
+  const iy = tp70 ? 27 : top ? 12 : 2;
   b.add("iu", "indoor_unit", cfg.indoorLabel || t("type.indoor_unit"), ix, iy, { model: cfg.indoorModel, props: indoorProps });
   const iu = b.components.find((c) => c.id === "iu")!;
   const port = (id: string) => portPos(iu, id)!;
@@ -284,7 +284,7 @@ export function generatePlant(cfg: WizardConfig, previous?: Plant | null): Plant
   const plant: Plant = {
     version: 5,
     name: cfg.name,
-    grid: tp70 ? { w: 58, h: 47 } : { w: n > 1 ? 76 : 66, h: Math.max(38, (top ? 46 : 38) + (n - 1) * 10) },
+    grid: tp70 ? { w: 58, h: 49 } : { w: n > 1 ? 76 : 66, h: Math.max(38, (top ? 46 : 38) + (n - 1) * 10) },
     components: b.components,
     pipes: b.pipes,
     settings: previous?.settings ?? { style: "flat", demo: true },

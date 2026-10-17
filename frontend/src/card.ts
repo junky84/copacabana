@@ -155,6 +155,8 @@ export class CopilotCardEditor extends LitElement {
 }
 
 if (!customElements.get("copilot-card")) customElements.define("copilot-card", CopilotCard);
+// former project name (COPilot): keep existing dashboards working
+if (!customElements.get("copilot-card")) customElements.define("copilot-card", class extends CopilotCard {});
 if (!customElements.get("copilot-card-editor")) customElements.define("copilot-card-editor", CopilotCardEditor);
 
 const w = window as any;

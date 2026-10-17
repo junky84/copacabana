@@ -88,11 +88,12 @@ export const TYPES: Record<ComponentType, TypeDef> = {
       { id: "out", x: 9, y: 6, dir: "r", kind: "supply" },
     ],
     slots: [
-      { key: "outdoor_temp", kind: "temp", show: true, pos: [9.5, 7.9] },
-      { key: "activity", kind: "enum" },
       { key: "heat_power", kind: "power_kw", show: true },
       { key: "el_power", kind: "power_w", show: true },
       { key: "compressor_speed", kind: "percent", show: true },
+      // fourth chip: own row above the three power values
+      { key: "outdoor_temp", kind: "temp", show: true },
+      { key: "activity", kind: "enum" },
       { key: "compressor_on", kind: "bool" },
       { key: "fan_speed", kind: "percent", pos: [3.2, 3.5] },
       T("air_in_temp"),

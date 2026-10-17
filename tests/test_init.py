@@ -132,3 +132,13 @@ async def test_message_rules(hass: HomeAssistant, hass_ws_client) -> None:
     hass.states.async_set("binary_sensor.in1", "on", {"x": 1})
     await hass.async_block_till_done()
     assert [e["key"] for e in events].count("input_active") == 1
+
+
+async def test_takes_over_copilot_data(hass: HomeAssistant, hass_ws_client, hass_storage) -> None:
+    hass_storage["copilot.plant"] = {"version": 1, "minor_version": 1, "key": "copilot.plant", "data": {"plant": PLANT}}
+    await _setup(hass)
+    ws = await hass_ws_client(hass)
+    await ws.send_json({"id": 1, "type": "copilot/config/get"})
+    res = await ws.receive_json()
+    assert res["result"]["plant"]["components"][0]["id"] == "iu"
+    assert hass_storage["copilot.plant"]["data"]["plant"]["components"][0]["id"] == "iu"

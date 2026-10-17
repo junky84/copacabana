@@ -1,7 +1,10 @@
 # COPilot
 
 SCADA-style heat pump dashboard for Home Assistant – modern, animated, configurable.
+The name: **COP** = *Coefficient of Performance* – your heat pump's co-pilot for efficiency.
 Built first for Buderus/Bosch heat pumps read via an **EMS-ESP gateway** (BBQKees E32 V2), designed to support other data sources later.
+
+> Formerly **COPilot** (domain `copilot`). Existing installations: see [Migrating from COPilot](#migrating-from-copilot).
 
 > Status: **v0.1 (preview)** – early test version, not yet verified on a real plant. Not affiliated with Bosch, Buderus or BBQKees.
 
@@ -30,6 +33,13 @@ Built first for Buderus/Bosch heat pumps read via an **EMS-ESP gateway** (BBQKee
 Updates appear in HACS (and under *Settings → Updates*); install them and restart Home Assistant.
 
 Manual installation: copy `custom_components/copilot` from the release zip to `/config/custom_components/` and restart.
+
+
+### Migrating from COPilot
+
+1. HACS: remove the old *COPilot* repository, add `https://github.com/junky84/copilot` as custom repository and download **COPilot**, restart.
+2. Add the integration **COPilot**. Plant layout and uploaded icons of COPilot are taken over automatically on first start.
+3. Remove the old *COPilot* integration entry. `custom:copilot-card` keeps working as an alias; switch dashboards to `custom:copilot-card` when convenient.
 
 ## Connection positions
 
