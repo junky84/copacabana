@@ -300,3 +300,28 @@ export const KIND_COLORS: Record<string, string> = {
   dhw_cold: "#38d0ff",
   circulation: "#b07cff",
 };
+
+/**
+ * Pipe colour in the style of hydraulic schematics: the kind of pipe sets the hue
+ * (flow warm, return blue, DHW pink, cold water light blue, circulation violet),
+ * the temperature shifts it within that hue family.
+ */
+export function pipeColor(kind: string, temp: number | undefined): string {
+  const mix = (a: [number, number, number], b: [number, number, number], f: number) =>
+    rgb([0, 1, 2].map((k) => a[k] + (b[k] - a[k]) * Math.max(0, Math.min(1, f))) as [number, number, number]);
+  const f = (lo: number, hi: number) => (temp === undefined ? 0.5 : (temp - lo) / (hi - lo));
+  switch (kind) {
+    case "supply":
+      return mix([245, 176, 66], [255, 64, 64], f(25, 55));
+    case "return":
+      return mix([46, 110, 255], [77, 208, 255], f(20, 45));
+    case "dhw_hot":
+      return mix([255, 128, 170], [255, 46, 120], f(35, 60));
+    case "dhw_cold":
+      return "rgb(110, 205, 255)";
+    case "circulation":
+      return mix([150, 120, 255], [196, 120, 255], f(35, 55));
+    default:
+      return tempColor(temp, "#8a97a6");
+  }
+}

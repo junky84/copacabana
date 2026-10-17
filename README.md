@@ -72,7 +72,7 @@ EMS-ESP enum values (e.g. compressor activity) are published in the EMS-ESP UI l
 
 ## Roadmap
 
-- **v0.2**: ~~Lovelace card~~ (0.1.4), ~~live COP / SPF with traffic light vs. datasheet~~ (0.1.5), ~~plant check~~ (0.1.8), interactive heating curve, “what is happening” explanation, energy layer (PV, battery, grid, wallbox, §14a), isometric 2.5D style
+- **v0.2**: ~~Lovelace card~~ (0.1.4), ~~live COP / SPF with traffic light vs. datasheet~~ (0.1.5), ~~plant check~~ (0.1.8), ~~interactive heating curve~~ (0.1.9), “what is happening” explanation, energy layer (PV, battery, grid, wallbox, §14a), isometric 2.5D style
 - **v0.3**: time machine (replay the schematic from recorder history), costs & PV share (fixed or entity tariff), maintenance calendar (anode, separator, expansion vessel …), export/import, write access for selected values
 
 ## Development

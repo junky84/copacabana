@@ -215,6 +215,7 @@ const P: Record<string, string> = {
   menu: "M4 7h16M4 12h16M4 17h16",
   grid: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
   chart: "M4 20V10M10 20V4M16 20v-7M22 20H2",
+  curve: "M3 20h18M3 20V4M5 6c3 9 8 12 15 13",
   bell: "M6 16V11a6 6 0 1 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0",
   gear: "M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6zM12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1",
   play: "M8 5l11 7l-11 7z",

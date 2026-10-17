@@ -102,7 +102,8 @@ export function generatePlant(cfg: WizardConfig, previous?: Plant | null): Plant
     buffer_l: im?.buffer,
   };
   const top = variant !== "wall_e";
-  const oy = top ? 12 : 3;
+  // wall units: outdoor connections level with the two rows below the indoor unit
+  const oy = top ? 12 : 2 + 14 - 4;
   b.add("ou", "outdoor_unit", cfg.outdoorLabel || t("type.outdoor_unit"), 1, oy, {
     model: cfg.outdoorModel,
     props: { nominal_kw: cfg.nominalKw },
@@ -116,71 +117,58 @@ export function generatePlant(cfg: WizardConfig, previous?: Plant | null): Plant
 
   if (!top) {
     // ------------------------------------------------ wall-hung unit, connections at the bottom
-    const bot = iy + 12;
-    b.pipe(P("ou", "out"), P("iu", "src_in"), "supply", [IU], { via: [[12, ouOut.y], [12, bot + 1]] });
-    b.pipe(P("iu", "src_out"), P("ou", "in"), "return", [IU], { via: [[ix + 1, bot + 2], [11, bot + 2]] });
+    // ports (x): to HP, from HP | DHW flow, DHW return | heating return, heating flow
+    const bot = iy + 14;
+    const px = (id: string) => port(id).x;
+    // heat pump circuit: two rows below the unit, no crossings (outdoor return connection on top)
+    b.pipe(P("iu", "src_out"), P("ou", "in"), "return", [IU], { via: [[px("src_out"), bot + 1]] });
+    b.pipe(P("ou", "out"), P("iu", "src_in"), "supply", [IU], { via: [[px("src_in"), bot + 2]] });
 
-    // return accessories in front of the indoor unit (row bot+4)
-    const row = bot + 4;
-    let ret: PortRef = P("iu", "ret");
-    let retVia: [number, number][] = [[ix + 6, row]];
-    const chainFlow = [IU, ...A];
-    const items: { id: string; x: number }[] = [];
+    // return accessories in front of the indoor unit, on their own row
+    const row = bot + 5;
+    const flowR = [IU, ...A];
+    const chain: { inP: PortRef; outP: PortRef }[] = [];
     if (cfg.separator) {
-      b.add("sc1", "separator", "SC1", ix + 8, row - 1, { rot: 180 as Rotation, props: { filter: true } });
-      items.push({ id: "sc1", x: ix + 8 });
+      b.add("sep", "separator", t("wz.separator_short"), px("sup") + 6, row - 1, { rot: 180 as Rotation });
+      chain.push({ inP: P("sep", "in"), outP: P("sep", "out") });
     }
     if (cfg.expansion) {
-      b.add("jmag", "junction", "", ix + 12, row);
-      b.add("mag", "expansion_vessel", "MAG", ix + 11, row + 1, { rot: 180 as Rotation });
+      b.add("jmag", "junction", "", px("sup") + 4, row);
+      b.add("mag", "expansion_vessel", "MAG", px("sup") + 3, row + 1, { rot: 180 as Rotation });
       b.pipe(P("mag", "conn"), P("jmag", "b"), "return", []);
+      chain.push({ inP: P("jmag", "r"), outP: P("jmag", "l") });
     }
     if (cfg.separator) {
-      b.add("sep", "separator", t("wz.separator_short"), ix + 14, row - 1, { rot: 180 as Rotation });
+      b.add("sc1", "separator", "SC1", px("sup"), row - 1, { rot: 180 as Rotation, props: { filter: true } });
+      chain.push({ inP: P("sc1", "in"), outP: P("sc1", "out") });
     }
-    // connect chain from the buffer side towards the indoor unit
-    const chain: { inP: PortRef; outP: PortRef }[] = [];
-    if (cfg.separator) chain.push({ inP: P("sep", "in"), outP: P("sep", "out") });
-    if (cfg.expansion) chain.push({ inP: P("jmag", "r"), outP: P("jmag", "l") });
-    if (cfg.separator) chain.push({ inP: P("sc1", "in"), outP: P("sc1", "out") });
-    for (let i = 0; i < chain.length - 1; i++) b.pipe(chain[i].outP, chain[i + 1].inP, "return", chainFlow);
+    for (let i = 0; i < chain.length - 1; i++) b.pipe(chain[i].outP, chain[i + 1].inP, "return", flowR);
+    let ret: PortRef = P("iu", "ret");
     if (chain.length) {
-      b.pipe(chain[chain.length - 1].outP, ret, "return", chainFlow, { via: retVia });
+      b.pipe(chain[chain.length - 1].outP, P("iu", "ret"), "return", flowR, { via: [[px("ret"), row]] });
       ret = chain[0].inP;
-      retVia = [];
     }
-    void items;
 
     // heating side
-    let hcSupply: PortRef = P("iu", "sup");
-    let hcReturn: PortRef = ret;
-    let hcViaSup: [number, number][] = [[ix + 7, bot + 2], [ix + 19, bot + 2]];
-    let x0 = ix + 20;
-    let hcFlow: FlowCond[] = [IU, ...A];
     if (extBuffer) {
-      const bx = ix + 17;
-      const by = row + 2;
+      const bx = ix + 18;
+      const by = bot + 7;
       b.add("buf", "buffer", cfg.bufferLabel || t("type.buffer"), bx, by, { props: { volume: cfg.bufferVolume } });
-      b.pipe(P("iu", "sup"), P("buf", "in_sup"), "supply", [IU, ...A], { via: [[ix + 7, bot + 2], [bx + 1, bot + 2]] });
+      b.pipe(P("iu", "sup"), P("buf", "in_sup"), "supply", [IU, ...A], { via: [[px("sup"), bot + 2], [bx + 1, bot + 2]] });
       b.pipe(P("buf", "in_ret"), ret, "return", [IU, ...A], { via: [[bx + 2, row]] });
-      hcSupply = P("buf", "out_sup");
-      hcReturn = P("buf", "out_ret");
-      hcViaSup = [];
-      hcFlow = [PC1];
-      x0 = bx + 7;
-    } else if (chain.length) {
-      // no buffer: heating return runs through the accessories
-      hcReturn = ret;
+      circuits(b, cfg, P("buf", "out_sup"), P("buf", "out_ret"), [PC1], [], true, bx + 7, by + 1);
+    } else {
+      const x0 = ix + 22;
+      circuits(b, cfg, P("iu", "sup"), ret, [IU, ...A], [[px("sup"), bot + 2], [x0 - 2, bot + 2]], false, x0, bot + 8, row);
     }
-    circuits(b, cfg, hcSupply, hcReturn, hcFlow, hcViaSup, extBuffer, x0, row + 2);
 
-    // hot water
+    // hot water: cylinder right below the DHW connections, drinking water on its left
     if (extDhw) {
-      const tx = ix - 4;
-      const ty = row + 1;
+      const tx = px("dhw_sup") - 7;
+      const ty = bot + 4;
       b.add("dhw", "dhw_tank", cfg.dhwLabel || t("type.dhw_tank"), tx, ty, { props: { volume: cfg.dhwVolume } });
-      b.pipe(P("iu", "dhw_sup"), P("dhw", "coil_in"), "supply", [IU, B], { via: [[ix + 4, ty + 4]] });
-      b.pipe(P("dhw", "coil_out"), P("iu", "dhw_ret"), "return", [IU, B], { via: [[ix + 5, ty + 9]] });
+      b.pipe(P("iu", "dhw_sup"), P("dhw", "coil_in"), "supply", [IU, B], { via: [[px("dhw_sup"), ty + 4]] });
+      b.pipe(P("dhw", "coil_out"), P("iu", "dhw_ret"), "return", [IU, B], { via: [[px("dhw_ret"), ty + 9]] });
       drinkingWater(b, cfg, P("dhw", "hot"), P("dhw", "circ"), P("dhw", "cold"), tx, ty);
     }
   } else {
@@ -246,7 +234,7 @@ export function generatePlant(cfg: WizardConfig, previous?: Plant | null): Plant
 
   const n = Math.max(1, cfg.circuits.length);
   const plant: Plant = {
-    version: 3,
+    version: 4,
     name: cfg.name,
     grid: { w: n > 1 ? 72 : 60, h: Math.max(36, (top ? 46 : 34) + (n - 1) * 10) },
     components: b.components,
@@ -288,6 +276,7 @@ function circuits(
   ownPump: boolean,
   x0: number,
   yBase: number,
+  returnRow?: number,
 ): void {
   const n = Math.max(1, cfg.circuits.length);
   const many = n > 1;
@@ -328,9 +317,9 @@ function circuits(
       b.add(`hc${idx}_jm`, "junction", "", x - 2, yc + 3);
       b.pipe(P(emId, "ret"), P(`hc${idx}_jm`, "r"), "return", f, { via: [[x - 2, yc + 3]] });
       b.pipe(P(`hc${idx}_jm`, "t"), P(mixId, "ret"), "return", f);
-      b.pipe(P(`hc${idx}_jm`, "l"), ret, "return", f, { via: [[x0 - 2 - i, yc + 3]] });
+      b.pipe(P(`hc${idx}_jm`, "l"), ret, "return", f, { via: [[x0 - 2 - i, yc + 3], ...(returnRow ? [[x0 - 2 - i, returnRow] as [number, number]] : [])] });
     } else {
-      b.pipe(P(emId, "ret"), ret, "return", f, { via: [[x0 - 2 - i, yc + 3]] });
+      b.pipe(P(emId, "ret"), ret, "return", f, { via: [[x0 - 2 - i, yc + 3], ...(returnRow ? [[x0 - 2 - i, returnRow] as [number, number]] : [])] });
     }
     void many;
   });
@@ -344,17 +333,18 @@ function circuits(
 function drinkingWater(b: Builder, cfg: WizardConfig, hot: PortRef, circ: PortRef, cold: PortRef, tx: number, ty: number): void {
   const draw: FlowCond = { c: "tap", s: "flowing" };
   const circOn: FlowCond = { c: "circ", s: "running" };
-  b.add("tap", "tap", t("type.tap"), tx - 6, ty - 2);
+  // tap level with the hot water outlet (1 cell below the cylinder top), cold inlet level with the cold connection
+  b.add("tap", "tap", t("type.tap"), tx - 6, ty);
   b.add("inlet", "water_inlet", t("type.water_inlet"), tx - 6, ty + 9);
   b.pipe(P("inlet", "out"), cold, "dhw_cold", [draw]);
   if (!cfg.circulation) {
-    b.pipe(hot, P("tap", "hot"), "dhw_hot", [draw], { via: [[tx - 1, ty - 1]] });
+    b.pipe(hot, P("tap", "hot"), "dhw_hot", [draw]);
     return;
   }
-  b.add("jww", "junction", "", tx - 2, ty - 1);
-  b.pipe(hot, P("jww", "r"), "dhw_hot", [], { flowAny: [draw, circOn], via: [[tx - 1, ty - 1]] });
+  b.add("jww", "junction", "", tx - 2, ty + 1);
+  b.pipe(hot, P("jww", "r"), "dhw_hot", [], { flowAny: [draw, circOn] });
   b.pipe(P("jww", "l"), P("tap", "hot"), "dhw_hot", [draw]);
-  b.add("circ", "pump", "PW2", tx - 3, ty + 2, { rot: 90 as Rotation, props: { role: "circulation" } });
+  b.add("circ", "pump", "PW2", tx - 3, ty + 3, { rot: 90 as Rotation, props: { role: "circulation" } });
   b.pipe(P("jww", "b"), P("circ", "in"), "circulation", [circOn]);
   b.pipe(P("circ", "out"), circ, "circulation", [circOn]);
 }

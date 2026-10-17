@@ -3,7 +3,7 @@ import { CELL, TYPES, anchoredSlots, badgesOf, baseSize, portPos, portsOf, sizeO
 import { shortLabel, slotLabel, t } from "../i18n";
 import type { Pipe, PipeKind, Plant, PlantComponent, PortRef, UserIcon } from "../types";
 import {
-  KIND_COLORS,
+  pipeColor,
   componentFlags,
   formatValue,
   kindOf,
@@ -274,7 +274,7 @@ export class CpSchematic extends LitElement {
             if (!route) return nothing;
             const d = pathD(route.pts);
             const active = pipeActive(pipe, flags);
-            const color = tempColor(temps.get(pipe.id), KIND_COLORS[pipe.kind] || "#888");
+            const color = pipeColor(pipe.kind, temps.get(pipe.id));
             const sel = this.selected?.kind === "p" && this.selected.id === pipe.id;
             return svg`<g class="pipe ${active ? "active" : ""} ${sel ? "selected" : ""}" data-pipe=${pipe.id}
                 @pointerdown=${(e: PointerEvent) => this._onPipeDown(e, pipe.id)}>
@@ -728,10 +728,11 @@ export class CpSchematic extends LitElement {
     /* pipes */
     .pipe path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
     .pipe-hit { stroke: transparent; stroke-width: 18; pointer-events: stroke; }
-    .pipe-outline { stroke: var(--cp-pipe-outline); stroke-width: 10; }
-    .pipe-base { stroke-width: 6; opacity: 0.38; transition: opacity 0.6s; }
+    /* the outline in background colour cuts a gap into pipes drawn earlier: crossings read as bridges */
+    .pipe-outline { stroke: var(--cp-surface); stroke-width: 12; }
+    .pipe-base { stroke-width: 5; opacity: 0.4; transition: opacity 0.6s; }
     .pipe.active .pipe-base { opacity: 1; }
-    .pipe-halo { stroke-width: 16; opacity: 0.16; }
+    .pipe-halo { stroke-width: 12; opacity: 0.12; }
     .pipe-flow {
       stroke: var(--cp-flow);
       stroke-width: 2.6;
@@ -797,6 +798,7 @@ export class CpSchematic extends LitElement {
       paint-order: stroke; stroke: var(--cp-surface); stroke-width: 3px; stroke-linejoin: round;
     }
     .rad-frame { fill: var(--cp-casing); stroke: var(--cp-casing-stroke); }
+    .rad-header { fill: var(--cp-casing-light); stroke: var(--cp-casing-stroke); stroke-width: 1; }
     .fin { stroke: rgba(255, 255, 255, 0.15); }
     .heat-wave { fill: none; stroke: #ff8a3d; stroke-width: 2; stroke-linecap: round; opacity: 0; animation: cp-rise 2.4s ease-in infinite; }
     .floor-slab { fill: var(--cp-casing); stroke: var(--cp-casing-stroke); }

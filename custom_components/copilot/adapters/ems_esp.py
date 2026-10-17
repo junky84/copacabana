@@ -197,6 +197,8 @@ RULES: dict[tuple[str, str | None], dict[str, list[Cand]]] = {
         "offset_temp": [("thermostat", "{hc}", "offsettemp")],
         "min_flow_temp": [("thermostat", "{hc}", "minflowtemp")],
         "max_flow_temp": [("thermostat", "{hc}", "maxflowtemp")],
+        "min_ext_temp": [("thermostat", None, "minexttemp")],
+        "heating_limit": [("thermostat", "{hc}", "summertemp"), ("thermostat", None, "summertemp")],
     },
     ("mixer", None): {
         "position": [("mixer", "{hc}", "valvestatus")],

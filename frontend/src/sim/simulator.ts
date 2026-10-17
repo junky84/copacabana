@@ -8,6 +8,7 @@
  */
 
 import type { HistoryPoint, Level, PlantMessage } from "../types";
+import { defaultCurve, flowTarget, type CurveParams } from "../data/curve";
 
 export type SimGroup = "outdoor" | "indoor" | "pc0" | "pc1" | "circ" | "vw1" | "buffer" | "dhw" | "hc" | "tap" | "mixer";
 export type SimValues = Record<SimGroup, Record<string, number | string | boolean>>;
@@ -110,8 +111,12 @@ export class Simulator {
   private listeners: ((m: PlantMessage) => void)[] = [];
   values!: SimValues;
 
+  /** heating curve of the (first) heating circuit; editable in the curve view */
+  curve!: CurveParams;
+
   constructor(params: Partial<SimParams> = {}, now = Date.now() / 1000, labels?: Record<string, string>) {
     this.p = { ...DEFAULT_PARAMS, ...params };
+    this.curve = defaultCurve(this.p.floor, this.p.designTemp);
     if (labels) this.labels = { ...this.labels, ...labels };
     this.time = now - 24 * 3600;
     // settle and fill 24 h of history without emitting messages
@@ -164,10 +169,8 @@ export class Simulator {
   }
 
   curveSetpoint(): number {
-    const design = this.p.floor ? 35 : 50;
-    const slope = (design - ROOM_SET) / (ROOM_SET - this.p.designTemp);
     const raise = this.pv ? 5 : 0;
-    return Math.max(25, Math.min(design + 5, ROOM_SET + (ROOM_SET - this.tOut) * slope + raise));
+    return (flowTarget(this.curve, this.tOut) ?? this.curve.minFlow) + raise;
   }
 
   dhwSetpoint(): number {
@@ -185,7 +188,7 @@ export class Simulator {
     const target = this.outdoorMean + this.dailySwing * Math.cos(((h - 15) / 24) * 2 * Math.PI);
     this.tOut += (target - this.tOut) * Math.min(1, dt / 1800);
 
-    const season = this.tOut < 16;
+    const season = this.tOut < this.curve.limit;
     const vlSet = this.curveSetpoint();
 
     // ---------------------------------------------- heating circuit
@@ -202,7 +205,7 @@ export class Simulator {
         tm = this.tVlHc - q / (2 * mHc);
       }
       // thermostatic valves throttle when the room is warm
-      q *= Math.max(0.1, Math.min(1, 1 - (this.tRoom - ROOM_SET - 0.2) * 1.5));
+      q *= Math.max(0.1, Math.min(1, 1 - (this.tRoom - this.curve.roomSet - 0.2) * 1.5));
       this.tRlHc = this.tVlHc - q / mHc;
     } else {
       this.tRlHc = this.bufBot;
@@ -470,14 +473,16 @@ export class Simulator {
         return_temp: r1(this.tRlHc),
         target_flow_temp: r1(vlSet),
         room_temp: r1(this.tRoom),
-        room_setpoint: ROOM_SET,
+        room_setpoint: this.curve.roomSet,
         mode: "auto",
         summer_mode: this.tOut < 16 ? "winter" : "summer",
         operating_state: this.tOut < 16 ? "heating" : "off",
-        design_temp: this.p.floor ? 35 : 50,
-        offset_temp: 0,
-        min_flow_temp: 25,
-        max_flow_temp: this.p.floor ? 40 : 55,
+        design_temp: this.curve.design,
+        offset_temp: this.curve.offset,
+        min_flow_temp: this.curve.minFlow,
+        max_flow_temp: this.curve.maxFlow,
+        min_ext_temp: this.curve.minExt,
+        heating_limit: this.curve.limit,
       },
       tap: { flow: this.tapFlow, temp: r1(this.dhwTop - 2) },
       mixer: { position: this.tOut < 16 ? 40 : 0, flow_temp: r1(Math.min(this.tVlHc, 33)) },

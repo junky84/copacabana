@@ -222,19 +222,19 @@ function indoor(ctx: IconCtx, variant: string): SVGTemplateResult {
       ${ipump([5.5, 11.6], run, "l")}
       ${imanometer([0.7, 9])}`;
   } else {
-    // wall_e: everything enters and leaves at the bottom
+    // wall_e: everything enters and leaves at the bottom (ports at x 2,3 | 5,6 | 8,9)
     body = svg`
-      ${screen(ctx, 1.6 * C, 0.8 * C, 4.6 * C)}
-      ${ipipe([[2, 12], [2, 8.2], [3.3, 8.2], [3.3, 2.6], [5.6, 2.6], [5.6, 9]], sup, run)}
-      ${ipipe([[5.6, 9], [7, 9], [7, 12]], sup, run && !b)}
-      ${ipipe([[5.6, 9], [5.6, 9.9], [4, 9.9], [4, 12]], sup, run && b)}
-      ${ipipe([[6, 12], [6, 11.2], [5, 11.2]], ret, run && !b)}
-      ${ipipe([[5, 12], [5, 11.2]], ret, run && b)}
-      ${ipipe([[5, 11.2], [1, 11.2], [1, 12]], ret, run)}
-      ${iheater([3.3, 3.2], 4.3, aux)}
-      ${ivalve([5.6, 9], b)}
-      ${ipump([3.3, 11.2], run, "l")}
-      ${imanometer([0.6, 8.6])}`;
+      ${screen(ctx, 2 * C, 0.8 * C, 6 * C)}
+      ${ipipe([[3, 14], [3, 9.6], [4.3, 9.6], [4.3, 2.8], [7.6, 2.8], [7.6, 10.6]], sup, run)}
+      ${ipipe([[7.6, 10.6], [9, 10.6], [9, 14]], sup, run && !b)}
+      ${ipipe([[7.6, 10.6], [7.6, 11.6], [5, 11.6], [5, 14]], sup, run && b)}
+      ${ipipe([[8, 14], [8, 12.8], [6, 12.8]], ret, run && !b)}
+      ${ipipe([[6, 14], [6, 12.8]], ret, run && b)}
+      ${ipipe([[6, 12.8], [2, 12.8], [2, 14]], ret, run)}
+      ${iheater([4.3, 3.4], 5.4, aux)}
+      ${ivalve([7.6, 10.6], b)}
+      ${ipump([4.3, 12.8], run, "l")}
+      ${imanometer([1.3, 9])}`;
   }
   return svg`
     ${casing(w, h, 10, "casing light")}
@@ -348,7 +348,9 @@ function radiators(ctx: IconCtx): SVGTemplateResult {
   const room = ctx.num("room_temp");
   const warm = flow !== undefined && room !== undefined ? flow - room > 6 : false;
   const fins = 9;
-  const fw = (w - 16) / fins;
+  const top = 0.45 * C; // supply connection at 1 cell sits in the upper header
+  const bottom = h - 0.45 * C; // return connection at 5 cells in the lower header
+  const fw = (w - 20) / fins;
   const gid = `rg-${ctx.c.id}`;
   return svg`
     <defs><linearGradient id=${gid} x1="0" y1="0" x2="0" y2="1">
@@ -356,12 +358,14 @@ function radiators(ctx: IconCtx): SVGTemplateResult {
       <stop offset="1" stop-color=${tempColor(ret, "#8b949e")} stop-opacity=${warm ? 0.6 : 0.2} />
     </linearGradient></defs>
     ${warm
-      ? [0.25, 0.5, 0.75].map(
-          (f, i) => svg`<path class="heat-wave" style="animation-delay:${i * 0.6}s" d="M ${w * f} ${h * 0.12} q 5 -6 0 -12 q -5 -6 0 -12" />`,
+      ? [0.3, 0.55, 0.8].map(
+          (f, i) => svg`<path class="heat-wave" style="animation-delay:${i * 0.6}s" d="M ${w * f} ${top - 4} q 5 -6 0 -12 q -5 -6 0 -12" />`,
         )
       : ""}
-    <rect class="rad-frame" x="4" y=${h * 0.18} width=${w - 8} height=${h * 0.72} rx="6" />
-    ${Array.from({ length: fins }, (_, i) => svg`<rect x=${8 + i * fw + 1} y=${h * 0.22} width=${fw - 3} height=${h * 0.64} rx=${(fw - 3) / 2} fill="url(#${gid})" class="fin" />`)}
+    <rect class="rad-frame" x="0" y=${top} width=${w - 4} height=${bottom - top} rx="6" />
+    <rect class="rad-header" x="0" y=${C - 4} width=${w - 4} height="8" rx="4" />
+    <rect class="rad-header" x="0" y=${5 * C - 4} width=${w - 4} height="8" rx="4" />
+    ${Array.from({ length: fins }, (_, i) => svg`<rect x=${12 + i * fw} y=${top + 6} width=${fw - 3} height=${bottom - top - 12} rx=${(fw - 3) / 2} fill="url(#${gid})" class="fin" />`)}
   `;
 }
 

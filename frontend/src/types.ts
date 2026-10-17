@@ -77,7 +77,7 @@ export interface PlantSettings {
 
 export interface Plant {
   /** 2 = built-in PC0/VW1 and real connection positions, 3 = circulation from the end of the hot water line */
-  version: 1 | 2 | 3;
+  version: 1 | 2 | 3 | 4;
   name: string;
   grid: { w: number; h: number };
   components: PlantComponent[];
