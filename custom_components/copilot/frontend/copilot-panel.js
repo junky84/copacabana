@@ -3036,7 +3036,7 @@ function ss(a, t, e = 10, s = "casing") {
 function Qi(a) {
   const { w: t, h: e, flags: s, c: i } = a, n = Qe(i.model);
   if (n.source === "brine") return tn(a);
-  const o = s.has("running") && !s.has("defrost"), r = s.has("defrost"), l = s.has("alarm"), p = t * 0.36, d = e * 0.5, h = Math.min(e * 0.38, t * 0.3), u = a.num("fan_speed") ?? (o ? 60 : 0), f = u > 0 ? Math.max(0.35, 2.2 - u / 50) : 0, g = l ? "#ff4d4d" : r ? "#6cc4ff" : o ? "#3ddc97" : "#5b6573", x = [0, 120, 240].map(
+  const o = s.has("running") && !s.has("defrost"), r = s.has("defrost"), l = s.has("alarm"), p = t * 0.36, d = e * 0.5, h = Math.min(e * 0.38, t * 0.3), u = a.num("fan_speed") ?? (o ? 60 : 0), f = u <= 0 ? 0 : u < 45 ? 2.8 : u < 70 ? 2 : 1.5, g = l ? "#ff4d4d" : r ? "#6cc4ff" : o ? "#3ddc97" : "#5b6573", x = [0, 120, 240].map(
     (k) => $`<path transform="rotate(${k})" d="M0 0 C ${h * 0.18} ${-h * 0.25}, ${h * 0.55} ${-h * 0.35}, ${h * 0.82} ${-h * 0.12} C ${h * 0.6} ${h * 0.05}, ${h * 0.25} ${h * 0.08}, 0 0 Z" />`
   );
   return $`

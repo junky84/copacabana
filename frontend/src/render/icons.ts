@@ -43,7 +43,9 @@ function outdoor(ctx: IconCtx): SVGTemplateResult {
   const cy = h * 0.5;
   const r = Math.min(h * 0.38, w * 0.3);
   const speed = ctx.num("fan_speed") ?? (running ? 60 : 0);
-  const dur = speed > 0 ? Math.max(0.35, 2.2 - speed / 50) : 0;
+  // seconds per revolution in three fixed steps: a changing animation-duration
+  // restarts the rotation and makes the fan jump on every value update
+  const dur = speed <= 0 ? 0 : speed < 45 ? 2.8 : speed < 70 ? 2 : 1.5;
   const led = alarm ? "#ff4d4d" : defrost ? "#6cc4ff" : running ? "#3ddc97" : "#5b6573";
   const blades = [0, 120, 240].map(
     (a) => svg`<path transform="rotate(${a})" d="M0 0 C ${r * 0.18} ${-r * 0.25}, ${r * 0.55} ${-r * 0.35}, ${r * 0.82} ${-r * 0.12} C ${r * 0.6} ${r * 0.05}, ${r * 0.25} ${r * 0.08}, 0 0 Z" />`,
