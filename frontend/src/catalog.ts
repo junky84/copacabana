@@ -167,7 +167,7 @@ export const TYPES: Record<ComponentType, TypeDef> = {
           { id: "dhw_sup", x: 7, y: 0, dir: "t", tempSlot: "supply_temp", kind: "supply" },
           { id: "dhw_ret", x: 8, y: 0, dir: "t", tempSlot: "return_temp", kind: "return" },
         ],
-        pos: { pressure: [0.7, 6.6], aux_level: [4.5, 2.6], pc0_speed: [6.5, 6.4], pc1_speed: [2.4, 6.4], buffer_temp: [4.5, 11.5] },
+        pos: { pressure: [7, 14.65], aux_level: [3.6, 3], pc0_speed: [7.6, 8.75], pc1_speed: [3.6, 4.9], buffer_temp: [4.5, 10.9] },
         at: { supply_temp: "src_in", return_temp: "src_out" },
       },
       // brine compact unit (WSW186i): connections on top; layout approximated from the T180 family
@@ -333,7 +333,7 @@ export const TYPES: Record<ComponentType, TypeDef> = {
       { key: "flow_temp", kind: "temp", show: true, at: "sup" },
       { key: "return_temp", kind: "temp", show: true, at: "ret" },
       T("target_flow_temp"),
-      { key: "room_temp", kind: "temp", show: true, pos: [3.5, -0.9] },
+      { key: "room_temp", kind: "temp", show: true, pos: [3.5, -2.2] },
       T("room_setpoint"),
       { key: "mode", kind: "enum" },
       { key: "summer_mode", kind: "enum" },

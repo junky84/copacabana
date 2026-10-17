@@ -105,7 +105,7 @@ function ipipe(pts: P[], color: string, active: boolean): SVGTemplateResult {
     ${active ? svg`<path class="ipipe-flow" d=${d} />` : nothing}`;
 }
 
-function ipump([x, y]: P, running: boolean, dir: "l" | "r" | "u" | "d" = "l"): SVGTemplateResult {
+function ipump([x, y]: P, running: boolean, dir: "l" | "r" | "u" | "d" = "l", label = "PC0"): SVGTemplateResult {
   const r = 0.55 * C;
   const rot = { r: 0, d: 90, l: 180, u: 270 }[dir];
   return svg`<g transform="translate(${x * C} ${y * C})">
@@ -113,17 +113,19 @@ function ipump([x, y]: P, running: boolean, dir: "l" | "r" | "u" | "d" = "l"): S
     <circle class=${running ? "pump-body on" : "pump-body"} r=${r} />
     <path class=${running ? "pump-tri on" : "pump-tri"} transform="rotate(${rot})" d="M ${-r * 0.5} ${-r * 0.8} L ${r} 0 L ${-r * 0.5} ${r * 0.8} Z" />
     <circle class=${running ? "impeller spin" : "impeller"} style="--dur:0.9s" r=${r * 0.36} />
-    <text class="itag" y=${r + 9} text-anchor="middle">PC0</text>
+    <text class="itag halo" y=${r + 9} text-anchor="middle">${label}</text>
   </g>`;
 }
 
-function ivalve([x, y]: P, b: boolean, label = "VW1"): SVGTemplateResult {
+function ivalve([x, y]: P, b: boolean, label = "VW1", left = false): SVGTemplateResult {
   const s = 0.5 * C;
   return svg`<g transform="translate(${x * C} ${y * C})">
     <path class="valve-tri on" d="M ${-s} ${-s * 0.6} L 0 0 L ${-s} ${s * 0.6} Z" transform="rotate(-90)" />
     <path class=${b ? "valve-tri" : "valve-tri on"} d="M ${s} ${-s * 0.6} L 0 0 L ${s} ${s * 0.6} Z" />
     <path class=${b ? "valve-tri on" : "valve-tri"} d="M ${-s} ${-s * 0.6} L 0 0 L ${-s} ${s * 0.6} Z" />
-    <text class="itag" x=${s + 3} y=${-s} >${label} ${b ? "B" : "A"}</text>
+    ${left
+      ? svg`<text class="itag" x=${-s - 3} y=${-s * 0.4} text-anchor="end">${label} ${b ? "B" : "A"}</text>`
+      : svg`<text class="itag" x=${s + 3} y=${-s} >${label} ${b ? "B" : "A"}</text>`}
   </g>`;
 }
 
@@ -180,25 +182,25 @@ function indoor(ctx: IconCtx, variant: string): SVGTemplateResult {
       ${pc1 || true ? svg`<g transform="translate(${3 * C} ${3.4 * C})"><circle class=${pc1 ? "pump-body on" : "pump-body"} r="8" /><text class="itag" x="12" y="4">PC1</text></g>` : nothing}`;
   } else if (variant === "tp70") {
     const bufC = tempColor(ctx.num("buffer_temp"), "#ff9f45");
+    // columns: 1 HK1 flow (PC1), 2 HK1 return, 3/4 HK2, 5 from HP (aux heater, VW1), 6 to HP (PC0), 7/8 DHW
     body = svg`
-      <rect class="tank-in" x=${0.6 * C} y=${9 * C} width=${7.8 * C} height=${6.4 * C} rx=${C} style="fill:${bufC}" />
-      <text class="tank-label" x=${4.5 * C} y=${13.6 * C} text-anchor="middle">${c.props.buffer_l || 70} l</text>
-      ${screen(ctx, 2.2 * C, 0.8 * C, 4.6 * C)}
-      ${ipipe([[5, 0], [5, 5.2]], sup, run)}
-      ${ipipe([[5, 5.2], [5, 9]], sup, run && !b)}
-      ${ipipe([[5, 5.2], [7, 5.2], [7, 0]], sup, run && b)}
-      ${ipipe([[8, 0], [8, 6.4], [6, 6.4]], ret, run && b)}
-      ${ipipe([[6.2, 15], [6.2, 9]], ret, run && !b)}
-      ${ipipe([[6, 9], [6, 0]], ret, run)}
-      ${ipipe([[1.6, 9], [1.6, 6.4], [1, 6.4], [1, 0]], bufC, pc1)}
-      ${ipipe([[2, 0], [2, 14.8]], ret, pc1)}
-      ${ipipe([[3, 0], [3, 1.4]], bufC, false)}
-      ${ipipe([[4, 0], [4, 1.4]], ret, false)}
-      ${iheater([4.5, 1.4], 2.6, aux)}
-      ${ivalve([5, 5.2], b)}
-      ${ipump([6.5, 6.4], run, "u")}
-      <g transform="translate(${1.6 * C} ${6.4 * C})"><circle class=${pc1 ? "pump-body on" : "pump-body"} r="8" />
-        ${pc1 ? svg`<circle class="impeller spin" style="--dur:0.9s" r="3.5" />` : nothing}<text class="itag" x="11" y="4">PC1</text></g>`;
+      <rect class="tank-in" x=${0.6 * C} y=${9.4 * C} width=${7.8 * C} height=${4.2 * C} rx=${C} style="fill:${bufC}" />
+      <text class="tank-label" x=${4.5 * C} y=${13 * C} text-anchor="middle">${c.props.buffer_l || 70} l</text>
+      ${screen(ctx, 0.6 * C, 14.2 * C, 4.4 * C)}
+      ${ipipe([[3, 0], [3, 1.2]], bufC, false)}
+      ${ipipe([[4, 0], [4, 1.2]], ret, false)}
+      ${ipipe([[2, 0], [2, 12.6]], ret, pc1)}
+      ${ipipe([[1, 9.4], [1, 0]], bufC, pc1)}
+      ${ipipe([[6, 9.4], [6, 8]], ret, run && !b)}
+      ${ipipe([[8, 0], [8, 8], [6, 8]], ret, run && b)}
+      ${ipipe([[6, 8], [6, 0]], ret, run)}
+      ${ipipe([[5, 0], [5, 6.4]], sup, run)}
+      ${ipipe([[5, 6.4], [5, 9.4]], sup, run && !b)}
+      ${ipipe([[5, 6.4], [7, 6.4], [7, 0]], sup, run && b)}
+      ${iheater([5, 1.6], 2.8, aux)}
+      ${ivalve([5, 6.4], b, "VW1", true)}
+      ${ipump([6, 3.4], run, "u")}
+      ${ipump([1, 5], pc1, "u", "PC1")}`;
   } else if (variant === "brine") {
     body = svg`
       ${screen(ctx, 1.6 * C, 0.8 * C, 4.6 * C)}
@@ -231,7 +233,7 @@ function indoor(ctx: IconCtx, variant: string): SVGTemplateResult {
   return svg`
     ${casing(w, h, 10, "casing light")}
     ${body}
-    ${variant === "wall_e" ? nothing : svg`<text class="tag" x=${w / 2} y=${2.4 * C} text-anchor="middle">${name}</text>`}
+    ${variant === "wall_e" || variant === "tp70" ? nothing : svg`<text class="tag" x=${w / 2} y=${2.4 * C} text-anchor="middle">${name}</text>`}
   `;
 }
 
