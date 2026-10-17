@@ -60,7 +60,7 @@ EMS-ESP enum values (e.g. compressor activity) are published in the EMS-ESP UI l
 
 ## Roadmap
 
-- **v0.2**: ~~Lovelace card~~ (done in 0.1.4), live COP / SPF with traffic light vs. datasheet, plant check (mixing loss buffer ≤ 2 K, cycling, spread), interactive heating curve, “what is happening” explanation, energy layer (PV, battery, grid, wallbox, §14a), isometric 2.5D style
+- **v0.2**: ~~Lovelace card~~ (0.1.4), ~~live COP / SPF with traffic light vs. datasheet~~ (0.1.5), plant check (mixing loss buffer ≤ 2 K, cycling, spread), interactive heating curve, “what is happening” explanation, energy layer (PV, battery, grid, wallbox, §14a), isometric 2.5D style
 - **v0.3**: time machine (replay the schematic from recorder history), costs & PV share (fixed or entity tariff), maintenance calendar (anode, separator, expansion vessel …), export/import, write access for selected values
 
 ## Development
@@ -87,6 +87,10 @@ HA_TARGET=http://<ha-host>:8123 node tools/ha-proxy.mjs 8123   # then open http:
 ```
 
 The built panel bundle is committed so the integration works without a build step on the Home Assistant host.
+
+## Made with AI
+
+This project is developed with substantial help from an AI coding assistant (Anthropic Claude). Every release is installed and checked on a real Home Assistant instance before it is published. Please report anything odd as an issue.
 
 ## Credits & notes
 

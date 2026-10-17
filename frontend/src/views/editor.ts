@@ -385,7 +385,8 @@ export class CpEditor extends LitElement {
         ? html`<label class="field">${t("ed.model")}<select @change=${(e: Event) => this._set((k) => (k.model = (e.target as HTMLSelectElement).value))}>
               ${OUTDOOR_MODELS.map((m) => html`<option value=${m.id} ?selected=${m.id === c.model}>${m.label}</option>`)}
             </select></label>
-            ${this._num(t("ed.nominal"), c.props.nominal_kw, (v) => this._set((k) => (k.props.nominal_kw = v)), 0.1)}`
+            ${this._num(t("ed.nominal"), c.props.nominal_kw, (v) => this._set((k) => (k.props.nominal_kw = v)), 0.1)}
+            ${this._num(t("ed.cop_ref"), c.props.cop_ref ?? 4.9, (v) => this._set((k) => (k.props.cop_ref = v)), 0.1)}`
         : nothing}
       ${c.type === "indoor_unit"
         ? html`<label class="field">${t("ed.model")}<select @change=${(e: Event) => this._set((k) => (k.model = (e.target as HTMLSelectElement).value))}>

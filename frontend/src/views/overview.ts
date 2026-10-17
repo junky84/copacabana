@@ -4,6 +4,7 @@ import { icon, ui } from "../styles";
 import type { Plant, PlantComponent, PlantMessage, UserIcon } from "../types";
 import { componentFlags, normalizeActivity, tempColor, type ValueSource } from "../data/values";
 import type { Simulator } from "../sim/simulator";
+import { AMPEL_COLOR, liveCop } from "../data/efficiency";
 import type { CpSchematic } from "../render/schematic";
 import "../render/schematic";
 import "./widgets";
@@ -85,12 +86,20 @@ export class CpOverview extends LitElement {
     if (el !== undefined && elUnit === "kW") el *= 1000;
     const cop = heat !== undefined && el !== undefined && el > 50 && heat > 0.2 ? heat / (el / 1000) : undefined;
     const fmt = (n: number | undefined, d = 1) => (n === undefined ? "–" : fmtNum(n, d));
+    const live = liveCop(this.plant, this.src);
     const out: Kpi[] = [
       { key: "mode", label: t("kpi.mode"), value: mode ? t(`mode.${mode}`) : "–", unit: "", color: modeColors[mode || "off"] },
       { key: "out", label: t("kpi.outdoor"), value: fmt(this._num(ou, "outdoor_temp")), unit: "°C", comp: ou, slot: "outdoor_temp" },
       { key: "heat", label: t("kpi.heat"), value: fmt(heat), unit: "kW", comp: ou, slot: "heat_power" },
       { key: "power", label: t("kpi.power"), value: el === undefined ? "–" : el >= 1000 ? fmtNum(el / 1000, 2) : fmtNum(el, 0), unit: el !== undefined && el >= 1000 ? "kW" : "W", comp: ou, slot: "el_power" },
-      { key: "cop", label: t("kpi.cop"), value: fmt(cop), unit: "", color: cop !== undefined ? (cop >= 4 ? "#3ddc97" : cop >= 3 ? "#f5c542" : "#ff8a3d") : undefined },
+      {
+        key: "cop",
+        label: t("kpi.cop"),
+        value: fmt(cop),
+        unit: "",
+        color: live ? AMPEL_COLOR[live.ampel] : undefined,
+        sub: live ? `${t("kpi.target")} ${fmt(live.expected)}` : undefined,
+      },
       {
         key: "supply",
         label: t("kpi.supply"),

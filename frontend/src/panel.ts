@@ -8,9 +8,10 @@ import "./views/overview";
 import "./views/editor";
 import "./views/config";
 import "./views/widgets";
+import "./views/efficiency";
 import "./card";
 
-type View = "overview" | "messages" | "config";
+type View = "overview" | "efficiency" | "messages" | "config";
 type Sub = "wizard" | "editor" | "mapping" | "icons" | "settings";
 
 const LS_VIEW = "copilot.view";
@@ -56,7 +57,7 @@ export class CopilotPanel extends LitElement {
     const saved = lsGet(LS_VIEW);
     if (saved) {
       const [v, s] = saved.split(":");
-      if (v === "overview" || v === "messages" || v === "config") this._view = v;
+      if (v === "overview" || v === "efficiency" || v === "messages" || v === "config") this._view = v;
       if (s) this._sub = s as Sub;
     }
   }
@@ -100,9 +101,9 @@ export class CopilotPanel extends LitElement {
           : nothing}
         <div class="brand">${logo}<span>COP<b>ilot</b></span></div>
         <nav>
-          ${(["overview", "messages", "config"] as View[]).map(
+          ${(["overview", "efficiency", "messages", "config"] as View[]).map(
             (v) => html`<button class="tab ${this._view === v ? "on" : ""}" @click=${() => this._go(v)}>
-              ${icon(v === "overview" ? "grid" : v === "messages" ? "bell" : "gear")}
+              ${icon(v === "overview" ? "grid" : v === "efficiency" ? "chart" : v === "messages" ? "bell" : "gear")}
               <span class="tl">${t(`nav.${v}`)}</span>
               ${v === "messages" && alerts ? html`<span class="badge">${alerts}</span>` : nothing}
             </button>`,
@@ -134,6 +135,15 @@ export class CopilotPanel extends LitElement {
         ?narrow=${this.narrow || window.innerWidth < 900}
         @scenario=${(e: CustomEvent) => this._ctl.scenario(e.detail)}
       ></cp-overview>`;
+    }
+    if (this._view === "efficiency") {
+      return html`<cp-efficiency
+        .plant=${plant}
+        .src=${src}
+        .hass=${this.hass}
+        .sim=${this._ctl.sim}
+        .version=${this._ctl.version}
+      ></cp-efficiency>`;
     }
     if (this._view === "messages") {
       return html`<div class="card pad"><cp-messages

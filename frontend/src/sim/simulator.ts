@@ -99,6 +99,8 @@ export class Simulator {
   disinfect = false;
   fault = false;
   private lastDrawDay = new Map<number, number>();
+  /** energy per local day (key: midnight epoch ms), kept for a few days */
+  private days = new Map<number, { heat: number; el: number; heatDhw: number; elDhw: number; aux: number }>();
   private sampleAcc = 0;
   private hist = new Map<string, HistoryPoint[]>();
   private active = new Map<string, string>();
@@ -352,6 +354,20 @@ export class Simulator {
     this.e.el += (this.pEl + this.aux) * hrs;
     this.e.aux += this.aux * hrs;
     this.e.heat += (heatOut + this.aux) * hrs;
+    const d = new Date(this.time * 1000);
+    const dayKey = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    let bucket = this.days.get(dayKey);
+    if (!bucket) {
+      this.days.set(dayKey, (bucket = { heat: 0, el: 0, heatDhw: 0, elDhw: 0, aux: 0 }));
+      for (const k of [...this.days.keys()]) if (k < dayKey - 3 * 86400_000) this.days.delete(k);
+    }
+    bucket.heat += (heatOut + this.aux) * hrs;
+    bucket.el += (this.pEl + this.aux) * hrs;
+    bucket.aux += this.aux * hrs;
+    if (toDhw) {
+      bucket.heatDhw += heatOut * hrs;
+      bucket.elDhw += this.pEl * hrs;
+    }
     if (toDhw) {
       this.e.elDhw += this.pEl * hrs;
       this.e.heatDhw += heatOut * hrs;
@@ -538,6 +554,10 @@ export class Simulator {
         if (arr.length > 1500) arr.splice(0, arr.length - 1440);
       }
     }
+  }
+
+  dailyEnergy(): { day: number; heat: number; el: number; heatDhw: number; elDhw: number; aux: number }[] {
+    return [...this.days.entries()].sort((a, b) => a[0] - b[0]).map(([day, e]) => ({ day, ...e }));
   }
 
   history(group: SimGroup, slot: string, hours: number): HistoryPoint[] {
