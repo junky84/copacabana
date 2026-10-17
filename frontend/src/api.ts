@@ -64,6 +64,10 @@ export class Api {
     await this.hass.callWS({ type: "copilot/config/save", plant });
   }
 
+  async write(componentId: string, slot: string, value: string | number | boolean | null): Promise<{ old: string; new: unknown }> {
+    return this.hass.callWS({ type: "copilot/write", component_id: componentId, slot, value });
+  }
+
   async listBackups(): Promise<Backup[]> {
     if (this.standalone) return [];
     return (await this.hass.callWS<{ backups: Backup[] }>({ type: "copilot/backups/list" })).backups;

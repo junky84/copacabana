@@ -135,6 +135,8 @@ export class CopilotPanel extends LitElement {
         .messages=${this._ctl.messages}
         .sim=${this._ctl.sim}
         .hass=${this.hass}
+        .api=${this._ctl.api}
+        ?admin=${this._ctl.admin}
         .version=${this._ctl.version}
         ?narrow=${this.narrow || window.innerWidth < 900}
         @scenario=${(e: CustomEvent) => this._ctl.scenario(e.detail)}

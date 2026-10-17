@@ -36,6 +36,8 @@ export interface PlantComponent {
   icon?: string;
   bindings: Record<string, string>;
   props: Record<string, any>;
+  /** slots released for changing from the panel (with confirmation) */
+  writable?: string[];
   /** slots shown as value badges; undefined = type defaults */
   show?: string[];
 }
@@ -118,6 +120,8 @@ export interface PlantSettings {
   maintenance?: { tasks: MaintenanceTask[] };
   /** energy layer (PV, grid, battery, house, wallbox) */
   energy?: EnergyConfig;
+  /** non-admin users may change released values too */
+  write_non_admin?: boolean;
   /** layout changed by hand in the editor: never regenerate it automatically */
   layout_edited?: boolean;
   /** last wizard answers, to reopen the wizard pre-filled */

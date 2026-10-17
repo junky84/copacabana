@@ -3,7 +3,7 @@ import { INDOOR_MODELS, OUTDOOR_MODELS, TYPES, baseSize, portPos, sizeOf, slotsO
 import { slotLabel, t } from "../i18n";
 import { icon, ui } from "../styles";
 import type { ComponentType, FlowCond, Hass, Pipe, PipeKind, Plant, PlantComponent, PortRef, Rotation, UserIcon } from "../types";
-import { formatValue, type ValueSource } from "../data/values";
+import { formatValue, type ValueSource, writeKind } from "../data/values";
 import type { Selection } from "../render/schematic";
 import "../render/schematic";
 import { autoArrange } from "../layout/auto";
@@ -480,6 +480,15 @@ export class CpEditor extends LitElement {
                 })} /></label>
               <span class="bname">${slotLabel(c.type, s.key)}</span>
               <span class="bval">${v ? `${text} ${unit}` : ""}</span>
+              ${writeKind(c.bindings[s.key])
+                ? html`<label class="wr" title=${t("wr.release")}><input type="checkbox" .checked=${(c.writable || []).includes(s.key)}
+                    @change=${(e: Event) => this._set((k) => {
+                      const w = new Set(k.writable || []);
+                      (e.target as HTMLInputElement).checked ? w.add(s.key) : w.delete(s.key);
+                      if (w.size) k.writable = [...w];
+                      else delete k.writable;
+                    })} />✎</label>`
+                : nothing}
             </div>
             <cp-entity-picker .hass=${this.hass} .value=${c.bindings[s.key] || ""}
               @value-changed=${(e: CustomEvent) => this._set((k) => {
@@ -590,6 +599,8 @@ export class CpEditor extends LitElement {
       .bhead { display: flex; gap: 6px; align-items: center; font-size: 12px; }
       .bname { font-weight: 600; flex: 1; }
       .bval { color: var(--cp-muted); font-variant-numeric: tabular-nums; }
+      .wr { display: inline-flex; align-items: center; gap: 2px; font-size: 12px; color: var(--cp-warn); cursor: pointer; }
+      .wr input { width: auto; margin: 0; }
       .nowrap { flex-wrap: nowrap; }
       .cond select { font-size: 12px; padding: 6px; }
       @media (max-width: 1100px) {

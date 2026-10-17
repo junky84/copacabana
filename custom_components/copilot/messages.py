@@ -229,6 +229,11 @@ class MessageEngine:
         self._save()
         return message
 
+    @callback
+    def async_log(self, level: str, key: str, params: dict[str, Any], component_id: str | None) -> None:
+        """Add a one-off message (e.g. a value changed from the panel)."""
+        self._add(level, key, params, component_id)
+
     def _open(self, ident: str, level: str, key: str, params: dict[str, Any], component_id: str | None) -> None:
         if ident in self._active:
             return

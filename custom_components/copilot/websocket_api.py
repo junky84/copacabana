@@ -39,6 +39,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_messages_clear,
         ws_backups_list,
         ws_backups_restore,
+        ws_write,
     ):
         websocket_api.async_register_command(hass, handler)
 
@@ -189,3 +190,84 @@ async def ws_backups_restore(hass: HomeAssistant, connection: websocket_api.Acti
         return
     rt.messages.async_set_plant(plant)
     connection.send_result(msg["id"], {"plant": plant})
+
+
+# domains that can be written, and how
+_NUMBER = ("number", "input_number")
+_SELECT = ("select", "input_select")
+_SWITCH = ("switch", "input_boolean")
+_BUTTON = ("button", "input_button")
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "copilot/write",
+        vol.Required("component_id"): str,
+        vol.Required("slot"): str,
+        vol.Optional("value"): vol.Any(str, int, float, bool, None),
+    }
+)
+@websocket_api.async_response
+async def ws_write(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
+    """Change a value the plant explicitly marks as writable."""
+    if (rt := _runtime(hass, connection, msg)) is None:
+        return
+    plant = rt.store.plant or {}
+    settings = plant.get("settings") or {}
+    if not connection.user.is_admin and not settings.get("write_non_admin"):
+        connection.send_error(msg["id"], "unauthorized", "Only administrators may change values")
+        return
+    component = next((c for c in plant.get("components", []) if c.get("id") == msg["component_id"]), None)
+    slot = msg["slot"]
+    if component is None or slot not in (component.get("writable") or []):
+        connection.send_error(msg["id"], "not_writable", "This value is not released for writing")
+        return
+    entity_id = (component.get("bindings") or {}).get(slot)
+    state = hass.states.get(entity_id) if entity_id else None
+    if state is None:
+        connection.send_error(msg["id"], "no_entity", "The value is not bound to an available entity")
+        return
+    domain = entity_id.split(".", 1)[0]
+    value = msg.get("value")
+    old = state.state
+    try:
+        if domain in _NUMBER:
+            number = float(value)  # type: ignore[arg-type]
+            lo = float(state.attributes.get("min", number))
+            hi = float(state.attributes.get("max", number))
+            if not lo <= number <= hi:
+                raise ValueError(f"{number} outside {lo}…{hi}")
+            await hass.services.async_call(domain, "set_value", {"entity_id": entity_id, "value": number}, blocking=True, context=connection.context(msg))
+            new = number
+        elif domain in _SELECT:
+            if value not in (state.attributes.get("options") or []):
+                raise ValueError(f"{value} is not an option")
+            await hass.services.async_call(domain, "select_option", {"entity_id": entity_id, "option": value}, blocking=True, context=connection.context(msg))
+            new = value
+        elif domain in _SWITCH:
+            on = value in (True, "on", "true", 1)
+            await hass.services.async_call(domain, "turn_on" if on else "turn_off", {"entity_id": entity_id}, blocking=True, context=connection.context(msg))
+            new = "on" if on else "off"
+        elif domain in _BUTTON:
+            await hass.services.async_call(domain, "press", {"entity_id": entity_id}, blocking=True, context=connection.context(msg))
+            new = "pressed"
+        else:
+            connection.send_error(msg["id"], "unsupported", f"Entities of domain {domain} cannot be written")
+            return
+    except (ValueError, TypeError) as err:
+        connection.send_error(msg["id"], "invalid_value", str(err))
+        return
+    rt.messages.async_log(
+        "info",
+        "value_changed",
+        {
+            "component": component.get("label") or component.get("type"),
+            "type": component.get("type"),
+            "slot": slot,
+            "old": old,
+            "new": new,
+            "user": connection.user.name,
+        },
+        component.get("id"),
+    )
+    connection.send_result(msg["id"], {"old": old, "new": new})

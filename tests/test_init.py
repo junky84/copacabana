@@ -195,3 +195,33 @@ async def test_maintenance_due_message(hass: HomeAssistant, hass_ws_client) -> N
     # only the first save (PLANT → PLANT with tasks) is not a layout change either: no backups
     await ws.send_json({"id": 5, "type": "copilot/backups/list"})
     assert (await ws.receive_json())["result"]["backups"] == []
+
+
+async def test_write_only_released_values(hass: HomeAssistant, hass_ws_client) -> None:
+    from homeassistant.setup import async_setup_component
+
+    assert await async_setup_component(hass, "input_number", {"input_number": {"dhw_set": {"min": 40, "max": 60, "step": 1, "initial": 50}}})
+    await _setup(hass)
+    ws = await hass_ws_client(hass)
+    plant = {
+        **PLANT,
+        "components": [
+            {"id": "ww", "type": "dhw_tank", "label": "WW", "bindings": {"setpoint": "input_number.dhw_set", "temp_top": "input_number.dhw_set"}, "writable": ["setpoint"]},
+        ],
+    }
+    await ws.send_json({"id": 1, "type": "copilot/config/save", "plant": plant})
+    assert (await ws.receive_json())["success"]
+    # released slot: written and logged
+    await ws.send_json({"id": 2, "type": "copilot/write", "component_id": "ww", "slot": "setpoint", "value": 55})
+    res = await ws.receive_json()
+    assert res["success"] and res["result"]["new"] == 55
+    assert float(hass.states.get("input_number.dhw_set").state) == 55
+    await ws.send_json({"id": 3, "type": "copilot/messages/list"})
+    msgs = (await ws.receive_json())["result"]["messages"]
+    assert any(m["key"] == "value_changed" and m["params"]["new"] == 55 for m in msgs)
+    # out of range and not released slots are refused
+    await ws.send_json({"id": 4, "type": "copilot/write", "component_id": "ww", "slot": "setpoint", "value": 80})
+    assert (await ws.receive_json())["error"]["code"] == "invalid_value"
+    await ws.send_json({"id": 5, "type": "copilot/write", "component_id": "ww", "slot": "temp_top", "value": 45})
+    assert (await ws.receive_json())["error"]["code"] == "not_writable"
+    assert float(hass.states.get("input_number.dhw_set").state) == 55

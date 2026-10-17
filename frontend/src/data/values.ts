@@ -325,3 +325,16 @@ export function pipeColor(kind: string, temp: number | undefined): string {
       return tempColor(temp, "#8a97a6");
   }
 }
+
+
+/** How a bound entity can be changed from the panel, if at all. */
+export type WriteKind = "number" | "select" | "switch" | "button";
+
+export function writeKind(entityId: string | undefined): WriteKind | null {
+  const domain = entityId?.split(".")[0];
+  if (domain === "number" || domain === "input_number") return "number";
+  if (domain === "select" || domain === "input_select") return "select";
+  if (domain === "switch" || domain === "input_boolean") return "switch";
+  if (domain === "button" || domain === "input_button") return "button";
+  return null;
+}

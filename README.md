@@ -6,7 +6,7 @@ Built first for Buderus/Bosch heat pumps read via an **EMS-ESP gateway** (BBQKee
 
 ![COPilot overview: energy flow, animated hydraulic schematic and messages (demo mode)](https://raw.githubusercontent.com/junky84/copilot/main/docs/images/overview.png)
 
-> Status: **v0.1 (preview)** – early test version, not yet verified on a real plant. Not affiliated with Bosch, Buderus or BBQKees.
+> Status: **v0.3 (preview)** – early test version, not yet verified on a real plant. Not affiliated with Bosch, Buderus or BBQKees.
 
 ## Features
 
@@ -23,6 +23,7 @@ Built first for Buderus/Bosch heat pumps read via an **EMS-ESP gateway** (BBQKee
 - **Interactive charts** (Apache ECharts, as used by Home Assistant itself): tooltips, zoom, series toggled via the legend
 - **Costs & PV share** (efficiency tab): grid cost of the heat pump per day / 30 days, share covered by PV or battery (hour by hour from the energy layer), feed-in revenue given up, cost per kWh of heat and comparison with a gas boiler; fixed price or a price entity (dynamic tariffs)
 - **Maintenance calendar** (wrench tab): recurring tasks suggested from your components (system pressure, particle filter SC1, dirt separator, expansion vessel, outdoor unit, DHW anode, professional service) plus your own; due tasks become messages and fire `copilot_message` for push notifications
+- **Write access for selected values**: release single values with ✎ in the editor (e.g. DHW setpoint, one-time charge, operating mode – any number / select / switch / button entity). Change them from the value popover with a confirmation step; the backend only accepts released values within the entity limits and logs every change under messages. Admins only, unless allowed for all users in the settings
 - **Time machine** (clock button): replay the last 6 h / 24 h / 3 days from the Home Assistant recorder – the whole schematic, values, explain mode and KPIs at any moment, with a strip of operating modes (heating, hot water, defrost) and playback at up to 1 h per second
 - **Safe configuration**: plant and layout live in Home Assistant's storage (not in the integration folder), so updates never touch them. Before every save and every update the previous layout is backed up automatically (last 15, restorable under *Configuration → Settings → Backups*); layouts arranged by hand are never regenerated. Export / import as a JSON file
 - **Messages**: backend rule engine (defrost, DHW charging, disinfection, backup heater, external inputs such as §14a / PV, pressure limits, new error codes, gateway offline). Fires a `copilot_message` event for your own automations (push, ntfy …)
@@ -96,7 +97,7 @@ EMS-ESP enum values (e.g. compressor activity) are published in the EMS-ESP UI l
 ## Roadmap
 
 - **v0.2**: ~~Lovelace card~~ (0.1.4), ~~live COP / SPF with traffic light vs. datasheet~~ (0.1.5), ~~plant check~~ (0.1.8), ~~interactive heating curve~~ (0.1.9), ~~explain mode (“what is happening”)~~ (0.1.21), ~~energy layer (PV, battery, grid, wallbox, §14a)~~ (0.1.22), ~~2.5D style~~ (0.1.24)
-- **v0.3**: ~~time machine~~ (0.1.27), ~~costs & PV share~~ (0.1.28), ~~maintenance calendar~~ (0.1.29), ~~export/import~~ (0.1.27), write access for selected values
+- **v0.3**: ~~time machine~~ (0.1.27), ~~costs & PV share~~ (0.1.28), ~~maintenance calendar~~ (0.1.29), ~~export/import~~ (0.1.27), ~~write access~~ (0.3.0)
 
 ## Development
 

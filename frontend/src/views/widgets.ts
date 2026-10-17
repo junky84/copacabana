@@ -1,8 +1,8 @@
 import { LitElement, css, html, nothing, svg } from "lit";
 import { fmtDateTime, fmtDuration, fmtNum, slotLabel, t } from "../i18n";
 import { icon, ui } from "../styles";
-import type { HistoryPoint, PlantComponent, PlantMessage } from "../types";
-import { formatValue, kindOf, tempColor, type ValueSource } from "../data/values";
+import type { Hass, HistoryPoint, PlantComponent, PlantMessage } from "../types";
+import { formatValue, kindOf, tempColor, writeKind, type ValueSource } from "../data/values";
 
 // ------------------------------------------------------------- sparkline
 
@@ -61,8 +61,25 @@ export class CpSlotPopover extends LitElement {
     x: { type: Number },
     y: { type: Number },
     version: { type: Number },
+    hass: { attribute: false },
+    writer: { attribute: false },
+    canWrite: { type: Boolean },
+    demo: { type: Boolean },
     _hist: { state: true },
+    _draft: { state: true },
+    _confirm: { state: true },
+    _wmsg: { state: true },
+    _busy: { state: true },
   };
+  hass?: Hass;
+  /** performs the write; set by the overview */
+  writer?: (componentId: string, slot: string, value: string | number | boolean | null) => Promise<unknown>;
+  canWrite = false;
+  demo = false;
+  private _draft: string | number | boolean | null = null;
+  private _confirm = false;
+  private _wmsg = "";
+  private _busy = false;
   component!: PlantComponent;
   slotKey = "";
   src!: ValueSource;
@@ -77,6 +94,9 @@ export class CpSlotPopover extends LitElement {
     if (key !== this._loadedFor && this.component) {
       this._loadedFor = key;
       this._hist = null;
+      this._draft = null;
+      this._confirm = false;
+      this._wmsg = "";
       this.src.history(this.component, this.slotKey, 24).then(
         (h) => (this._hist = h),
         () => (this._hist = []),
@@ -91,6 +111,63 @@ export class CpSlotPopover extends LitElement {
   private _more(entity: string) {
     this.dispatchEvent(new CustomEvent("hass-more-info", { detail: { entityId: entity }, bubbles: true, composed: true }));
     this._close();
+  }
+
+  /** Change control for values released as writable. */
+  private _writer() {
+    const c = this.component;
+    const entity = c.bindings?.[this.slotKey];
+    const kind = writeKind(entity);
+    if (!entity || !kind || !(c.writable || []).includes(this.slotKey)) return nothing;
+    if (this.demo) return html`<div class="w muted small">${t("wr.demo")}</div>`;
+    if (!this.canWrite) return html`<div class="w muted small">${t("wr.no_permission")}</div>`;
+    const st = this.hass?.states[entity];
+    const a = st?.attributes || {};
+    const cur = st?.state;
+    const draft = this._draft ?? (kind === "number" ? Number(cur) : kind === "switch" ? cur === "on" : cur ?? null);
+    const fmt = (v: unknown) => (typeof v === "boolean" ? t(v ? "wr.on" : "wr.off") : kind === "number" ? `${fmtNum(Number(v), 1)} ${a.unit_of_measurement || ""}` : String(v));
+    const changed = kind === "button" || String(draft) !== String(kind === "switch" ? cur === "on" : kind === "number" ? Number(cur) : cur);
+    const send = async () => {
+      this._busy = true;
+      try {
+        await this.writer!(c.id, this.slotKey, kind === "button" ? null : (draft as any));
+        this._wmsg = t("wr.done");
+        this._draft = null;
+      } catch (err: any) {
+        this._wmsg = `${t("wr.failed")}: ${err?.message || err}`;
+      } finally {
+        this._busy = false;
+        this._confirm = false;
+      }
+    };
+    let control;
+    if (kind === "number") {
+      const min = Number(a.min ?? 0);
+      const max = Number(a.max ?? 100);
+      const step = Number(a.step ?? 1);
+      control = html`<div class="wrow">
+        <input type="range" min=${min} max=${max} step=${step} .value=${String(draft)} @input=${(e: Event) => (this._draft = Number((e.target as HTMLInputElement).value))} />
+        <input class="wnum" type="number" min=${min} max=${max} step=${step} .value=${String(draft)} @change=${(e: Event) => (this._draft = Number((e.target as HTMLInputElement).value))} />
+        <span class="muted">${a.unit_of_measurement || ""}</span></div>`;
+    } else if (kind === "select") {
+      control = html`<select @change=${(e: Event) => (this._draft = (e.target as HTMLSelectElement).value)}>
+        ${((a.options as string[]) || []).map((o) => html`<option value=${o} ?selected=${o === draft}>${o}</option>`)}</select>`;
+    } else if (kind === "switch") {
+      control = html`<label class="wsw"><input type="checkbox" .checked=${!!draft} @change=${(e: Event) => (this._draft = (e.target as HTMLInputElement).checked)} /> ${t(draft ? "wr.on" : "wr.off")}</label>`;
+    } else control = nothing;
+    return html`<div class="w">
+      <div class="cap">${t("wr.title")}</div>
+      ${control}
+      ${this._confirm
+        ? html`<div class="wconfirm">
+            <div>${kind === "button" ? t("wr.press_confirm") : t("wr.confirm", { old: fmt(kind === "switch" ? cur === "on" : cur), new: fmt(draft) })}</div>
+            <div class="row"><button @click=${() => (this._confirm = false)}>${t("cancel")}</button><span class="spacer"></span>
+              <button class="primary" ?disabled=${this._busy} @click=${send}>${icon("check")} ${t("wr.apply")}</button></div>
+          </div>`
+        : html`<div class="row"><span class="spacer"></span>
+            <button class="primary" ?disabled=${!changed} @click=${() => (this._confirm = true)}>${kind === "button" ? t("wr.press") : t("wr.change")}</button></div>`}
+      ${this._wmsg ? html`<div class="muted small">${this._wmsg}</div>` : nothing}
+    </div>`;
   }
 
   render() {
@@ -127,6 +204,7 @@ export class CpSlotPopover extends LitElement {
               <span>${t("ov.max")} <b>${fmtNum(Math.max(...nums))}</b></span>
             </div>`
           : nothing}
+        ${this._writer()}
         ${entity
           ? html`<div class="row foot"><code>${entity}</code><span class="spacer"></span>
               <button @click=${() => this._more(entity)}>${t("ov.open_entity")}</button></div>`
@@ -152,6 +230,15 @@ export class CpSlotPopover extends LitElement {
       .stats b { color: var(--cp-text); }
       .foot { margin-top: 10px; font-size: 11px; flex-wrap: nowrap; }
       code { color: var(--cp-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .w { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--cp-border); display: grid; gap: 8px; }
+      .wrow { display: flex; gap: 8px; align-items: center; }
+      .wrow input[type="range"] { flex: 1; }
+      .wnum { width: 76px; }
+      .wsw { display: flex; gap: 8px; align-items: center; font-size: 13px; }
+      .wsw input { width: auto; margin: 0; }
+      .wconfirm { display: grid; gap: 8px; padding: 10px; border-radius: 10px; font-size: 13px;
+        background: color-mix(in srgb, var(--cp-warn) 14%, transparent); border: 1px solid color-mix(in srgb, var(--cp-warn) 45%, transparent); }
+      .small { font-size: 12px; }
       .loading { height: 90px; border-radius: 8px; background: linear-gradient(90deg, var(--cp-surface-2), var(--cp-surface), var(--cp-surface-2)); background-size: 200% 100%; animation: sh 1.2s infinite; }
       @keyframes sh { to { background-position: -200% 0; } }
     `,
@@ -165,6 +252,7 @@ const LEVEL_ICON: Record<string, string> = { info: "info", notice: "notice", war
 export function messageText(m: PlantMessage): string {
   const params = { ...m.params };
   params.label_sfx = params.label ? ` (${params.label})` : "";
+  if (m.key === "value_changed") params.slot_label = params.type ? slotLabel(params.type, params.slot) : params.slot;
   if (m.key === "maintenance_due") params.task = params.task_key ? t(`mt.${params.task_key}`) : params.title;
   return t(`msgk.${m.key}`, params);
 }

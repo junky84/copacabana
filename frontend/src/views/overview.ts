@@ -3,6 +3,7 @@ import { fmtNum, fmtTime, t } from "../i18n";
 import { icon, ui } from "../styles";
 import type { Hass, Plant, PlantComponent, PlantMessage, UserIcon } from "../types";
 import { ReplaySource } from "../data/replay";
+import type { Api } from "../api";
 import { componentFlags, normalizeActivity, tempColor, type ValueSource } from "../data/values";
 import type { Simulator } from "../sim/simulator";
 import { AMPEL_COLOR, liveCop } from "../data/efficiency";
@@ -75,8 +76,12 @@ export class CpOverview extends LitElement {
     _tmBusy: { state: true },
     _tick: { state: true },
     hass: { attribute: false },
+    api: { attribute: false },
+    admin: { type: Boolean },
   };
   hass?: Hass;
+  api?: Api;
+  admin = true;
   plant!: Plant;
   src!: ValueSource;
   icons: Map<string, UserIcon> = new Map();
@@ -442,6 +447,10 @@ export class CpOverview extends LitElement {
             .x=${this._pop.x}
             .y=${this._pop.y}
             .version=${this.version}
+            .hass=${this.hass}
+            .writer=${(id: string, slot: string, value: any) => this.api!.write(id, slot, value)}
+            ?canWrite=${!!this.api && !this.api.standalone && (this.admin || !!this.plant.settings.write_non_admin)}
+            ?demo=${!!this.sim || !!this._tm}
             @close=${() => (this._pop = null)}
           ></cp-slot-popover>`
         : nothing}

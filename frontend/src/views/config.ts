@@ -590,6 +590,8 @@ export class CpSettings extends LitElement {
         <select @change=${(e: Event) => this._patch({ language: (e.target as HTMLSelectElement).value as any })}>
           ${(["auto", "de", "en"] as const).map((l) => html`<option value=${l} ?selected=${(s.language || "auto") === l}>${l === "auto" ? t("st.lang.auto") : l === "de" ? "Deutsch" : "English"}</option>`)}
         </select></label>
+      <label class="toggle"><input type="checkbox" .checked=${!!s.write_non_admin} @change=${(e: Event) => this._patch({ write_non_admin: (e.target as HTMLInputElement).checked })} />
+        <span><b>${t("st.write_non_admin")}</b><br /><span class="muted">${t("st.write_hint")}</span></span></label>
       <label class="field">${t("st.heat_load")}
         <input type="number" step="0.1" .value=${String(s.heat_load ?? 6.2)} @change=${(e: Event) => this._patch({ heat_load: Number((e.target as HTMLInputElement).value) })} /></label>
       <div class="row foot">
