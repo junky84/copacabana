@@ -228,6 +228,8 @@ function fromTemplate(plant: Plant): Plant | null {
       c.y = g.y;
       if (g.rot !== undefined) c.rot = g.rot;
       else delete c.rot;
+      if (g.flip) c.flip = true;
+      else delete c.flip;
       placed.push(c);
     } else extras.push(c);
   }

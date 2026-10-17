@@ -153,6 +153,15 @@ export const ui = css`
     color: var(--cp-muted);
     font-weight: 600;
   }
+  label.field.check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  label.field.check input {
+    width: auto;
+    margin: 0;
+  }
   .card {
     background: var(--cp-surface);
     border: 1px solid var(--cp-border);

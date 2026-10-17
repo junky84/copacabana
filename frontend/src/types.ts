@@ -30,6 +30,8 @@ export interface PlantComponent {
   x: number;
   y: number;
   rot?: Rotation;
+  /** mirrored left/right (connections on the other side) */
+  flip?: boolean;
   model?: string;
   icon?: string;
   bindings: Record<string, string>;

@@ -60,6 +60,8 @@ export interface TypeDef {
   ports: PortDef[];
   slots: SlotDef[];
   rotatable?: boolean;
+  /** can be mirrored left/right */
+  mirrorable?: boolean;
   /** passes water through: pipe temperature is inherited from upstream */
   passive?: boolean;
   /** where value badges are placed */
@@ -318,6 +320,7 @@ export const TYPES: Record<ComponentType, TypeDef> = {
   },
   radiators: {
     type: "radiators",
+    mirrorable: true,
     w: 7,
     h: 6,
     group: "consumer",
@@ -345,6 +348,7 @@ export const TYPES: Record<ComponentType, TypeDef> = {
   },
   floor_heating: {
     type: "floor_heating",
+    mirrorable: true,
     w: 7,
     h: 6,
     group: "consumer",
@@ -498,10 +502,15 @@ export function portPos(c: PlantComponent, portId: string): { x: number; y: numb
   const rot = c.rot || 0;
   const { w, h } = baseSize(c);
   let { x, y } = port;
+  let dir = port.dir;
+  if (c.flip && TYPES[c.type].mirrorable) {
+    x = w - x;
+    dir = dir === "l" ? "r" : dir === "r" ? "l" : dir;
+  }
   if (rot === 90) [x, y] = [h - y, x];
   else if (rot === 180) [x, y] = [w - x, h - y];
   else if (rot === 270) [x, y] = [y, w - x];
-  return { x: c.x + x, y: c.y + y, dir: rotateDir(port.dir, rot), def: port };
+  return { x: c.x + x, y: c.y + y, dir: rotateDir(dir, rot), def: port };
 }
 
 // ------------------------------------------------------------- models

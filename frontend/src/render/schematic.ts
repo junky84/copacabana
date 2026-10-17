@@ -308,7 +308,8 @@ export class CpSchematic extends LitElement {
   private _transform(c: PlantComponent): string {
     const def = { ...TYPES[c.type], ...baseSize(c) };
     const rot = c.rot || 0;
-    const base = `translate(${c.x * CELL} ${c.y * CELL})`;
+    let base = `translate(${c.x * CELL} ${c.y * CELL})`;
+    if (c.flip && def.mirrorable) base += ` translate(${def.w * CELL} 0) scale(-1 1)`;
     if (!def.rotatable || rot === 0) return base;
     if (rot === 90) return `${base} translate(${def.h * CELL} 0) rotate(90)`;
     if (rot === 180) return `${base} translate(${def.w * CELL} ${def.h * CELL}) rotate(180)`;

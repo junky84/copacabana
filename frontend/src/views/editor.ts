@@ -440,6 +440,12 @@ export class CpEditor extends LitElement {
             ${[0, 90, 180, 270].map((r) => html`<option value=${r} ?selected=${(c.rot || 0) === r}>${r}°</option>`)}
           </select></label>`
         : nothing}
+      ${def.mirrorable
+        ? html`<label class="field check"><input type="checkbox" .checked=${!!c.flip} @change=${(e: Event) => this._set((k) => {
+            if ((e.target as HTMLInputElement).checked) k.flip = true;
+            else delete k.flip;
+          })} />${t("ed.flip")}</label>`
+        : nothing}
       ${!["junction", "label", "value_tile"].includes(c.type)
         ? html`<label class="field">${t("ed.icon")}<select @change=${(e: Event) => this._set((k) => {
             const v = (e.target as HTMLSelectElement).value;
