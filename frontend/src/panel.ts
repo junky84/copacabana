@@ -4,6 +4,7 @@ import { t } from "./i18n";
 import { icon, logo, tokens, ui } from "./styles";
 import type { Hass, Plant } from "./types";
 import { examplePlant } from "./templates";
+import "./sidebar-icon";
 import "./views/maintenance";
 import "./views/overview";
 import "./views/editor";

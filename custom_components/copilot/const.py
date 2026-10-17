@@ -6,11 +6,12 @@ from typing import Final
 
 DOMAIN: Final = "copilot"
 NAME: Final = "COPilot"
-VERSION: Final = "0.3.6"
+VERSION: Final = "0.3.7"
 
 PANEL_URL_PATH: Final = "copilot"
 PANEL_WEBCOMPONENT: Final = "copilot-panel"
-PANEL_ICON: Final = "mdi:heat-pump-outline"
+# provided by the frontend bundle (custom icon set "copilot")
+PANEL_ICON: Final = "copilot:logo"
 FRONTEND_URL_BASE: Final = "/copilot_frontend"
 FRONTEND_FILE: Final = "copilot-panel.js"
 
