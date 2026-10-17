@@ -5389,7 +5389,9 @@ Pt.properties = {
     .tank-fill { opacity: 0.92; }
     .tank-glass { fill: rgba(255, 255, 255, 0.18); }
     .tank-coil { fill: none; stroke: rgba(255, 255, 255, 0.55); stroke-width: 2.5; }
-    .tank-coil.hot { stroke: #fff; stroke-dasharray: 4 6; animation: cp-flow 1s linear infinite; }
+    /* offset = one dash period (4 + 6), at the same speed as the pipes (15 px/s) */
+    .tank-coil.hot { stroke: #fff; stroke-dasharray: 4 6; animation: cp-coil 0.667s linear infinite; }
+    @keyframes cp-coil { to { stroke-dashoffset: -10; } }
     .strat { stroke: rgba(255, 255, 255, 0.35); stroke-width: 1; stroke-dasharray: 3 4; }
     .tank-label { fill: rgba(255, 255, 255, 0.92); font-size: 12px; font-weight: 700; text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
     .tank-badge { fill: #fff; font-size: 11px; font-weight: 800; }
@@ -5408,7 +5410,8 @@ Pt.properties = {
       paint-order: stroke; stroke: var(--cp-surface); stroke-width: 3px; stroke-linejoin: round;
     }
     .rad-frame { fill: var(--cp-casing); stroke: var(--cp-casing-stroke); }
-    .shower-jet { stroke: #6cc4ff; stroke-width: 1.6; stroke-linecap: round; stroke-dasharray: 3 5; animation: cp-flow 0.5s linear infinite; opacity: 0.85; }
+    .shower-jet { stroke: #6cc4ff; stroke-width: 1.6; stroke-linecap: round; stroke-dasharray: 3 5; animation: cp-jet 0.53s linear infinite; opacity: 0.85; }
+    @keyframes cp-jet { to { stroke-dashoffset: -16; } }
     .shower-hole { fill: var(--cp-muted); }
     /* mirrored parts keep their texts readable */
     .flipped text { transform-box: fill-box; transform-origin: center; transform: scaleX(-1); }
@@ -7346,7 +7349,7 @@ const Nt = class Nt extends ne {
     super(...arguments), this._chartKey = "", this._costs = [], this._costKey = "", this.sim = null, this.version = 0, this._data = null, this._error = "", this._loadedAt = 0, this._loadedFor = null;
   }
   connectedCallback() {
-    super.connectedCallback(), Bi ??= import("./echart-CoISIl4b.js").catch((e) => {
+    super.connectedCallback(), Bi ??= import("./echart-CRnBSqBp.js").catch((e) => {
       Bi = null, console.error("COPilot: chart module failed to load", e);
     });
   }
@@ -8050,7 +8053,7 @@ const jt = class jt extends ne {
     })}></cp-echart>`;
   }
   connectedCallback() {
-    super.connectedCallback(), ji ??= import("./echart-CoISIl4b.js").catch((e) => {
+    super.connectedCallback(), ji ??= import("./echart-CRnBSqBp.js").catch((e) => {
       ji = null, console.error("COPilot: chart module failed to load", e);
     });
   }
