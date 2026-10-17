@@ -76,8 +76,8 @@ export interface PlantSettings {
 }
 
 export interface Plant {
-  /** 2 = indoor unit with built-in PC0/VW1 and real connection positions */
-  version: 1 | 2;
+  /** 2 = built-in PC0/VW1 and real connection positions, 3 = circulation from the end of the hot water line */
+  version: 1 | 2 | 3;
   name: string;
   grid: { w: number; h: number };
   components: PlantComponent[];
@@ -119,6 +119,8 @@ export interface SlotValue {
 export interface HistoryPoint {
   t: number;
   v: number | null;
+  /** original state text (enums such as compressor activity) */
+  raw?: string;
 }
 
 /** Minimal subset of the Home Assistant frontend `hass` object that we use. */

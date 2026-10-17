@@ -94,7 +94,7 @@ export async function fetchHistory(hass: Hass, entityId: string, hours: number):
     const s = String(r.s).toLowerCase();
     let v: number | null = Number(r.s);
     if (!Number.isFinite(v)) v = TRUE.has(s) ? 1 : s === "off" || s === "false" ? 0 : null;
-    return { t: r.lu, v };
+    return { t: r.lu, v, raw: String(r.s) };
   });
 }
 

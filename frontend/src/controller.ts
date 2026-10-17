@@ -131,8 +131,8 @@ export class PlantController implements ReactiveController {
       if (!plant) {
         plant = examplePlant();
         if (cfg.is_admin && this.saveExample) await this.api.saveConfig(plant);
-      } else if ((plant.version ?? 1) < 2 && plant.settings?.wizard) {
-        // v1 plants had separate PC0/VW1 parts and simplified connections: rebuild from the wizard answers
+      } else if ((plant.version ?? 1) < 3 && plant.settings?.wizard) {
+        // older layouts (separate PC0/VW1, circulation from the tap): rebuild from the wizard answers
         plant = generatePlant(plant.settings.wizard, plant);
         if (cfg.is_admin && this.saveExample) await this.api.saveConfig(plant);
       }

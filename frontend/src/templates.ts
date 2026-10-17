@@ -246,7 +246,7 @@ export function generatePlant(cfg: WizardConfig, previous?: Plant | null): Plant
 
   const n = Math.max(1, cfg.circuits.length);
   const plant: Plant = {
-    version: 2,
+    version: 3,
     name: cfg.name,
     grid: { w: n > 1 ? 72 : 60, h: Math.max(36, (top ? 46 : 34) + (n - 1) * 10) },
     components: b.components,
@@ -336,19 +336,27 @@ function circuits(
   });
 }
 
-/** Tap, circulation pump and cold water inlet next to a cylinder or an indoor unit with built-in cylinder. */
+/**
+ * Hot water line with tap, circulation and cold water inlet. The circulation
+ * branches off at the end of the hot water line (tee behind the tap) and runs
+ * through the circulation pump PW2 back to the cylinder's circulation inlet.
+ */
 function drinkingWater(b: Builder, cfg: WizardConfig, hot: PortRef, circ: PortRef, cold: PortRef, tx: number, ty: number): void {
   const draw: FlowCond = { c: "tap", s: "flowing" };
   const circOn: FlowCond = { c: "circ", s: "running" };
   b.add("tap", "tap", t("type.tap"), tx - 6, ty - 2);
   b.add("inlet", "water_inlet", t("type.water_inlet"), tx - 6, ty + 9);
-  b.pipe(hot, P("tap", "hot"), "dhw_hot", [], { flowAny: cfg.circulation ? [draw, circOn] : [draw], via: [[tx - 2, ty + 1], [tx - 2, ty - 1]] });
   b.pipe(P("inlet", "out"), cold, "dhw_cold", [draw]);
-  if (cfg.circulation) {
-    b.add("circ", "pump", "PW2", tx - 5, ty + 3, { rot: 90 as Rotation, props: { role: "circulation" } });
-    b.pipe(P("tap", "circ"), P("circ", "in"), "circulation", [circOn]);
-    b.pipe(P("circ", "out"), circ, "circulation", [circOn]);
+  if (!cfg.circulation) {
+    b.pipe(hot, P("tap", "hot"), "dhw_hot", [draw], { via: [[tx - 1, ty - 1]] });
+    return;
   }
+  b.add("jww", "junction", "", tx - 2, ty - 1);
+  b.pipe(hot, P("jww", "r"), "dhw_hot", [], { flowAny: [draw, circOn], via: [[tx - 1, ty - 1]] });
+  b.pipe(P("jww", "l"), P("tap", "hot"), "dhw_hot", [draw]);
+  b.add("circ", "pump", "PW2", tx - 3, ty + 2, { rot: 90 as Rotation, props: { role: "circulation" } });
+  b.pipe(P("jww", "b"), P("circ", "in"), "circulation", [circOn]);
+  b.pipe(P("circ", "out"), circ, "circulation", [circOn]);
 }
 
 export function examplePlant(): Plant {

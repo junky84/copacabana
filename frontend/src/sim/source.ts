@@ -56,6 +56,19 @@ export function simParamsFor(plant: Plant | null): Partial<SimParams> {
 
 const UNITS: Record<string, string> = {};
 
+/** Values of parts built into the indoor unit. */
+const INNER: Record<string, [SimGroup, string]> = {
+  pc0_running: ["pc0", "running"],
+  pc0_speed: ["pc0", "speed"],
+  vw1_position: ["vw1", "position"],
+  pc1_running: ["pc1", "running"],
+  pc1_speed: ["pc1", "speed"],
+  dhw_temp: ["dhw", "temp_top"],
+  dhw_setpoint: ["dhw", "setpoint"],
+  dhw_charging: ["dhw", "charging"],
+  buffer_temp: ["buffer", "temp_top"],
+};
+
 export class SimSource implements ValueSource {
   constructor(public sim: Simulator) {}
 
@@ -76,18 +89,7 @@ export class SimSource implements ValueSource {
     }
     // parts built into the indoor unit
     if (c.type === "indoor_unit") {
-      const inner: Record<string, [SimGroup, string]> = {
-        pc0_running: ["pc0", "running"],
-        pc0_speed: ["pc0", "speed"],
-        vw1_position: ["vw1", "position"],
-        pc1_running: ["pc1", "running"],
-        pc1_speed: ["pc1", "speed"],
-        dhw_temp: ["dhw", "temp_top"],
-        dhw_setpoint: ["dhw", "setpoint"],
-        dhw_charging: ["dhw", "charging"],
-        buffer_temp: ["buffer", "temp_top"],
-      };
-      const m = inner[slot];
+      const m = INNER[slot];
       if (m) {
         const variant = variantOf(c)?.id;
         if ((slot.startsWith("dhw_") && variant !== "t180") || (slot === "buffer_temp" && variant !== "tp70") || (slot.startsWith("pc1") && variant === "wall_e"))
@@ -117,6 +119,8 @@ export class SimSource implements ValueSource {
   }
 
   async history(c: PlantComponent, slot: string, hours: number): Promise<HistoryPoint[]> {
+    const inner = c.type === "indoor_unit" ? INNER[slot] : undefined;
+    if (inner) return this.sim.history(inner[0], inner[1], hours);
     const group = simGroup(c);
     if (!group) return [];
     return this.sim.history(group, slot, hours);

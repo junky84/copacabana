@@ -546,11 +546,11 @@ export class Simulator {
     for (const [group, slots] of Object.entries(this.values)) {
       for (const [slot, v] of Object.entries(slots)) {
         const num = typeof v === "number" ? v : typeof v === "boolean" ? (v ? 1 : 0) : null;
-        if (num === null) continue;
+        if (num === null && slot !== "activity") continue;
         const key = `${group}.${slot}`;
         let arr = this.hist.get(key);
         if (!arr) this.hist.set(key, (arr = []));
-        arr.push({ t: ts, v: num });
+        arr.push(num === null ? { t: ts, v: null, raw: String(v) } : { t: ts, v: num });
         if (arr.length > 1500) arr.splice(0, arr.length - 1440);
       }
     }
