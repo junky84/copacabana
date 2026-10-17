@@ -122,7 +122,7 @@ export function suggestEnergy(hass: Hass): EnergyConfig {
       grid_invert: true,
       battery: solax(/battery_power_charge$/),
       battery_invert: true,
-      battery_soc: solax(/battery_capacity$/),
+      battery_soc: find(/^sensor\.solax_battery_capacity$/),
       house: solax(/house_load$/),
       house_includes_hp: true,
     };
