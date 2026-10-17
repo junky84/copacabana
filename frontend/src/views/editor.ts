@@ -358,6 +358,11 @@ export class CpEditor extends LitElement {
             ×
             <input type="number" min="20" max="200" .value=${String(this._draft.grid.h)} @change=${(e: Event) => this._commit((p) => (p.grid.h = Number((e.target as HTMLInputElement).value) || p.grid.h))} />
           </div>
+          <label class="bld"><input type="checkbox" .checked=${!!this._draft.settings.building && this._draft.settings.building.show !== false}
+            @change=${(e: Event) => this._commit((p) => {
+              const on = (e.target as HTMLInputElement).checked;
+              p.settings = { ...p.settings, building: { ...(p.settings.building || { floor: p.grid.h - 2 }), show: on } };
+            })} /> ${t("ed.building")}</label>
         </aside>
         <div class="canvas card">
           <cp-schematic
@@ -440,6 +445,13 @@ export class CpEditor extends LitElement {
       ${def.rotatable
         ? html`<label class="field">${t("ed.rotation")}<select @change=${(e: Event) => this._set((k) => (k.rot = Number((e.target as HTMLSelectElement).value) as Rotation))}>
             ${[0, 90, 180, 270].map((r) => html`<option value=${r} ?selected=${(c.rot || 0) === r}>${r}°</option>`)}
+          </select></label>`
+        : nothing}
+      ${c.type === "radiators" || c.type === "tap"
+        ? html`<label class="field">${t(c.type === "tap" ? "ed.tap_kind" : "ed.connection")}<select @change=${(e: Event) => this._set((k) => (k.props.variant = (e.target as HTMLSelectElement).value))}>
+            ${(c.type === "tap" ? ["tap", "shower"] : ["side", "bottom"]).map(
+              (v) => html`<option value=${v} ?selected=${(c.props.variant || (c.type === "tap" ? "tap" : "side")) === v}>${t(c.type === "tap" ? `ed.tap.${v}` : `ed.conn.${v}`)}</option>`,
+            )}
           </select></label>`
         : nothing}
       ${def.mirrorable
@@ -599,6 +611,8 @@ export class CpEditor extends LitElement {
       .bhead { display: flex; gap: 6px; align-items: center; font-size: 12px; }
       .bname { font-weight: 600; flex: 1; }
       .bval { color: var(--cp-muted); font-variant-numeric: tabular-nums; }
+      .bld { display: flex; gap: 8px; align-items: center; font-size: 13px; margin-top: 10px; }
+      .bld input { width: auto; margin: 0; }
       .wr { display: inline-flex; align-items: center; gap: 2px; font-size: 12px; color: var(--cp-warn); cursor: pointer; }
       .wr input { width: auto; margin: 0; }
       .nowrap { flex-wrap: nowrap; }

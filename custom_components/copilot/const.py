@@ -6,7 +6,7 @@ from typing import Final
 
 DOMAIN: Final = "copilot"
 NAME: Final = "COPilot"
-VERSION: Final = "0.3.0"
+VERSION: Final = "0.3.1"
 
 PANEL_URL_PATH: Final = "copilot"
 PANEL_WEBCOMPONENT: Final = "copilot-panel"

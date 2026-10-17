@@ -25,6 +25,10 @@ export const tokens = css`
     --cp-pipe-outline: rgba(0, 0, 0, 0.55);
     --cp-casing: #232d3a;
     --cp-iso-top: #3a475a;
+    --cp-bld-outside: rgba(108, 196, 255, 0.04);
+    --cp-bld-ground: rgba(140, 110, 80, 0.12);
+    --cp-bld-wall: #222c38;
+    --cp-bld-line: #3b4757;
     --cp-iso-side: #141b24;
     --cp-iso-floor: rgba(255, 255, 255, 0.05);
     --cp-casing-light: #2c3747;
@@ -55,6 +59,10 @@ export const tokens = css`
     --cp-pipe-outline: rgba(15, 23, 42, 0.18);
     --cp-casing: #f7f9fb;
     --cp-iso-top: #ffffff;
+    --cp-bld-outside: rgba(77, 159, 255, 0.06);
+    --cp-bld-ground: rgba(140, 110, 80, 0.14);
+    --cp-bld-wall: #dfe5ec;
+    --cp-bld-line: #b6c0cc;
     --cp-iso-side: #b4bfcc;
     --cp-iso-floor: rgba(15, 23, 42, 0.07);
     --cp-casing-light: #ffffff;

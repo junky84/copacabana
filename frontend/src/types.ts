@@ -109,6 +109,17 @@ export interface MaintenanceTask {
   component?: string;
 }
 
+/** Building section drawn behind the plant (grid cells). */
+export interface BuildingConfig {
+  show?: boolean;
+  /** floor / ground level (y) */
+  floor: number;
+  /** outer wall (x); outside is to the left */
+  wall?: number;
+  /** ceiling of the plant room = floor of the living space above (y) */
+  slab?: number;
+}
+
 export interface PlantSettings {
   style: "flat" | "iso";
   demo: boolean;
@@ -117,6 +128,7 @@ export interface PlantSettings {
   /** heat load at design temperature in kW (simulator) */
   heat_load?: number;
   tariff?: TariffConfig;
+  building?: BuildingConfig;
   maintenance?: { tasks: MaintenanceTask[] };
   /** energy layer (PV, grid, battery, house, wallbox) */
   energy?: EnergyConfig;

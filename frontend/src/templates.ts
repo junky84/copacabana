@@ -104,21 +104,102 @@ export function generatePlant(cfg: WizardConfig, previous?: Plant | null): Plant
   const top = variant !== "wall_e";
   // TP70 with one direct circuit: dedicated layout (outdoor unit top left, circuit left, DHW right)
   const tp70 = variant === "tp70" && cfg.circuits.length <= 1 && !cfg.circuits[0]?.mixed;
+  // wall-hung unit with parallel buffer and one direct radiator circuit: building section layout
+  // (outdoor unit outside on the ground, cylinder and buffer on the floor, radiator upstairs)
+  const hc0 = cfg.circuits[0];
+  const bld =
+    variant === "wall_e" && cfg.buffer === "parallel" && !builtInBuffer && cfg.circuits.length === 1 && !hc0?.mixed && hc0?.emitter === "radiators";
+  // building grid (cells): floor, outer wall, ceiling of the plant room
+  const FLOOR = 46;
+  const WALL = 16;
+  const SLAB = 12;
   // wall units: outdoor connections level with the two rows below the indoor unit
-  const oy = tp70 ? 5 : top ? 12 : 2 + 14 - 4;
+  const oy = bld ? FLOOR - 7 : tp70 ? 5 : top ? 12 : 2 + 14 - 4;
   b.add("ou", "outdoor_unit", cfg.outdoorLabel || t("type.outdoor_unit"), 1, oy, {
     model: cfg.outdoorModel,
     props: { nominal_kw: cfg.nominalKw },
   });
   // generous gap between outdoor unit (x 1..10) and indoor unit
-  const ix = tp70 ? 22 : top ? 14 : 16;
-  const iy = tp70 ? 27 : top ? 12 : 2;
+  const ix = bld ? 30 : tp70 ? 22 : top ? 14 : 16;
+  // wall-hung: bottom connections 14 rows above the floor, the cylinder fits below the pipe runs
+  const iy = bld ? FLOOR - 29 : tp70 ? 27 : top ? 12 : 2;
   b.add("iu", "indoor_unit", cfg.indoorLabel || t("type.indoor_unit"), ix, iy, { model: cfg.indoorModel, props: indoorProps });
   const iu = b.components.find((c) => c.id === "iu")!;
   const port = (id: string) => portPos(iu, id)!;
   const ouOut = { x: 10, y: oy + 5 };
 
-  if (tp70) {
+  if (bld) {
+    // ------------------------------------------------ building section (wall-hung, buffer, radiator upstairs)
+    const bot = iy + 14;
+    const px = (id: string) => port(id).x;
+    // heat pump circuit: two parallel runs through the outer wall, down to the outdoor unit
+    b.pipe(P("iu", "src_out"), P("ou", "in"), "return", [IU], { via: [[px("src_out"), bot + 1], [WALL - 3, bot + 1], [WALL - 3, oy + 5]] });
+    b.pipe(P("ou", "out"), P("iu", "src_in"), "supply", [IU], { via: [[WALL - 2, oy + 6], [WALL - 2, bot + 2], [px("src_in"), bot + 2]] });
+    // DHW cylinder on the floor, left of the unit and below the pipe runs; drinking water by the wall
+    if (extDhw) {
+      const tx = ix - 4;
+      const ty = FLOOR - 11;
+      b.add("dhw", "dhw_tank", cfg.dhwLabel || t("type.dhw_tank"), tx, ty, { props: { volume: cfg.dhwVolume } });
+      b.pipe(P("iu", "dhw_sup"), P("dhw", "coil_in"), "supply", [IU, B], { via: [[px("dhw_sup"), ty + 4]] });
+      b.pipe(P("dhw", "coil_out"), P("iu", "dhw_ret"), "return", [IU, B], { via: [[px("dhw_ret"), ty + 9]] });
+      // drinking water: shower upstairs, hot water and circulation rise side by side along the outer wall
+      const draw: FlowCond = { c: "tap", s: "flowing" };
+      const circOn: FlowCond = { c: "circ", s: "running" };
+      const hotX = tx - 2;
+      b.add("tap", "tap", t("wz.shower"), WALL + 2, SLAB - 6, { props: { variant: "shower" } });
+      b.add("inlet", "water_inlet", t("type.water_inlet"), WALL + 1, ty + 9);
+      b.pipe(P("inlet", "out"), P("dhw", "cold"), "dhw_cold", [draw]);
+      if (cfg.circulation) {
+        b.add("jww", "junction", "", hotX, SLAB - 4);
+        b.pipe(P("dhw", "hot"), P("jww", "b"), "dhw_hot", [], { via: [[hotX, ty + 1]], flowAny: [draw, circOn] });
+        b.pipe(P("jww", "t"), P("tap", "hot"), "dhw_hot", [draw], { via: [[hotX, SLAB - 5]] });
+        b.add("circ", "pump", "PW2", hotX - 2, ty + 2, { rot: 90 as Rotation, props: { role: "circulation" } });
+        b.pipe(P("jww", "l"), P("circ", "in"), "circulation", [circOn], { via: [[hotX - 1, SLAB - 4]] });
+        b.pipe(P("circ", "out"), P("dhw", "circ"), "circulation", [circOn], { via: [[hotX - 1, ty + 6]] });
+      } else {
+        b.pipe(P("dhw", "hot"), P("tap", "hot"), "dhw_hot", [draw], { via: [[hotX, ty + 1], [hotX, SLAB - 5]] });
+      }
+    }
+    // buffer on the floor; return accessories in one run in front of the indoor unit
+    const bx = ix + 22;
+    const by = FLOOR - 9;
+    const row = by - 1;
+    const flowR = [IU, ...A];
+    b.add("buf", "buffer", cfg.bufferLabel || t("type.buffer"), bx, by, { props: { volume: cfg.bufferVolume } });
+    b.pipe(P("iu", "sup"), P("buf", "in_sup"), "supply", flowR, { via: [[px("sup"), bot + 1], [bx + 1, bot + 1]] });
+    const chain: { inP: PortRef; outP: PortRef }[] = [];
+    if (cfg.separator) {
+      b.add("sep", "separator", t("wz.separator_short"), px("sup") + 9, row - 1, { rot: 180 as Rotation });
+      chain.push({ inP: P("sep", "in"), outP: P("sep", "out") });
+    }
+    if (cfg.expansion) {
+      b.add("jmag", "junction", "", px("sup") + 6, row);
+      b.add("mag", "expansion_vessel", "MAG", px("sup") + 5, row + 1, { rot: 180 as Rotation });
+      b.pipe(P("mag", "conn"), P("jmag", "b"), "return", []);
+      chain.push({ inP: P("jmag", "r"), outP: P("jmag", "l") });
+    }
+    if (cfg.separator) {
+      b.add("sc1", "separator", "SC1", px("sup") + 1, row - 1, { rot: 180 as Rotation, props: { filter: true } });
+      chain.push({ inP: P("sc1", "in"), outP: P("sc1", "out") });
+    }
+    for (let i = 0; i < chain.length - 1; i++) b.pipe(chain[i].outP, chain[i + 1].inP, "return", flowR);
+    if (chain.length) {
+      b.pipe(chain[chain.length - 1].outP, P("iu", "ret"), "return", flowR, { via: [[px("ret"), row]] });
+      b.pipe(P("buf", "in_ret"), chain[0].inP, "return", flowR, { via: [[bx + 2, row]] });
+    } else {
+      b.pipe(P("buf", "in_ret"), P("iu", "ret"), "return", flowR, { via: [[bx + 2, row], [px("ret"), row]] });
+    }
+    // heating circuit: risers through the ceiling to a radiator connected from below
+    // the flow riser steps right so the pump does not touch the return riser
+    const rx = bx + 6;
+    const ry = SLAB - 7;
+    const PC: FlowCond = { c: "pc1", s: "running" };
+    b.add("pc1", "pump", "PC1", bx + 5, by - 10, { rot: 270 as Rotation, props: { role: "secondary", circuit: 1 } });
+    b.add("hc1", "radiators", hc0.label || t("wz.circuit", { n: 1 }), rx, ry, { props: { circuit: 1, variant: "bottom" } });
+    b.pipe(P("buf", "out_sup"), P("pc1", "in"), "supply", [PC], { via: [[bx + 4, by - 2], [bx + 6, by - 2]] });
+    b.pipe(P("pc1", "out"), P("hc1", "sup"), "supply", [PC], { via: [[bx + 6, SLAB + 3], [rx + 6, SLAB + 3]] });
+    b.pipe(P("hc1", "ret"), P("buf", "out_ret"), "return", [PC], { via: [[rx + 1, SLAB + 2], [bx + 3, SLAB + 2]] });
+  } else if (tp70) {
     // ------------------------------------------------ TP70: connections on top, PC1 and buffer built in
     // ports (x): HK1 flow, HK1 return, HK2 flow, HK2 return, from HP, to HP, DHW flow, DHW return
     const yTop = iy;
@@ -284,12 +365,12 @@ export function generatePlant(cfg: WizardConfig, previous?: Plant | null): Plant
   const plant: Plant = {
     version: 5,
     name: cfg.name,
-    grid: tp70 ? { w: 58, h: 49 } : { w: n > 1 ? 76 : 66, h: Math.max(38, (top ? 46 : 38) + (n - 1) * 10) },
+    grid: bld ? { w: 68, h: FLOOR + 2 } : tp70 ? { w: 58, h: 49 } : { w: n > 1 ? 76 : 66, h: Math.max(38, (top ? 46 : 38) + (n - 1) * 10) },
     components: b.components,
     pipes: b.pipes,
     settings: previous?.settings ?? { style: "flat", demo: true },
   };
-  plant.settings = { ...plant.settings, wizard: cfg, layout_edited: false };
+  plant.settings = { ...plant.settings, wizard: cfg, layout_edited: false, building: bld ? { show: true, floor: FLOOR, wall: WALL, slab: SLAB } : undefined };
 
   // keep bindings, icons and badge choices of components that still exist
   if (previous) {

@@ -230,8 +230,22 @@ function fromTemplate(plant: Plant): Plant | null {
       else delete c.rot;
       if (g.flip) c.flip = true;
       else delete c.flip;
+      // shape follows the template (radiator connected from below, shower instead of tap)
+      if (g.props?.variant && (c.type === "radiators" || c.type === "tap")) c.props = { ...c.props, variant: g.props.variant };
       placed.push(c);
     } else extras.push(c);
+  }
+  // nothing added by hand: take over the template's piping too (it may connect differently now),
+  // keeping entity bindings of pipes that still join the same components
+  if (!extras.length && gen.components.every((g) => p.components.some((c) => c.id === g.id))) {
+    const old = new Map(p.pipes.map((pp) => [[pp.from.c, pp.to.c].sort().join("|"), pp]));
+    p.pipes = gen.pipes.map((gp) => {
+      const o = old.get([gp.from.c, gp.to.c].sort().join("|"));
+      return o?.bindings ? { ...gp, bindings: o.bindings } : gp;
+    });
+    p.grid = { w: Math.max(p.grid.w, gen.grid.w), h: Math.max(p.grid.h, gen.grid.h) };
+    p.settings = { ...p.settings, building: gen.settings.building };
+    return p;
   }
   // template pipes keep their curated routing when they connect the same ports
   const key = (pp: { from: { c: string; p: string }; to: { c: string; p: string } }) => `${pp.from.c}.${pp.from.p}>${pp.to.c}.${pp.to.p}`;
@@ -244,6 +258,7 @@ function fromTemplate(plant: Plant): Plant | null {
   }
   // extra parts: first free spot below/right of the template area
   p.grid = { w: Math.max(p.grid.w, gen.grid.w), h: Math.max(p.grid.h, gen.grid.h) };
+  p.settings = { ...p.settings, building: gen.settings.building };
   for (const c of extras) {
     const { w, h } = sizeOf(c);
     const free = (x: number, y: number) =>
@@ -319,7 +334,8 @@ export function autoArrange(plant: Plant): ArrangeResult {
     const score = scoreLayout(c.plant);
     if (!best || score.total < best.score.total) best = { plant: c.plant, kind: c.kind, score };
   }
-  if (best!.kind === "layered" || best!.score.crossings > 2) {
+  // building layouts are drawn like installation schemes: their few crossings are intended
+  if (best!.kind === "layered" || (best!.score.crossings > 2 && !best!.plant.settings.building)) {
     const refined = refine(best!.plant);
     const score = scoreLayout(refined);
     if (score.total < best!.score.total) best = { plant: refined, kind: best!.kind, score };

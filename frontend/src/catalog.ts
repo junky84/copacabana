@@ -330,6 +330,28 @@ export const TYPES: Record<ComponentType, TypeDef> = {
       { id: "sup", x: 0, y: 1, dir: "l", kind: "supply" },
       { id: "ret", x: 0, y: 5, dir: "l", tempSlot: "return_temp", kind: "return" },
     ],
+    variants: {
+      // connections on one side (flow top, return bottom)
+      side: {
+        id: "side",
+        w: 7,
+        h: 6,
+        ports: [
+          { id: "sup", x: 0, y: 1, dir: "l", kind: "supply" },
+          { id: "ret", x: 0, y: 5, dir: "l", tempSlot: "return_temp", kind: "return" },
+        ],
+      },
+      // connections from below (valve radiator), return left, flow right
+      bottom: {
+        id: "bottom",
+        w: 7,
+        h: 6,
+        ports: [
+          { id: "ret", x: 1, y: 6, dir: "b", tempSlot: "return_temp", kind: "return" },
+          { id: "sup", x: 6, y: 6, dir: "b", kind: "supply" },
+        ],
+      },
+    },
     slots: [
       { key: "flow_temp", kind: "temp", show: true, at: "sup" },
       { key: "return_temp", kind: "temp", show: true, at: "ret" },
@@ -368,6 +390,11 @@ export const TYPES: Record<ComponentType, TypeDef> = {
     passive: true,
     badges: "left",
     ports: [{ id: "hot", x: 3, y: 1, dir: "r", kind: "dhw_hot" }],
+    variants: {
+      tap: { id: "tap", w: 3, h: 3, ports: [{ id: "hot", x: 3, y: 1, dir: "r", kind: "dhw_hot" }] },
+      // shower head on an arm from the wall, supply from the right
+      shower: { id: "shower", w: 4, h: 5, ports: [{ id: "hot", x: 4, y: 1, dir: "r", kind: "dhw_hot" }], pos: { flow: [1.4, -0.9] } },
+    },
     slots: [{ key: "flow", kind: "flow_lmin", show: true, pos: [1.5, -0.9] }, T("temp")],
   },
   water_inlet: {

@@ -356,6 +356,9 @@ function radiators(ctx: IconCtx): SVGTemplateResult {
           (f, i) => svg`<path class="heat-wave" style="animation-delay:${i * 0.6}s" d="M ${w * f} ${top - 4} q 5 -6 0 -12 q -5 -6 0 -12" />`,
         )
       : ""}
+    ${ctx.c.props?.variant === "bottom"
+      ? svg`<line class="rad-stub" x1=${C} x2=${C} y1=${bottom - 2} y2=${h} /><line class="rad-stub" x1=${6 * C} x2=${6 * C} y1=${bottom - 2} y2=${h} />`
+      : ""}
     <rect class="rad-frame" x="0" y=${top} width=${w - 4} height=${bottom - top} rx="6" />
     <rect class="rad-header" x="0" y=${C - 4} width=${w - 4} height="8" rx="4" />
     <rect class="rad-header" x="0" y=${5 * C - 4} width=${w - 4} height="8" rx="4" />
@@ -378,7 +381,27 @@ function floor(ctx: IconCtx): SVGTemplateResult {
   `;
 }
 
+function shower(ctx: IconCtx): SVGTemplateResult {
+  const { w, flags } = ctx;
+  const flowing = flags.has("flowing");
+  // arm from the supply (right) to a round shower head, water falling from it
+  const hx = 1.3 * C;
+  const hy = 1.6 * C;
+  return svg`
+    <path class="tap-body" d="M ${w} ${C - 3} H ${hx + 6} v 6 H ${w} Z" />
+    <path class="tap-body" d="M ${hx + 4} ${C - 3} v ${hy - C - 3} h -4 v ${-(hy - C - 3)} Z" />
+    <path class="tap-handle" d="M ${hx - 16} ${hy + 4} L ${hx - 10} ${hy - 5} H ${hx + 14} L ${hx + 20} ${hy + 4} Z" />
+    ${[0, 1, 2, 3, 4].map((i) => {
+      const x = hx - 12 + i * 7;
+      return flowing
+        ? svg`<line class="shower-jet" style="animation-delay:${(i % 3) * 0.18}s" x1=${x} y1=${hy + 8} x2=${x + (i - 2) * 3} y2=${hy + 2.8 * C} />`
+        : svg`<circle class="shower-hole" cx=${x} cy=${hy + 6} r="1.4" />`;
+    })}
+  `;
+}
+
 function tap(ctx: IconCtx): SVGTemplateResult {
+  if (ctx.c.props?.variant === "shower") return shower(ctx);
   const { w, h, flags } = ctx;
   const flowing = flags.has("flowing");
   // spout points left, supply comes from the right

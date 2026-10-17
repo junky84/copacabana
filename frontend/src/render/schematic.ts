@@ -319,6 +319,7 @@ export class CpSchematic extends LitElement {
         @pointercancel=${this._onUp}
         @wheel=${this._onWheel}
       >
+        ${this._building(view)}
         ${this._iso && !this.edit ? this._isoFloor(view) : nothing}
         ${this.edit ? this._grid() : nothing}
         ${this._iso ? this._isoLayer() : nothing}
@@ -400,6 +401,34 @@ export class CpSchematic extends LitElement {
       <g class="iso-bodies">
         ${boxes.map((b) => steps.map((f) => svg`<rect x=${b.x + ISO_DX * f} y=${b.y - ISO_DY * f} width=${b.w} height=${b.h} rx=${b.r} fill="url(#cp-iso-grad)" />`))}
       </g>`;
+  }
+
+  /** Building section: ground, outer wall, ceiling and room names (settings.building). */
+  private _building(view: { x: number; y: number; w: number; h: number }): SVGTemplateResult {
+    const b = this.plant.settings?.building;
+    if (!b || b.show === false) return svg``;
+    const { w } = this.plant.grid;
+    const F = b.floor * CELL;
+    const W = (b.wall ?? -1) * CELL;
+    const S = b.slab !== undefined ? b.slab * CELL : undefined;
+    const left = Math.min(0, view.x) - CELL * 4;
+    const right = Math.max(w * CELL, view.x + view.w) + CELL * 4;
+    const top = Math.min(0, view.y);
+    const bottom = Math.max(F + CELL * 3, view.y + view.h);
+    return svg`<g class="building">
+      ${b.wall !== undefined ? svg`<rect class="outside" x=${left} y=${top} width=${W - left} height=${F - top} />` : nothing}
+      <rect class="ground" x=${left} y=${F} width=${right - left} height=${bottom - F} />
+      <line class="floor-line" x1=${left} x2=${right} y1=${F} y2=${F} />
+      ${b.wall !== undefined
+        ? svg`<rect class="wall" x=${W - 7} y=${top} width="14" height=${F - top} />
+            <text class="room" x=${W - 12} y=${F - 8} text-anchor="end">${t("bld.outside")}</text>`
+        : nothing}
+      ${S !== undefined
+        ? svg`<rect class="slab" x=${b.wall !== undefined ? W : left} y=${S} width=${right - (b.wall !== undefined ? W : left)} height="10" />
+            <text class="room" x=${(b.wall !== undefined ? W : left) + CELL * 10} y=${S - 8}>${t("bld.living")}</text>
+            <text class="room" x=${(b.wall !== undefined ? W : left) + CELL * 10} y=${S + 28}>${t("bld.plant_room")}</text>`
+        : nothing}
+    </g>`;
   }
 
   /** Isometric floor: two families of lines at ±30°. */
@@ -916,6 +945,15 @@ export class CpSchematic extends LitElement {
       paint-order: stroke; stroke: var(--cp-surface); stroke-width: 3px; stroke-linejoin: round;
     }
     .rad-frame { fill: var(--cp-casing); stroke: var(--cp-casing-stroke); }
+    .shower-jet { stroke: #6cc4ff; stroke-width: 1.6; stroke-linecap: round; stroke-dasharray: 3 5; animation: cp-flow 0.5s linear infinite; opacity: 0.85; }
+    .shower-hole { fill: var(--cp-muted); }
+    .rad-stub { stroke: var(--cp-casing-stroke); stroke-width: 4; stroke-linecap: round; }
+    .building { pointer-events: none; }
+    .building .outside { fill: var(--cp-bld-outside); }
+    .building .ground { fill: var(--cp-bld-ground); }
+    .building .floor-line { stroke: var(--cp-bld-line); stroke-width: 3; }
+    .building .wall, .building .slab { fill: var(--cp-bld-wall); stroke: var(--cp-bld-line); stroke-width: 1; }
+    .building .room { fill: var(--cp-muted); font-size: 12px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; opacity: 0.7; }
     .rad-header { fill: var(--cp-casing-light); stroke: var(--cp-casing-stroke); stroke-width: 1; }
     .fin { stroke: rgba(255, 255, 255, 0.15); }
     .heat-wave { fill: none; stroke: #ff8a3d; stroke-width: 2; stroke-linecap: round; opacity: 0; animation: cp-rise 2.4s ease-in infinite; }
