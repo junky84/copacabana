@@ -746,6 +746,8 @@ export class CpSchematic extends LitElement {
     }
     .pipe-sel { stroke: var(--cp-select); stroke-width: 18; opacity: 0.35; }
     @keyframes cp-flow { to { stroke-dashoffset: -15; } }
+    /* internal pipes: offset = one dash period (2 + 9), otherwise the dots jump each loop */
+    @keyframes cp-iflow { to { stroke-dashoffset: -11; } }
 
     /* component artwork */
     .comp { cursor: default; }
@@ -835,7 +837,7 @@ export class CpSchematic extends LitElement {
     .apill text { fill: var(--cp-text); font-size: 11.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
     .apill-label { fill: var(--cp-muted); font-weight: 600; font-size: 10px; }
     .ipipe { fill: none; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; opacity: 0.85; }
-    .ipipe-flow { fill: none; stroke: var(--cp-flow); stroke-width: 1.8; stroke-dasharray: 2 9; animation: cp-flow 0.9s linear infinite; }
+    .ipipe-flow { fill: none; stroke: var(--cp-flow); stroke-width: 1.8; stroke-dasharray: 2 9; animation: cp-iflow 0.66s linear infinite; }
     .itag { fill: var(--cp-muted); font-size: 8.5px; font-weight: 700; }
     .itag.halo { paint-order: stroke; stroke: var(--cp-surface); stroke-width: 3px; stroke-linejoin: round; }
     .tank-in { opacity: 0.55; stroke: var(--cp-casing-stroke); }

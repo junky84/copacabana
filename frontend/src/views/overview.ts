@@ -5,6 +5,7 @@ import type { Plant, PlantComponent, PlantMessage, UserIcon } from "../types";
 import { componentFlags, normalizeActivity, tempColor, type ValueSource } from "../data/values";
 import type { Simulator } from "../sim/simulator";
 import { AMPEL_COLOR, liveCop } from "../data/efficiency";
+import { explainComponent, explainPlant, type ExplainTone } from "../data/explain";
 import type { CpSchematic } from "../render/schematic";
 import "../render/schematic";
 import "./widgets";
@@ -21,6 +22,33 @@ interface Kpi {
 }
 
 const SPEEDS = [1, 10, 60, 300, 900];
+const LS_EXPLAIN = "copilot.explain";
+
+const TONE: Record<ExplainTone, string> = {
+  heat: "#ff8a3d",
+  dhw: "#ff4f8b",
+  cold: "#6cc4ff",
+  warn: "var(--cp-warn)",
+  error: "var(--cp-error)",
+  eco: "#3ddc97",
+  info: "var(--cp-muted)",
+};
+
+function lsGet(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function lsSet(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    /* private mode */
+  }
+}
 
 export class CpOverview extends LitElement {
   static properties = {
@@ -36,6 +64,8 @@ export class CpOverview extends LitElement {
     showSide: { type: Boolean },
     _pop: { state: true },
     _side: { state: true },
+    _explain: { state: true },
+    _comp: { state: true },
   };
   plant!: Plant;
   src!: ValueSource;
@@ -50,6 +80,58 @@ export class CpOverview extends LitElement {
   showSide = true;
   private _pop: { component: PlantComponent; slot: string; x: number; y: number } | null = null;
   private _side = true;
+  private _explain = lsGet(LS_EXPLAIN) === "1";
+  private _comp: { component: PlantComponent; x: number; y: number } | null = null;
+
+  private _toggleExplain() {
+    this._explain = !this._explain;
+    lsSet(LS_EXPLAIN, this._explain ? "1" : "0");
+  }
+
+  private _onComponent(e: CustomEvent) {
+    if (this._explain) this._comp = e.detail;
+  }
+
+  private _explainPanel() {
+    const items = explainPlant(this.plant, this.src);
+    return html`<div class="side-head"><b>${t("ex.title")}</b></div>
+      ${items.length
+        ? html`<ul class="explain">
+            ${items.map(
+              (it) => html`<li style="--tone:${TONE[it.tone]}">
+                <span class="dot"></span>
+                <div>
+                  <div>${t(it.key, it.params)}</div>
+                  ${it.hint ? html`<div class="ex-hint">${t(it.hint, it.params)}</div>` : nothing}
+                </div>
+              </li>`,
+            )}
+          </ul>`
+        : html`<p class="muted">${t("ex.empty")}</p>`}
+      <p class="ex-tip">${icon("info")} ${t("ex.tap_hint")}</p>`;
+  }
+
+  private _compPop() {
+    const p = this._comp;
+    if (!p) return nothing;
+    const ex = explainComponent(p.component, this.src);
+    const w = 300;
+    const left = Math.max(12, Math.min(window.innerWidth - w - 12, p.x - w / 2));
+    const top = Math.max(12, Math.min(window.innerHeight - 200, p.y + 14));
+    return html`<div class="backdrop" @pointerdown=${() => (this._comp = null)}></div>
+      <div class="cpop card" style="left:${left}px; top:${top}px; width:${w}px">
+        <div class="row cpop-head">
+          <div>
+            <div class="cpop-title">${p.component.label || t(`type.${p.component.type}`)}</div>
+            <div class="muted cpop-sub">${t(`type.${p.component.type}`)}</div>
+          </div>
+          <span class="spacer"></span>
+          <button class="ghost icon" @click=${() => (this._comp = null)} aria-label=${t("close")}>${icon("close")}</button>
+        </div>
+        ${ex.role ? html`<p>${t(ex.role, ex.params)}</p>` : nothing}
+        ${ex.state ? html`<p class="cpop-state">${t(ex.state, ex.params)}</p>` : nothing}
+      </div>`;
+  }
 
   private _first(type: string): PlantComponent | undefined {
     return this.plant.components.find((c) => c.type === type);
@@ -173,7 +255,7 @@ export class CpOverview extends LitElement {
           </button>`,
         )}
       </div>` : nothing}
-      <div class="main ${this._side && this.showSide ? "with-side" : ""}">
+      <div class="main ${this._explain || (this._side && this.showSide) ? "with-side" : ""}">
         <div class="stage card">
           <cp-schematic
             ?auto-height=${this.narrow}
@@ -182,8 +264,10 @@ export class CpOverview extends LitElement {
             .icons=${this.icons}
             .version=${this.version}
             @cp-slot-click=${this._openPop}
+            @cp-component-click=${this._onComponent}
           ></cp-schematic>
           <div class="zoom">
+            <button class="icon ${this._explain ? "on" : ""}" title=${t("ex.toggle")} aria-pressed=${this._explain ? "true" : "false"} @click=${this._toggleExplain}>${icon("info")}</button>
             <button class="icon" title=${t("zoom_in")} @click=${() => this._sch()?.zoom(0.8)}>${icon("plus")}</button>
             <button class="icon" title=${t("zoom_out")} @click=${() => this._sch()?.zoom(1.25)}>${icon("minus")}</button>
             <button class="icon" title=${t("fit")} @click=${() => this._sch()?.fit()}>${icon("fit")}</button>
@@ -193,12 +277,14 @@ export class CpOverview extends LitElement {
                   ${icon("bell")}${activeCount ? html`<span class="badge">${activeCount}</span>` : nothing}</button>`}
           </div>
         </div>
-        ${this.showSide && (this._side || this.narrow)
-          ? html`<aside class="side card">
-              <div class="side-head"><b>${t("msg.title")}</b></div>
-              <cp-messages compact .messages=${this.messages}></cp-messages>
-            </aside>`
-          : nothing}
+        ${this._explain
+          ? html`<aside class="side card">${this._explainPanel()}</aside>`
+          : this.showSide && (this._side || this.narrow)
+            ? html`<aside class="side card">
+                <div class="side-head"><b>${t("msg.title")}</b></div>
+                <cp-messages compact .messages=${this.messages}></cp-messages>
+              </aside>`
+            : nothing}
       </div>
       ${this._pop
         ? html`<cp-slot-popover
@@ -211,6 +297,7 @@ export class CpOverview extends LitElement {
             @close=${() => (this._pop = null)}
           ></cp-slot-popover>`
         : nothing}
+      ${this._compPop()}
     `;
   }
 
@@ -257,6 +344,21 @@ export class CpOverview extends LitElement {
       .zoom .badge { position: absolute; top: -6px; right: -6px; }
       .side { overflow: auto; padding: 12px 14px; min-height: 0; }
       .side-head { font-size: 14px; margin-bottom: 4px; }
+      .zoom button.on { background: var(--cp-accent); color: var(--cp-bg); }
+      .explain { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 10px; font-size: 13px; line-height: 1.45; }
+      .explain li { display: grid; grid-template-columns: 10px 1fr; gap: 10px; padding: 8px 10px; border-radius: 10px;
+        background: color-mix(in srgb, var(--tone) 9%, transparent); border-left: 3px solid var(--tone); }
+      .explain .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--tone); margin-top: 6px; }
+      .ex-hint { color: var(--cp-muted); font-size: 12px; margin-top: 3px; }
+      .ex-tip { display: flex; gap: 6px; align-items: flex-start; color: var(--cp-muted); font-size: 12px; margin: 12px 0 0; }
+      .ex-tip svg { flex: none; width: 15px; height: 15px; }
+      .backdrop { position: fixed; inset: 0; z-index: 30; }
+      .cpop { position: fixed; z-index: 31; box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45); padding: 14px; font-size: 13px; line-height: 1.45; }
+      .cpop p { margin: 8px 0 0; }
+      .cpop-head { flex-wrap: nowrap; align-items: flex-start; }
+      .cpop-title { font-weight: 700; font-size: 15px; }
+      .cpop-sub { font-size: 12px; }
+      .cpop-state { color: var(--cp-accent); font-weight: 600; }
       @media (max-width: 900px) {
         :host { height: auto; }
         .main, .main.with-side { grid-template-columns: 1fr; grid-template-rows: auto; flex: none; }
