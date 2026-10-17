@@ -29,6 +29,9 @@ def test_parse_multi_and_legacy():
 def test_parse_rejects_foreign():
     assert parse_unique_id("solax_grid_power") is None
     assert parse_unique_id("thermostat_hc1") is None
+    # Zigbee2MQTT entities share the mqtt platform but must never match
+    assert parse_unique_id("0x804b50fffeaa37cf_switch_zigbee2mqtt") is None
+    assert parse_unique_id("0x804b50fffeaa37cf_boiler_zigbee2mqtt") is None
 
 
 def _entry(entity_id, unique_id, platform="mqtt", disabled=None):

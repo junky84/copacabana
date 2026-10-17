@@ -4421,7 +4421,7 @@ function Mi(a, t) {
 }
 const Ut = class Ut extends L {
   constructor() {
-    super(), this.narrow = !1, this._plant = null, this._icons = /* @__PURE__ */ new Map(), this._messages = [], this._view = "overview", this._sub = "editor", this._version = 0, this._error = "", this._toast = "", this._admin = !0, this._backendVersion = "", this._sim = null, this._raf = 0, this._lastFrame = 0, this._accum = 0, this._boundIds = [], this._lastStates = [], this._loading = !1;
+    super(), this.narrow = !1, this._plant = null, this._icons = /* @__PURE__ */ new Map(), this._backendMessages = [], this._simMessages = [], this._view = "overview", this._sub = "editor", this._version = 0, this._error = "", this._toast = "", this._admin = !0, this._backendVersion = "", this._sim = null, this._raf = 0, this._lastFrame = 0, this._accum = 0, this._boundIds = [], this._lastStates = [], this._loading = !1;
     const t = ki(qe);
     if (t) {
       const [e, s] = t.split(":");
@@ -4454,7 +4454,7 @@ const Ut = class Ut extends L {
         const t = await this._api.getConfig();
         this._admin = t.is_admin, this._backendVersion = t.version;
         let e = t.plant;
-        e || (e = Yt(), t.is_admin && await this._api.saveConfig(e)), this._setPlant(e), await this._loadIcons(), this._api.standalone || (this._messages = await this._api.listMessages(), this._unsubMsg = await this._api.subscribeMessages((s) => this._mergeMessage(s)));
+        e || (e = Yt(), t.is_admin && await this._api.saveConfig(e)), this._setPlant(e), await this._loadIcons(), this._api.standalone || (this._backendMessages = await this._api.listMessages(), this._unsubMsg = await this._api.subscribeMessages((s) => this._mergeMessage(s)));
       } catch (t) {
         this._error = t?.message || String(t);
       } finally {
@@ -4467,8 +4467,8 @@ const Ut = class Ut extends L {
     this._icons = new Map(t.map((e) => [e.id, e]));
   }
   _mergeMessage(t) {
-    const e = this._messages.findIndex((i) => i.id === t.id), s = [...this._messages];
-    e >= 0 ? s[e] = t : s.push(t), this._messages = s;
+    const e = this._backendMessages.findIndex((i) => i.id === t.id), s = [...this._backendMessages];
+    e >= 0 ? s[e] = t : s.push(t), this._backendMessages = s;
   }
   _setPlant(t) {
     const e = JSON.stringify(qt(this._plant));
@@ -4488,7 +4488,7 @@ const Ut = class Ut extends L {
   _startSim() {
     this._stopSim();
     const t = this._plant?.components.find((i) => i.type === "dhw_tank"), e = new qs(qt(this._plant), void 0, { dhw: t?.label || l("type.dhw_tank") });
-    this._sim = e, this._unsubSim = e.onMessage(() => this._messages = [...e.messages]), this._messages = [...e.messages], this._lastFrame = performance.now();
+    this._sim = e, this._unsubSim = e.onMessage(() => this._simMessages = [...e.messages]), this._simMessages = [...e.messages], this._lastFrame = performance.now();
     const s = (i) => {
       const n = (i - this._lastFrame) / 1e3;
       this._lastFrame = i, document.hidden || (e.advance(n), this._accum += n, this._accum >= 1 / xi && (this._accum = 0, this._version++)), this._raf = requestAnimationFrame(s);
@@ -4496,7 +4496,7 @@ const Ut = class Ut extends L {
     this._raf = requestAnimationFrame(s);
   }
   _stopSim() {
-    this._raf && cancelAnimationFrame(this._raf), this._raf = 0, this._unsubSim?.(), this._unsubSim = void 0, this._sim && (this._sim = null, this._messages = [], this._api && !this._api.standalone && this._api.listMessages().then((t) => this._messages = t, () => {
+    this._raf && cancelAnimationFrame(this._raf), this._raf = 0, this._unsubSim?.(), this._unsubSim = void 0, this._sim && (this._sim = null, this._simMessages = [], this._api && !this._api.standalone && this._api.listMessages().then((t) => this._backendMessages = t, () => {
     }));
   }
   _scenario(t) {
@@ -4541,6 +4541,9 @@ const Ut = class Ut extends L {
     super.connectedCallback(), this.hass && !this._api && (this._api = new Oe(this.hass), this._load()), this._plant?.settings.demo && !this._sim && this._startSim();
   }
   // ------------------------------------------------------------- render
+  get _shownMessages() {
+    return this._sim ? this._simMessages : this._backendMessages;
+  }
   get _src() {
     return this._sim ? new Xs(this._sim) : new Rs(this.hass);
   }
@@ -4552,7 +4555,7 @@ const Ut = class Ut extends L {
     });
   }
   render() {
-    const t = this._plant, e = this._messages.filter((s) => s.active && (s.level === "warning" || s.level === "error")).length;
+    const t = this._plant, e = this._shownMessages.filter((s) => s.active && (s.level === "warning" || s.level === "error")).length;
     return u`<div class="shell">
       <header>
         ${this.narrow ? u`<button class="ghost icon" title=${l("menu")} @click=${() => this.dispatchEvent(new Event("hass-toggle-menu", { bubbles: !0, composed: !0 }))}>${M("menu")}</button>` : m}
@@ -4585,7 +4588,7 @@ const Ut = class Ut extends L {
         .plant=${t}
         .src=${e}
         .icons=${this._icons}
-        .messages=${this._messages}
+        .messages=${this._shownMessages}
         .sim=${this._sim}
         .version=${this._version}
         ?narrow=${this.narrow || window.innerWidth < 900}
@@ -4593,10 +4596,10 @@ const Ut = class Ut extends L {
       ></cp-overview>`;
     if (this._view === "messages")
       return u`<div class="card pad"><cp-messages
-        .messages=${this._messages}
+        .messages=${this._shownMessages}
         ?canClear=${this._admin && !this._sim}
         @clear=${async () => {
-        await this._api.clearMessages(), this._messages = await this._api.listMessages();
+        await this._api.clearMessages(), this._backendMessages = await this._api.listMessages();
       }}
       ></cp-messages></div>`;
     if (!this._admin) return u`<div class="card">${l("readonly_hint")}</div>`;
@@ -4625,7 +4628,8 @@ Ut.properties = {
   panel: { attribute: !1 },
   _plant: { state: !0 },
   _icons: { state: !0 },
-  _messages: { state: !0 },
+  _backendMessages: { state: !0 },
+  _simMessages: { state: !0 },
   _view: { state: !0 },
   _sub: { state: !0 },
   _version: { state: !0 },

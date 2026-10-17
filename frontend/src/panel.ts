@@ -41,7 +41,8 @@ export class CopilotPanel extends LitElement {
     panel: { attribute: false },
     _plant: { state: true },
     _icons: { state: true },
-    _messages: { state: true },
+    _backendMessages: { state: true },
+    _simMessages: { state: true },
     _view: { state: true },
     _sub: { state: true },
     _version: { state: true },
@@ -59,7 +60,10 @@ export class CopilotPanel extends LitElement {
   private _api?: Api;
   private _plant: Plant | null = null;
   private _icons: Map<string, UserIcon> = new Map();
-  private _messages: PlantMessage[] = [];
+  /** messages from the integration's rule engine (live plant) */
+  private _backendMessages: PlantMessage[] = [];
+  /** messages of the demo simulator; shown instead while demo mode is on */
+  private _simMessages: PlantMessage[] = [];
   private _view: View = "overview";
   private _sub: Sub = "editor";
   private _version = 0;
@@ -139,7 +143,7 @@ export class CopilotPanel extends LitElement {
       this._setPlant(plant);
       await this._loadIcons();
       if (!this._api.standalone) {
-        this._messages = await this._api.listMessages();
+        this._backendMessages = await this._api.listMessages();
         this._unsubMsg = await this._api.subscribeMessages((m) => this._mergeMessage(m));
       }
     } catch (err: any) {
@@ -155,11 +159,11 @@ export class CopilotPanel extends LitElement {
   }
 
   private _mergeMessage(m: PlantMessage): void {
-    const idx = this._messages.findIndex((x) => x.id === m.id);
-    const next = [...this._messages];
+    const idx = this._backendMessages.findIndex((x) => x.id === m.id);
+    const next = [...this._backendMessages];
     if (idx >= 0) next[idx] = m;
     else next.push(m);
-    this._messages = next;
+    this._backendMessages = next;
   }
 
   private _setPlant(plant: Plant): void {
@@ -198,8 +202,8 @@ export class CopilotPanel extends LitElement {
     const dhw = this._plant?.components.find((c) => c.type === "dhw_tank");
     const sim = new Simulator(simParamsFor(this._plant), undefined, { dhw: dhw?.label || t("type.dhw_tank") });
     this._sim = sim;
-    this._unsubSim = sim.onMessage(() => (this._messages = [...sim.messages]));
-    this._messages = [...sim.messages];
+    this._unsubSim = sim.onMessage(() => (this._simMessages = [...sim.messages]));
+    this._simMessages = [...sim.messages];
     this._lastFrame = performance.now();
     const loop = (now: number) => {
       const dt = (now - this._lastFrame) / 1000;
@@ -224,8 +228,8 @@ export class CopilotPanel extends LitElement {
     this._unsubSim = undefined;
     if (this._sim) {
       this._sim = null;
-      this._messages = [];
-      if (this._api && !this._api.standalone) this._api.listMessages().then((m) => (this._messages = m), () => undefined);
+      this._simMessages = [];
+      if (this._api && !this._api.standalone) this._api.listMessages().then((m) => (this._backendMessages = m), () => undefined);
     }
   }
 
@@ -289,6 +293,10 @@ export class CopilotPanel extends LitElement {
 
   // ------------------------------------------------------------- render
 
+  private get _shownMessages(): PlantMessage[] {
+    return this._sim ? this._simMessages : this._backendMessages;
+  }
+
   private get _src(): ValueSource {
     if (this._sim) return new SimSource(this._sim);
     return new HassSource(this.hass);
@@ -307,7 +315,7 @@ export class CopilotPanel extends LitElement {
 
   render() {
     const plant = this._plant;
-    const alerts = this._messages.filter((m) => m.active && (m.level === "warning" || m.level === "error")).length;
+    const alerts = this._shownMessages.filter((m) => m.active && (m.level === "warning" || m.level === "error")).length;
     return html`<div class="shell">
       <header>
         ${this.narrow
@@ -343,7 +351,7 @@ export class CopilotPanel extends LitElement {
         .plant=${plant}
         .src=${src}
         .icons=${this._icons}
-        .messages=${this._messages}
+        .messages=${this._shownMessages}
         .sim=${this._sim}
         .version=${this._version}
         ?narrow=${this.narrow || window.innerWidth < 900}
@@ -352,11 +360,11 @@ export class CopilotPanel extends LitElement {
     }
     if (this._view === "messages") {
       return html`<div class="card pad"><cp-messages
-        .messages=${this._messages}
+        .messages=${this._shownMessages}
         ?canClear=${this._admin && !this._sim}
         @clear=${async () => {
           await this._api!.clearMessages();
-          this._messages = await this._api!.listMessages();
+          this._backendMessages = await this._api!.listMessages();
         }}
       ></cp-messages></div>`;
     }

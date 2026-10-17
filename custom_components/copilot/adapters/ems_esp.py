@@ -39,6 +39,9 @@ DEVICES = (
 )
 
 _TAG_RE = r"hc\d+|dhw\d*|ahs\d*|hs\d+"
+# devices whose names are distinctive enough to find behind an unknown MQTT base
+_FALLBACK_DEVICES = ("boiler", "thermostat", "heatpump", "mixer", "solar")
+_BASE_RE = re.compile(r"(?!0x)[a-z][a-z0-9-]*(?:_[a-z0-9-]+)?")
 _KEY_RE = re.compile(
     rf"^(?P<device>{'|'.join(DEVICES)})_(?:(?P<tag>{_TAG_RE})_)?(?P<short>[a-z0-9]+)$"
 )
@@ -73,14 +76,17 @@ def parse_unique_id(unique_id: str, base: str | None = None) -> EmsKey | None:
             uid = uid[len(prefix):]
     match = _KEY_RE.match(uid)
     if match is None:
-        # unknown basename: strip everything up to the first known device word
-        for device in DEVICES:
+        # unknown basename: strip everything up to the first core EMS device word.
+        # Only plain names qualify as a base (no Zigbee IEEE addresses such as 0x…).
+        for device in _FALLBACK_DEVICES:
             idx = uid.find(f"_{device}_")
-            if idx > 0:
+            if idx > 0 and _BASE_RE.fullmatch(uid[:idx]):
                 match = _KEY_RE.match(uid[idx + 1:])
                 if match:
                     break
     if match is None:
+        return None
+    if uid.endswith(("_zigbee2mqtt", "_z2m")):
         return None
     device, tag, short = match.group("device"), match.group("tag"), match.group("short")
     if tag is None and re.fullmatch(_TAG_RE, short):
