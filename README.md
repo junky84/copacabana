@@ -63,6 +63,12 @@ VIRTUAL_ENV=.venv uv pip install -r requirements_test.txt
 .venv/bin/python -m pytest
 ```
 
+To look at a real Home Assistant from a browser that only allows `localhost`:
+
+```bash
+HA_TARGET=http://<ha-host>:8123 node tools/ha-proxy.mjs 8123   # then open http://localhost:8123
+```
+
 The built panel bundle is committed so the integration works without a build step on the Home Assistant host.
 
 ## Credits & notes
