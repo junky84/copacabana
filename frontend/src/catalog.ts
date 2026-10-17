@@ -362,11 +362,8 @@ export const TYPES: Record<ComponentType, TypeDef> = {
     group: "consumer",
     passive: true,
     badges: "left",
-    ports: [
-      { id: "hot", x: 3, y: 1, dir: "r", kind: "dhw_hot" },
-      { id: "circ", x: 2, y: 3, dir: "b", kind: "circulation" },
-    ],
-    slots: [{ key: "flow", kind: "flow_lmin", show: true, pos: [0.9, 3.6] }, T("temp")],
+    ports: [{ id: "hot", x: 3, y: 1, dir: "r", kind: "dhw_hot" }],
+    slots: [{ key: "flow", kind: "flow_lmin", show: true, pos: [1.5, -0.9] }, T("temp")],
   },
   water_inlet: {
     type: "water_inlet",
