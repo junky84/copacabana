@@ -1,5 +1,5 @@
 import { LitElement, css, html, nothing, svg } from "lit";
-import "./echart";
+// ECharts is large: loaded on demand as a separate chunk, only when this view is opened
 import type { ChartOption, ChartTheme } from "./echart";
 import { fmtNum, getLang, t } from "../i18n";
 import { ui } from "../styles";
@@ -25,8 +25,16 @@ function spfColor(v: number | undefined): string {
   return v >= 3.5 ? AMPEL_COLOR.green : v >= 3 ? AMPEL_COLOR.yellow : AMPEL_COLOR.red;
 }
 
+let echartLoad: Promise<unknown> | null = null;
+
 export class CpEfficiency extends LitElement {
   private _chartKey = "";
+
+  connectedCallback(): void {
+    super.connectedCallback();
+    echartLoad ??= import("./echart");
+  }
+
   private _chartOption?: (th: ChartTheme) => ChartOption;
   static properties = {
     plant: { attribute: false },

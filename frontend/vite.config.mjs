@@ -10,7 +10,8 @@ export default defineConfig({
       formats: ["es"],
       fileName: () => "copilot-panel.js",
     },
-    rollupOptions: { output: { inlineDynamicImports: true } },
+    // the chart library is a separate chunk, loaded only by the efficiency view
+    rollupOptions: { output: { chunkFileNames: "chunks/[name]-[hash].js" } },
     minify: "esbuild",
     sourcemap: false,
   },

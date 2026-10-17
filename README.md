@@ -4,9 +4,11 @@ SCADA-style heat pump dashboard for Home Assistant – modern, animated, configu
 The name: **COP** = *Coefficient of Performance* – your heat pump's co-pilot for efficiency.
 Built first for Buderus/Bosch heat pumps read via an **EMS-ESP gateway** (BBQKees E32 V2), designed to support other data sources later.
 
+![COPilot overview: energy flow, animated hydraulic schematic and messages (demo mode)](https://raw.githubusercontent.com/junky84/copilot/main/docs/images/overview.png)
+
 > Status: **v0.1 (preview)** – early test version, not yet verified on a real plant. Not affiliated with Bosch, Buderus or BBQKees.
 
-## Features (v0.1)
+## Features
 
 - **Own sidebar panel** in Home Assistant: overview, messages, configuration
 - **Animated hydraulic schematic**: pipes coloured by water temperature, flow animation while pumps run, spinning fan, defrost frost overlay, glowing backup heater, tank stratification, heat waves on radiators
@@ -23,6 +25,18 @@ Built first for Buderus/Bosch heat pumps read via an **EMS-ESP gateway** (BBQKee
 - **Demo mode with physics simulator**: realistic heat pump behaviour (heating curve, buffer stratification, COP, icing/defrost, DHW draws, aux heater) plus scenarios: winter morning, mild season (cycling), shower, defrost, §14a limit, PV surplus, disinfection, fault
 - **Custom icons**: bundled artwork is original and brand-neutral; upload your own SVG/PNG/WebP/JPG per component or per type
 - German & English, light & dark (follows HA theme), wall display / phone / tablet / desktop
+
+## Screenshots
+
+All screenshots show the built-in demo mode with the physics simulator.
+
+| 2.5D style (light theme) | Explain mode |
+|---|---|
+| ![2.5D style](https://raw.githubusercontent.com/junky84/copilot/main/docs/images/iso-light.png) | ![Explain mode](https://raw.githubusercontent.com/junky84/copilot/main/docs/images/explain.png) |
+| **Efficiency: COP, SPF and daily energy** | **Interactive heating curve** |
+| ![Efficiency view](https://raw.githubusercontent.com/junky84/copilot/main/docs/images/efficiency.png) | ![Heating curve](https://raw.githubusercontent.com/junky84/copilot/main/docs/images/curve.png) |
+
+<p align="center"><img src="https://raw.githubusercontent.com/junky84/copilot/main/docs/images/mobile.png" alt="Phone layout" width="300"></p>
 
 ## Installation (HACS)
 

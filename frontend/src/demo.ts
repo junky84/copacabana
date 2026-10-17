@@ -16,7 +16,14 @@ const hass: Hass = {
   },
 };
 
+// screenshot helpers: ?explain=1, ?energy=0|1, ?view=efficiency|check|curve|messages|config
+for (const [param, key] of [["explain", "copilot.explain"], ["energy", "copilot.energy"]]) {
+  const v = params.get(param);
+  if (v !== null) localStorage.setItem(key, v === "1" ? "1" : "0");
+}
+
 const el = document.querySelector("copilot-panel") as any;
+if (params.get("view")) el._view = params.get("view");
 el.hass = hass;
 el.narrow = window.innerWidth < 870;
 window.addEventListener("resize", () => (el.narrow = window.innerWidth < 870));

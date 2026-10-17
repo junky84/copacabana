@@ -1,10 +1,12 @@
-import { LitElement, css, html, nothing, svg } from "lit";
+import { LitElement, css, html, nothing } from "lit";
 import { fmtNum, t } from "../i18n";
 import { icon, ui } from "../styles";
 import type { Hass, Plant, PlantComponent } from "../types";
 import type { ValueSource } from "../data/values";
 import type { Simulator } from "../sim/simulator";
 import { defaultCurve, flowTarget, suggestOffset, type CurveParams } from "../data/curve";
+// ECharts is loaded on demand (separate chunk)
+import type { ChartOption, ChartTheme } from "./echart";
 
 interface Pt {
   tOut: number;
@@ -25,16 +27,13 @@ const PARAMS: { key: keyof CurveParams; slot: string; min: number; max: number; 
 ];
 
 const DAYS = 14;
-// chart frame
-const W = 640;
-const H = 380;
-const PAD = { l: 42, r: 16, t: 14, b: 32 };
+// chart range
 const X0 = -20;
 const X1 = 22;
-const Y0 = 15;
-const Y1 = 65;
-const sx = (v: number) => PAD.l + ((v - X0) / (X1 - X0)) * (W - PAD.l - PAD.r);
-const sy = (v: number) => H - PAD.b - ((v - Y0) / (Y1 - Y0)) * (H - PAD.t - PAD.b);
+const Y0 = 20;
+const Y1 = 70;
+
+let echartLoad: Promise<unknown> | null = null;
 
 export class CpCurve extends LitElement {
   static properties = {
@@ -219,13 +218,13 @@ export class CpCurve extends LitElement {
 
   private _chart(cur: CurveParams, next: CurveParams | null, pts: Pt[]) {
     const line = (p: CurveParams) => {
-      let d = "";
+      const out: [number, number][] = [];
       for (let x = X0; x <= Math.min(X1, p.limit); x += 0.5) {
         const y = flowTarget(p, x);
         if (y === null) break;
-        d += `${d ? "L" : "M"} ${sx(x)} ${sy(y)} `;
+        out.push([x, Math.round(y * 10) / 10]);
       }
-      return d;
+      return out;
     };
     const hc = this._circuit;
     const ou = this.plant.components.find((c) => c.type === "outdoor_unit");
@@ -235,20 +234,99 @@ export class CpCurve extends LitElement {
     const lo = liveOut?.available ? liveOut.num : null;
     const lf = liveFlow?.available ? liveFlow.num : null;
     const target = lo !== null ? flowTarget(cur, lo) : null;
-    return svg`<svg class="chart" viewBox="0 0 ${W} ${H}">
-      ${[-20, -10, 0, 10, 20].map((x) => svg`<line class="grid" x1=${sx(x)} x2=${sx(x)} y1=${PAD.t} y2=${H - PAD.b} />
-        <text class="axis" x=${sx(x)} y=${H - 12} text-anchor="middle">${x} °C</text>`)}
-      ${[20, 30, 40, 50, 60].map((y) => svg`<line class="grid" x1=${PAD.l} x2=${W - PAD.r} y1=${sy(y)} y2=${sy(y)} />
-        <text class="axis" x=${PAD.l - 6} y=${sy(y) + 3} text-anchor="end">${y}</text>`)}
-      <rect class="limit" x=${sx(cur.limit)} y=${PAD.t} width=${Math.max(0, sx(X1) - sx(cur.limit))} height=${H - PAD.t - PAD.b} />
-      <text class="axis" x=${sx(cur.limit) + 6} y=${PAD.t + 14}>${t("cv.no_heating")}</text>
-      ${pts.map((p) => svg`<circle class="pt" cx=${sx(p.tOut)} cy=${sy(p.flow)} r="3.2" style="opacity:${0.85 - p.age * 0.6}" />`)}
-      <path class="curve" d=${line(cur)} />
-      ${next ? svg`<path class="curve next" d=${line(next)} />` : nothing}
-      ${lo !== null && target !== null ? svg`<circle class="target" cx=${sx(lo)} cy=${sy(target)} r="6" />` : nothing}
-      ${lo !== null && lf !== null ? svg`<g class="live"><circle cx=${sx(lo)} cy=${sy(lf)} r="7" class="pulse" /><circle cx=${sx(lo)} cy=${sy(lf)} r="4" /></g>` : nothing}
-      <text class="axis title" x=${PAD.l} y=${PAD.t - 2}>${t("cv.axis_flow")}</text>
-    </svg>`;
+    const curLine = line(cur);
+    const nextLine = next ? line(next) : [];
+    const deg = (v: number) => `${fmtNum(v, Number.isInteger(v) ? 0 : 1)} °C`;
+    const option = (th: ChartTheme): ChartOption => ({
+      animation: false,
+      textStyle: { fontFamily: "inherit" },
+      grid: { left: 8, right: 16, top: 30, bottom: 8, containLabel: true },
+      tooltip: {
+        trigger: "item",
+        backgroundColor: th.surface,
+        borderColor: th.border,
+        textStyle: { color: th.text, fontSize: 12 },
+        formatter: (it: any) => {
+          const [x, y] = it.value as [number, number];
+          return `<b>${it.seriesName}</b><br>${t("cv.tip", { out: deg(x), flow: deg(y) })}`;
+        },
+      },
+      xAxis: {
+        type: "value",
+        min: X0,
+        max: X1,
+        interval: 10,
+        axisLabel: { color: th.muted, formatter: (v: number) => `${v} °C` },
+        axisLine: { lineStyle: { color: th.border } },
+        splitLine: { lineStyle: { color: th.border, type: "dashed" } },
+      },
+      yAxis: {
+        type: "value",
+        min: Y0,
+        max: Y1,
+        interval: 10,
+        name: t("cv.axis_flow"),
+        nameTextStyle: { color: th.muted, align: "left" },
+        axisLine: { show: false, onZero: false },
+        axisLabel: { color: th.muted },
+        splitLine: { lineStyle: { color: th.border, type: "dashed" } },
+      },
+      series: [
+        {
+          name: t("cv.points", { days: DAYS }),
+          type: "scatter",
+          symbolSize: 6,
+          z: 1,
+          data: pts.map((p) => ({ value: [p.tOut, Math.round(p.flow * 10) / 10], itemStyle: { color: "#f5c542", opacity: 0.85 - p.age * 0.6 } })),
+          markArea: {
+            silent: true,
+            itemStyle: { color: "rgba(77,159,255,0.08)" },
+            label: { color: th.muted, position: "insideTop" },
+            data: [[{ name: t("cv.no_heating"), xAxis: cur.limit }, { xAxis: X1 }]],
+          },
+        },
+        {
+          name: t("cv.curve"),
+          type: "line",
+          showSymbol: false,
+          z: 3,
+          data: curLine,
+          lineStyle: { color: "#3ddc97", width: 3 },
+          itemStyle: { color: "#3ddc97" },
+        },
+        {
+          name: t("cv.preview"),
+          type: "line",
+          showSymbol: false,
+          z: 4,
+          data: nextLine,
+          lineStyle: { color: "#4d9fff", width: 2.5, type: "dashed" },
+          itemStyle: { color: "#4d9fff" },
+        },
+        {
+          name: t("cv.target"),
+          type: "scatter",
+          z: 5,
+          symbolSize: 13,
+          data: lo !== null && target !== null ? [[lo, Math.round(target * 10) / 10]] : [],
+          itemStyle: { color: "transparent", borderColor: "#3ddc97", borderWidth: 2 },
+        },
+        {
+          name: t("cv.now"),
+          type: "scatter",
+          z: 6,
+          symbolSize: 11,
+          data: lo !== null && lf !== null ? [[lo, lf]] : [],
+          itemStyle: { color: "#ff7a45", shadowBlur: 10, shadowColor: "#ff7a45" },
+        },
+      ],
+    });
+    return html`<cp-echart class="curve-chart" .option=${option}></cp-echart>`;
+  }
+
+  connectedCallback(): void {
+    super.connectedCallback();
+    echartLoad ??= import("./echart");
   }
 
   render() {
@@ -343,7 +421,7 @@ export class CpCurve extends LitElement {
       .head { margin-bottom: 6px; }
       .head h2 { margin: 0 10px 0 0; }
       .head select { width: auto; }
-      .chart { width: 100%; height: auto; display: block; }
+      .curve-chart { height: clamp(280px, 52vh, 520px); }
       .grid line.grid, line.grid { stroke: var(--cp-border); }
       .axis { fill: var(--cp-muted); font-size: 11px; }
       .axis.title { font-weight: 700; }
