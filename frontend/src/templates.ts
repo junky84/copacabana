@@ -289,7 +289,7 @@ export function generatePlant(cfg: WizardConfig, previous?: Plant | null): Plant
     pipes: b.pipes,
     settings: previous?.settings ?? { style: "flat", demo: true },
   };
-  plant.settings = { ...plant.settings, wizard: cfg };
+  plant.settings = { ...plant.settings, wizard: cfg, layout_edited: false };
 
   // keep bindings, icons and badge choices of components that still exist
   if (previous) {

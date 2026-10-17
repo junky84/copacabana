@@ -93,6 +93,8 @@ export interface PlantSettings {
   heat_load?: number;
   /** energy layer (PV, grid, battery, house, wallbox) */
   energy?: EnergyConfig;
+  /** layout changed by hand in the editor: never regenerate it automatically */
+  layout_edited?: boolean;
   /** last wizard answers, to reopen the wizard pre-filled */
   wizard?: any;
 }

@@ -1,7 +1,8 @@
-import { LitElement, css, html, nothing } from "lit";
+import { LitElement, css, html, nothing, svg } from "lit";
 import { fmtNum, fmtTime, t } from "../i18n";
 import { icon, ui } from "../styles";
-import type { Plant, PlantComponent, PlantMessage, UserIcon } from "../types";
+import type { Hass, Plant, PlantComponent, PlantMessage, UserIcon } from "../types";
+import { ReplaySource } from "../data/replay";
 import { componentFlags, normalizeActivity, tempColor, type ValueSource } from "../data/values";
 import type { Simulator } from "../sim/simulator";
 import { AMPEL_COLOR, liveCop } from "../data/efficiency";
@@ -70,7 +71,12 @@ export class CpOverview extends LitElement {
     _explain: { state: true },
     _comp: { state: true },
     _energy: { state: true },
+    _tm: { state: true },
+    _tmBusy: { state: true },
+    _tick: { state: true },
+    hass: { attribute: false },
   };
+  hass?: Hass;
   plant!: Plant;
   src!: ValueSource;
   icons: Map<string, UserIcon> = new Map();
@@ -93,6 +99,128 @@ export class CpOverview extends LitElement {
     lsSet(LS_EXPLAIN, this._explain ? "1" : "0");
   }
 
+  // ------------------------------------------------------------ time machine
+  private _tm: { src: ReplaySource; playing: boolean; speed: number; hours: number; strip: { x: number; w: number; mode: string }[] } | null = null;
+  private _tmBusy = false;
+  private _tick = 0;
+  private _raf = 0;
+  private _last = 0;
+  private _drawn = 0;
+
+  /** values shown right now: live, or the recorded state at the replay time */
+  private get _src(): ValueSource {
+    return this._tm?.src ?? this.src;
+  }
+
+  private async _openTm(hours = 24) {
+    if (this._tmBusy) return;
+    this._tmBusy = true;
+    try {
+      const h = this.sim ? Math.min(hours, 24) : hours;
+      const src = await ReplaySource.load(this.plant, this.src, h, this.hass);
+      src.t = src.start;
+      this._tm = { src, playing: false, speed: this._tm?.speed ?? 900, hours: h, strip: this._modeStrip(src) };
+    } catch (err) {
+      console.error("COPilot: history could not be loaded", err);
+    } finally {
+      this._tmBusy = false;
+    }
+  }
+
+  private _closeTm() {
+    cancelAnimationFrame(this._raf);
+    this._tm = null;
+  }
+
+  /** Operating mode along the replay range, for the strip under the slider. */
+  private _modeStrip(src: ReplaySource): { x: number; w: number; mode: string }[] {
+    const ou = this._first("outdoor_unit");
+    if (!ou) return [];
+    const n = 240;
+    const t0 = src.start;
+    const span = Math.max(1, src.to - t0);
+    const keep = src.t;
+    const out: { x: number; w: number; mode: string }[] = [];
+    for (let i = 0; i < n; i++) {
+      src.t = t0 + (span * (i + 0.5)) / n;
+      const f = componentFlags(ou, src);
+      const act = normalizeActivity(src.get(ou, "activity"));
+      const mode = f.has("defrost") ? "defrost" : act === "hot_water" ? "hot_water" : f.has("running") ? (act && act !== "off" ? act : "heating") : "off";
+      const prev = out[out.length - 1];
+      if (prev && prev.mode === mode) prev.w += 1 / n;
+      else out.push({ x: i / n, w: 1 / n, mode });
+    }
+    src.t = keep;
+    return out;
+  }
+
+  private _play() {
+    const tm = this._tm;
+    if (!tm) return;
+    if (tm.src.t >= tm.src.to - 1) tm.src.t = tm.src.start;
+    tm.playing = !tm.playing;
+    this._tm = { ...tm };
+    if (tm.playing) {
+      this._last = performance.now();
+      const step = (now: number) => {
+        const cur = this._tm;
+        if (!cur?.playing) return;
+        const dt = Math.min(0.25, (now - this._last) / 1000);
+        this._last = now;
+        cur.src.t = Math.min(cur.src.to, cur.src.t + dt * cur.speed);
+        if (cur.src.t >= cur.src.to) this._tm = { ...cur, playing: false };
+        // redraw about 10× per second: smooth enough, light on the wall display
+        if (now - this._drawn > 100) {
+          this._drawn = now;
+          this._tick++;
+        }
+        this._raf = requestAnimationFrame(step);
+      };
+      this._raf = requestAnimationFrame(step);
+    }
+  }
+
+  private _seek(t: number) {
+    if (!this._tm) return;
+    this._tm.src.t = t;
+    this._tick++;
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    cancelAnimationFrame(this._raf);
+  }
+
+  private _tmBar() {
+    const tm = this._tm;
+    if (!tm) return nothing;
+    const s = tm.src;
+    const start = s.start;
+    const d = new Date(s.t * 1000);
+    const label = d.toLocaleString(undefined, { weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+    const MODE: Record<string, string> = { heating: "#ff8a3d", hot_water: "#ff4f8b", defrost: "#6cc4ff", compressor_alarm: "#ff5a5f", off: "transparent" };
+    return html`<div class="tm">
+      <button class="icon" title=${tm.playing ? t("tm.pause") : t("tm.play")} @click=${this._play}>${icon(tm.playing ? "pause" : "play")}</button>
+      <div class="tm-track">
+        <input type="range" min=${start} max=${s.to} step="60" .value=${String(s.t)}
+          @input=${(e: Event) => this._seek(Number((e.target as HTMLInputElement).value))} aria-label=${t("tm.title")} />
+        <svg class="strip" viewBox="0 0 1 1" preserveAspectRatio="none">
+          ${tm.strip.map((p) => svg`<rect x=${p.x} y="0" width=${p.w + 0.001} height="1" fill=${MODE[p.mode] ?? "#8b949e"} />`)}
+        </svg>
+      </div>
+      <span class="tm-time">${label}</span>
+      <select title=${t("tm.speed")} @change=${(e: Event) => (this._tm = { ...tm, speed: Number((e.target as HTMLSelectElement).value) })}>
+        ${[300, 900, 1800, 3600].map((v) => html`<option value=${v} ?selected=${tm.speed === v}>${t("tm.speed_v", { min: v / 60 })}</option>`)}
+      </select>
+      ${this.sim
+        ? nothing
+        : html`<select title=${t("tm.range")} @change=${(e: Event) => this._openTm(Number((e.target as HTMLSelectElement).value))}>
+            ${[6, 24, 72].map((h) => html`<option value=${h} ?selected=${tm.hours === h}>${t("tm.hours", { h })}</option>`)}
+          </select>`}
+      <button class="live" @click=${this._closeTm}>${t("tm.live")}</button>
+    </div>`;
+  }
+
   private _toggleEnergy() {
     this._energy = !this._energy;
     lsSet(LS_ENERGY, this._energy ? "1" : "0");
@@ -103,7 +231,7 @@ export class CpOverview extends LitElement {
   }
 
   private _explainPanel() {
-    const items = explainPlant(this.plant, this.src);
+    const items = explainPlant(this.plant, this._src);
     return html`<div class="side-head"><b>${t("ex.title")}</b></div>
       ${items.length
         ? html`<ul class="explain">
@@ -124,7 +252,7 @@ export class CpOverview extends LitElement {
   private _compPop() {
     const p = this._comp;
     if (!p) return nothing;
-    const ex = explainComponent(p.component, this.src);
+    const ex = explainComponent(p.component, this._src);
     const w = 300;
     const left = Math.max(12, Math.min(window.innerWidth - w - 12, p.x - w / 2));
     const top = Math.max(12, Math.min(window.innerHeight - 200, p.y + 14));
@@ -149,7 +277,7 @@ export class CpOverview extends LitElement {
 
   private _num(c: PlantComponent | undefined, slot: string): number | undefined {
     if (!c) return undefined;
-    const v = this.src.get(c, slot);
+    const v = this._src.get(c, slot);
     return v?.available && v.num !== null ? v.num : undefined;
   }
 
@@ -159,10 +287,10 @@ export class CpOverview extends LitElement {
     const dhw = this._first("dhw_tank");
     const hc = this.plant.components.find((c) => c.type === "radiators" || c.type === "floor_heating");
     const vw = this.plant.components.find((c) => c.type === "valve_3way" && c.props.role === "dhw_switch");
-    let mode = ou ? normalizeActivity(this.src.get(ou, "activity")) : undefined;
+    let mode = ou ? normalizeActivity(this._src.get(ou, "activity")) : undefined;
     if (!mode && ou) {
-      const f = componentFlags(ou, this.src);
-      const vf = vw ? componentFlags(vw, this.src) : new Set<string>();
+      const f = componentFlags(ou, this._src);
+      const vf = vw ? componentFlags(vw, this._src) : new Set<string>();
       mode = f.has("running") ? (vf.has("b") ? "hot_water" : "heating") : "off";
     }
     const modeColors: Record<string, string> = {
@@ -174,11 +302,11 @@ export class CpOverview extends LitElement {
     };
     const heat = this._num(ou, "heat_power");
     let el = this._num(ou, "el_power");
-    const elUnit = ou ? this.src.get(ou, "el_power")?.unit : undefined;
+    const elUnit = ou ? this._src.get(ou, "el_power")?.unit : undefined;
     if (el !== undefined && elUnit === "kW") el *= 1000;
     const cop = heat !== undefined && el !== undefined && el > 50 && heat > 0.2 ? heat / (el / 1000) : undefined;
     const fmt = (n: number | undefined, d = 1) => (n === undefined ? "–" : fmtNum(n, d));
-    const live = liveCop(this.plant, this.src);
+    const live = liveCop(this.plant, this._src);
     const out: Kpi[] = [
       { key: "mode", label: t("kpi.mode"), value: mode ? t(`mode.${mode}`) : "–", unit: "", color: modeColors[mode || "off"] },
       { key: "out", label: t("kpi.outdoor"), value: fmt(this._num(ou, "outdoor_temp")), unit: "°C", comp: ou, slot: "outdoor_temp" },
@@ -253,10 +381,10 @@ export class CpOverview extends LitElement {
   render() {
     if (!this.plant) return nothing;
     const kpis = this._kpis();
-    const hasEnergy = energyAvailable(this.plant, this.sim);
+    const hasEnergy = energyAvailable(this.plant, this._tm ? null : this.sim);
     const activeCount = this.messages.filter((m) => m.active && (m.level === "warning" || m.level === "error")).length;
     return html`
-      ${this._demoBar()}
+      ${this._tm ? nothing : this._demoBar()}
       ${this.showKpis ? html`<div class="kpis">
         ${kpis.map(
           (k) => html`<button class="kpi" ?disabled=${!k.comp} @click=${(e: MouseEvent) => k.comp && (this._pop = { component: k.comp, slot: k.slot!, x: e.clientX, y: e.clientY })}>
@@ -267,23 +395,26 @@ export class CpOverview extends LitElement {
         )}
       </div>` : nothing}
       ${hasEnergy && this._energy
-        ? html`<div class="energy card"><cp-energy .flow=${readEnergy(this.plant, this.src, this.sim)}></cp-energy></div>`
+        ? html`<div class="energy card"><cp-energy .flow=${readEnergy(this.plant, this._src, this._tm ? null : this.sim)}></cp-energy></div>`
         : nothing}
       <div class="main ${this._explain || (this._side && this.showSide) ? "with-side" : ""}">
         <div class="stage card">
           <cp-schematic
             ?auto-height=${this.narrow}
             .plant=${this.plant}
-            .src=${this.src}
+            .src=${this._src}
             .icons=${this.icons}
-            .version=${this.version}
+            .version=${this.version * 100000 + this._tick}
             @cp-slot-click=${this._openPop}
             @cp-component-click=${this._onComponent}
           ></cp-schematic>
+          ${this._tmBar()}
           <div class="zoom">
             ${hasEnergy
               ? html`<button class="icon ${this._energy ? "on" : ""}" title=${t("en.toggle")} aria-pressed=${this._energy ? "true" : "false"} @click=${this._toggleEnergy}>${icon("bolt")}</button>`
               : nothing}
+            <button class="icon ${this._tm ? "on" : ""} ${this._tmBusy ? "busy" : ""}" title=${t("tm.title")} aria-pressed=${this._tm ? "true" : "false"}
+              @click=${() => (this._tm ? this._closeTm() : this._openTm())}>${icon("history")}</button>
             <button class="icon ${this._explain ? "on" : ""}" title=${t("ex.toggle")} aria-pressed=${this._explain ? "true" : "false"} @click=${this._toggleExplain}>${icon("info")}</button>
             <button class="icon" title=${t("zoom_in")} @click=${() => this._sch()?.zoom(0.8)}>${icon("plus")}</button>
             <button class="icon" title=${t("zoom_out")} @click=${() => this._sch()?.zoom(1.25)}>${icon("minus")}</button>
@@ -307,7 +438,7 @@ export class CpOverview extends LitElement {
         ? html`<cp-slot-popover
             .component=${this._pop.component}
             .slotKey=${this._pop.slot}
-            .src=${this.src}
+            .src=${this._src}
             .x=${this._pop.x}
             .y=${this._pop.y}
             .version=${this.version}
@@ -362,6 +493,16 @@ export class CpOverview extends LitElement {
       .side { overflow: auto; padding: 12px 14px; min-height: 0; }
       .side-head { font-size: 14px; margin-bottom: 4px; }
       .energy { padding: 10px 14px 6px; }
+      .tm { position: absolute; left: 10px; right: 10px; top: 10px; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
+        padding: 8px 12px; border-radius: 12px; background: color-mix(in srgb, var(--cp-surface) 88%, transparent);
+        border: 1px solid color-mix(in srgb, var(--cp-accent) 45%, var(--cp-border)); backdrop-filter: blur(8px); }
+      .tm-track { flex: 1; min-width: 180px; display: grid; gap: 3px; }
+      .tm-track input { width: 100%; margin: 0; accent-color: var(--cp-accent); }
+      .strip { width: 100%; height: 6px; border-radius: 3px; background: var(--cp-border); display: block; }
+      .tm-time { font-weight: 800; font-variant-numeric: tabular-nums; min-width: 128px; }
+      .tm select { width: auto; padding: 4px 8px; font-size: 12px; }
+      .tm .live { padding: 5px 12px; font-size: 12px; font-weight: 700; }
+      .zoom button.busy { opacity: 0.5; }
       .zoom button.on { background: var(--cp-accent); color: var(--cp-bg); }
       .explain { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 10px; font-size: 13px; line-height: 1.45; }
       .explain li { display: grid; grid-template-columns: 10px 1fr; gap: 10px; padding: 8px 10px; border-radius: 10px;

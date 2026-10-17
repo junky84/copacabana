@@ -6,7 +6,7 @@ from typing import Final
 
 DOMAIN: Final = "copilot"
 NAME: Final = "COPilot"
-VERSION: Final = "0.1.26"
+VERSION: Final = "0.1.27"
 
 PANEL_URL_PATH: Final = "copilot"
 PANEL_WEBCOMPONENT: Final = "copilot-panel"
@@ -18,6 +18,8 @@ STORAGE_VERSION: Final = 1
 STORAGE_KEY_PLANT: Final = f"{DOMAIN}.plant"
 STORAGE_KEY_ICONS: Final = f"{DOMAIN}.icons"
 STORAGE_KEY_MESSAGES: Final = f"{DOMAIN}.messages"
+STORAGE_KEY_BACKUPS: Final = f"{DOMAIN}.backups"
+BACKUP_MAX: Final = 15
 
 ICON_DIR: Final = "copilot/icons"
 ICON_MAX_BYTES: Final = 256 * 1024

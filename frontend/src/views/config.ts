@@ -6,7 +6,7 @@ import type { ComponentType, EnergyConfig, Hass, Plant, UserIcon } from "../type
 import { suggestEnergy } from "../data/energy";
 import "./editor";
 import { exampleConfig, generatePlant, type WizardConfig } from "../templates";
-import type { Api, ScanResult } from "../api";
+import type { Api, Backup, ScanResult } from "../api";
 
 function emit(el: HTMLElement, name: string, detail?: unknown) {
   el.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true }));
@@ -379,10 +379,103 @@ export class CpIcons extends LitElement {
 // --------------------------------------------------------------- settings
 
 export class CpSettings extends LitElement {
-  static properties = { plant: { attribute: false }, version: {}, hass: { attribute: false }, _energy: { state: true }, _note: { state: true } };
+  static properties = {
+    plant: { attribute: false },
+    version: {},
+    hass: { attribute: false },
+    api: { attribute: false },
+    _energy: { state: true },
+    _note: { state: true },
+    _backups: { state: true },
+    _bmsg: { state: true },
+  };
   plant!: Plant;
   version = "";
   hass?: Hass;
+  api?: Api;
+  private _backups: Backup[] | null = null;
+  private _bmsg = "";
+
+  connectedCallback(): void {
+    super.connectedCallback();
+    this._loadBackups();
+  }
+
+  private async _loadBackups() {
+    try {
+      this._backups = this.api ? await this.api.listBackups() : [];
+    } catch {
+      this._backups = [];
+    }
+  }
+
+  private async _restore(b: Backup) {
+    if (!this.api || !confirm(t("bk.restore_confirm", { date: new Date(b.ts * 1000).toLocaleString() }))) return;
+    try {
+      const plant = await this.api.restoreBackup(b.ts);
+      emit(this, "plant-restored", plant);
+      this._bmsg = t("bk.restored");
+      await this._loadBackups();
+    } catch (err: any) {
+      this._bmsg = err?.message || String(err);
+    }
+  }
+
+  private _export() {
+    const blob = new Blob([JSON.stringify(this.plant, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    const day = new Date().toISOString().slice(0, 10);
+    const name = (this.plant.name || "plant").replace(/[^\w-]+/g, "_");
+    a.href = URL.createObjectURL(blob);
+    a.download = `copilot-${name}-${day}.json`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  private async _import(e: Event) {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = "";
+    if (!file) return;
+    try {
+      const plant = JSON.parse(await file.text()) as Plant;
+      if (!Array.isArray(plant.components) || !Array.isArray(plant.pipes) || !plant.grid) throw new Error(t("bk.invalid"));
+      if (!confirm(t("bk.import_confirm", { name: plant.name || file.name, n: plant.components.length }))) return;
+      plant.settings = { ...this.plant.settings, ...(plant.settings || {}) };
+      emit(this, "save", plant);
+      this._bmsg = t("bk.imported");
+      setTimeout(() => this._loadBackups(), 800);
+    } catch (err: any) {
+      this._bmsg = `${t("bk.invalid")} (${err?.message || err})`;
+    }
+  }
+
+  private _backupSection() {
+    const reason = (r: string) => t(`bk.reason.${r}`);
+    return html`<div class="card wrap">
+      <h2>${t("bk.title")}</h2>
+      <p class="muted">${t("bk.hint")}</p>
+      <div class="row">
+        <button @click=${this._export}>${icon("download")} ${t("bk.export")}</button>
+        <label class="filebtn">${icon("upload")} ${t("bk.import")}
+          <input type="file" accept="application/json,.json" @change=${this._import} /></label>
+        ${this._bmsg ? html`<span class="muted">${this._bmsg}</span>` : nothing}
+      </div>
+      ${this._backups === null
+        ? nothing
+        : this._backups.length
+          ? html`<ul class="backups">
+              ${this._backups.map(
+                (b) => html`<li>
+                  <div><b>${new Date(b.ts * 1000).toLocaleString()}</b>
+                    <span class="muted"> · ${reason(b.reason)}${b.version ? ` · v${b.version}` : ""} · ${t("bk.components", { n: b.components })}</span></div>
+                  <button @click=${() => this._restore(b)}>${icon("undo")} ${t("bk.restore")}</button>
+                </li>`,
+              )}
+            </ul>`
+          : html`<p class="muted">${t(this.api?.standalone ? "bk.demo" : "bk.none")}</p>`}
+    </div>`;
+  }
   /** unsaved energy settings */
   private _energy: EnergyConfig | null = null;
   private _note = "";
@@ -471,7 +564,8 @@ export class CpSettings extends LitElement {
         <button class="danger" @click=${() => confirm(t("st.reset_confirm")) && emit(this, "reset-plant")}>${t("st.reset")}</button>
       </div>
     </div>
-    ${this._energySection()}`;
+    ${this._energySection()}
+    ${this._backupSection()}`;
   }
 
   static styles = [
@@ -486,6 +580,12 @@ export class CpSettings extends LitElement {
       .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px 16px; }
       .check { display: flex; gap: 8px; align-items: center; font-size: 13px; margin-top: 6px; }
       .check input { width: auto; margin: 0; }
+      .backups { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+      .backups li { display: flex; gap: 10px; align-items: center; justify-content: space-between; padding: 8px 10px;
+        border: 1px solid var(--cp-border); border-radius: 10px; font-size: 13px; }
+      .filebtn { position: relative; display: inline-flex; gap: 6px; align-items: center; cursor: pointer; padding: 7px 12px;
+        border: 1px solid var(--cp-border); border-radius: 10px; font-size: 13px; font-weight: 600; }
+      .filebtn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
     `,
   ];
 }

@@ -133,6 +133,7 @@ export class CopilotPanel extends LitElement {
         .icons=${this._ctl.icons}
         .messages=${this._ctl.messages}
         .sim=${this._ctl.sim}
+        .hass=${this.hass}
         .version=${this._ctl.version}
         ?narrow=${this.narrow || window.innerWidth < 900}
         @scenario=${(e: CustomEvent) => this._ctl.scenario(e.detail)}
@@ -183,7 +184,11 @@ export class CopilotPanel extends LitElement {
           ? html`<cp-icons .plant=${plant} .api=${this._ctl.api} .icons=${this._ctl.icons} @save=${onSave} @icons-changed=${() => this._ctl.loadIcons()}></cp-icons>`
           : nothing}
         ${this._sub === "settings"
-          ? html`<cp-settings .plant=${plant} .hass=${this.hass} .version=${this._ctl.backendVersion} @save=${onSave}
+          ? html`<cp-settings .plant=${plant} .hass=${this.hass} .api=${this._ctl.api} .version=${this._ctl.backendVersion} @save=${onSave}
+              @plant-restored=${(e: CustomEvent) => {
+                this._ctl.setPlant(e.detail);
+                this._showToast(t("bk.restored"));
+              }}
               @reset-plant=${() => this._save({ ...examplePlant(), settings: { ...examplePlant().settings, demo: true } })}></cp-settings>`
           : nothing}
       </div>

@@ -18,9 +18,12 @@ from .const import (
     ICON_MAX_BYTES,
     ICON_MAX_COUNT,
     ICON_MIME_TYPES,
+    BACKUP_MAX,
+    STORAGE_KEY_BACKUPS,
     STORAGE_KEY_ICONS,
     STORAGE_KEY_PLANT,
     STORAGE_VERSION,
+    VERSION,
 )
 
 # SVGs are only ever rendered as <image> data URLs (no script execution), but we
@@ -46,6 +49,9 @@ class CopilotStore:
         self.hass = hass
         self._plant_store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, STORAGE_KEY_PLANT)
         self._icon_store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, STORAGE_KEY_ICONS)
+        self._backup_store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, STORAGE_KEY_BACKUPS)
+        self.backups: list[dict[str, Any]] = []
+        self._last_version: str | None = None
         self._icon_dir = Path(hass.config.path(ICON_DIR))
         self.plant: dict[str, Any] | None = None
         self.icons: dict[str, dict[str, Any]] = {}
@@ -55,10 +61,53 @@ class CopilotStore:
         icons = await self._icon_store.async_load()
         self.plant = (data or {}).get("plant")
         self.icons = (icons or {}).get("icons", {})
+        backups = await self._backup_store.async_load() or {}
+        self.backups = backups.get("backups", [])
+        self._last_version = backups.get("last_version")
+        # an update (or downgrade) of the integration: keep the layout as it was before
+        if self.plant is not None and self._last_version != VERSION:
+            self._push_backup(self.plant, "update", self._last_version)
+            self._last_version = VERSION
+            await self._save_backups()
 
-    async def async_save_plant(self, plant: dict[str, Any]) -> None:
+    async def async_save_plant(self, plant: dict[str, Any], reason: str = "save") -> None:
+        """Persist the plant; the previous layout is kept as a backup."""
+        if self.plant is not None and self.plant != plant:
+            self._push_backup(self.plant, reason, VERSION)
+            await self._save_backups()
         self.plant = plant
         await self._plant_store.async_save({"plant": plant})
+
+    # ---------------------------------------------------------------- backups
+
+    def _push_backup(self, plant: dict[str, Any], reason: str, version: str | None) -> None:
+        if self.backups and self.backups[0]["plant"] == plant:
+            return
+        self.backups.insert(0, {"ts": time.time(), "reason": reason, "version": version, "plant": plant})
+        del self.backups[BACKUP_MAX:]
+
+    async def _save_backups(self) -> None:
+        await self._backup_store.async_save({"last_version": self._last_version or VERSION, "backups": self.backups})
+
+    def list_backups(self) -> list[dict[str, Any]]:
+        """Backups without the plant bodies (newest first)."""
+        return [
+            {
+                "ts": b["ts"],
+                "reason": b["reason"],
+                "version": b.get("version"),
+                "name": (b["plant"] or {}).get("name"),
+                "components": len((b["plant"] or {}).get("components", [])),
+            }
+            for b in self.backups
+        ]
+
+    async def async_restore_backup(self, ts: float) -> dict[str, Any] | None:
+        backup = next((b for b in self.backups if b["ts"] == ts), None)
+        if backup is None:
+            return None
+        await self.async_save_plant(backup["plant"], "restore")
+        return backup["plant"]
 
     # ---------------------------------------------------------------- icons
 

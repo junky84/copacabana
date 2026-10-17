@@ -35,6 +35,14 @@ function lsSet(key: string, value: unknown): void {
 }
 
 /** Thin wrapper around the integration's websocket API (or local storage in the standalone demo). */
+export interface Backup {
+  ts: number;
+  reason: "save" | "update" | "restore" | "import";
+  version: string | null;
+  name?: string;
+  components: number;
+}
+
 export class Api {
   constructor(private hass: Hass) {}
 
@@ -54,6 +62,15 @@ export class Api {
   async saveConfig(plant: Plant): Promise<void> {
     if (this.standalone) return lsSet(LS_PLANT, plant);
     await this.hass.callWS({ type: "copilot/config/save", plant });
+  }
+
+  async listBackups(): Promise<Backup[]> {
+    if (this.standalone) return [];
+    return (await this.hass.callWS<{ backups: Backup[] }>({ type: "copilot/backups/list" })).backups;
+  }
+
+  async restoreBackup(ts: number): Promise<Plant> {
+    return (await this.hass.callWS<{ plant: Plant }>({ type: "copilot/backups/restore", ts })).plant;
   }
 
   async scan(plant: Plant): Promise<ScanResult> {

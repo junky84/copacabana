@@ -37,6 +37,8 @@ def async_register(hass: HomeAssistant) -> None:
         ws_messages_list,
         ws_messages_subscribe,
         ws_messages_clear,
+        ws_backups_list,
+        ws_backups_restore,
     ):
         websocket_api.async_register_command(hass, handler)
 
@@ -164,3 +166,26 @@ async def ws_messages_clear(hass: HomeAssistant, connection: websocket_api.Activ
         return
     rt.messages.async_clear()
     connection.send_result(msg["id"], {"cleared": True})
+
+
+@websocket_api.require_admin
+@websocket_api.websocket_command({vol.Required("type"): "copilot/backups/list"})
+@websocket_api.async_response
+async def ws_backups_list(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
+    if (rt := _runtime(hass, connection, msg)) is None:
+        return
+    connection.send_result(msg["id"], {"backups": rt.store.list_backups()})
+
+
+@websocket_api.require_admin
+@websocket_api.websocket_command({vol.Required("type"): "copilot/backups/restore", vol.Required("ts"): vol.Coerce(float)})
+@websocket_api.async_response
+async def ws_backups_restore(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
+    if (rt := _runtime(hass, connection, msg)) is None:
+        return
+    plant = await rt.store.async_restore_backup(msg["ts"])
+    if plant is None:
+        connection.send_error(msg["id"], "not_found", "Backup not found")
+        return
+    rt.messages.async_set_plant(plant)
+    connection.send_result(msg["id"], {"plant": plant})

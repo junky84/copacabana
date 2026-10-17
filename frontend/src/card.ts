@@ -76,6 +76,7 @@ export class CopilotCard extends LitElement {
             .icons=${this._ctl.icons}
             .messages=${this._ctl.messages}
             .sim=${this._ctl.sim}
+            .hass=${this.hass}
             .version=${this._ctl.version}
             .showKpis=${c.show_kpis !== false}
             .showSide=${!!c.show_messages}

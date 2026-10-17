@@ -133,3 +133,36 @@ async def test_message_rules(hass: HomeAssistant, hass_ws_client) -> None:
     await hass.async_block_till_done()
     assert [e["key"] for e in events].count("input_active") == 1
 
+
+
+async def test_saves_keep_backups_and_restore(hass: HomeAssistant, hass_ws_client) -> None:
+    await _setup(hass)
+    ws = await hass_ws_client(hass)
+    moved = {**PLANT, "components": [{**PLANT["components"][0], "x": 7, "y": 3}, *PLANT["components"][1:]]}
+    await ws.send_json({"id": 1, "type": "copilot/config/save", "plant": PLANT})
+    assert (await ws.receive_json())["success"]
+    await ws.send_json({"id": 2, "type": "copilot/config/save", "plant": moved})
+    assert (await ws.receive_json())["success"]
+    await ws.send_json({"id": 3, "type": "copilot/backups/list"})
+    backups = (await ws.receive_json())["result"]["backups"]
+    assert len(backups) == 1 and backups[0]["reason"] == "save" and backups[0]["components"] == 3
+    await ws.send_json({"id": 4, "type": "copilot/backups/restore", "ts": backups[0]["ts"]})
+    res = await ws.receive_json()
+    assert res["success"] and "x" not in res["result"]["plant"]["components"][0]
+    await ws.send_json({"id": 5, "type": "copilot/config/get"})
+    assert "x" not in (await ws.receive_json())["result"]["plant"]["components"][0]
+    # the moved layout is a backup now, so restoring can be undone
+    await ws.send_json({"id": 6, "type": "copilot/backups/list"})
+    assert (await ws.receive_json())["result"]["backups"][0]["reason"] == "restore"
+
+
+async def test_update_keeps_a_backup(hass: HomeAssistant, hass_ws_client, hass_storage) -> None:
+    hass_storage["copilot.plant"] = {"version": 1, "minor_version": 1, "key": "copilot.plant", "data": {"plant": PLANT}}
+    hass_storage["copilot.backups"] = {"version": 1, "minor_version": 1, "key": "copilot.backups", "data": {"last_version": "0.0.1", "backups": []}}
+    await _setup(hass)
+    ws = await hass_ws_client(hass)
+    await ws.send_json({"id": 1, "type": "copilot/backups/list"})
+    backups = (await ws.receive_json())["result"]["backups"]
+    assert backups[0]["reason"] == "update" and backups[0]["version"] == "0.0.1"
+    await ws.send_json({"id": 2, "type": "copilot/config/get"})
+    assert (await ws.receive_json())["result"]["plant"] == PLANT

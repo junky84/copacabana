@@ -133,8 +133,9 @@ export class PlantController implements ReactiveController {
       if (!plant) {
         plant = examplePlant();
         if (cfg.is_admin && this.saveExample) await this.api.saveConfig(plant);
-      } else if ((plant.version ?? 1) < 5 && plant.settings?.wizard) {
-        // older layouts (separate PC0/VW1, circulation from the tap): rebuild from the wizard answers
+      } else if ((plant.version ?? 1) < 5 && plant.settings?.wizard && !plant.settings.layout_edited) {
+        // older generated layouts (separate PC0/VW1, circulation from the tap): rebuild from the wizard
+        // answers. Layouts arranged by hand are never regenerated – migrations must keep positions.
         plant = generatePlant(plant.settings.wizard, plant);
         if (cfg.is_admin && this.saveExample) await this.api.saveConfig(plant);
       }

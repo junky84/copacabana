@@ -294,7 +294,9 @@ export class CpEditor extends LitElement {
   }
 
   private _save() {
-    this.dispatchEvent(new CustomEvent("save", { detail: clone(this._draft), bubbles: true, composed: true }));
+    const plant = clone(this._draft);
+    plant.settings = { ...plant.settings, layout_edited: true };
+    this.dispatchEvent(new CustomEvent("save", { detail: plant, bubbles: true, composed: true }));
     this._dirty = false;
   }
 
