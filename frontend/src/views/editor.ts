@@ -6,6 +6,7 @@ import type { ComponentType, FlowCond, Hass, Pipe, PipeKind, Plant, PlantCompone
 import { formatValue, type ValueSource } from "../data/values";
 import type { Selection } from "../render/schematic";
 import "../render/schematic";
+import { autoArrange } from "../layout/auto";
 
 const PALETTE: ComponentType[] = [
   "outdoor_unit",
@@ -280,6 +281,18 @@ export class CpEditor extends LitElement {
     }, record);
   }
 
+  private _autoArrange() {
+    const r = autoArrange(this._draft);
+    this._commit((p) => {
+      p.components = r.plant.components;
+      p.pipes = r.plant.pipes;
+      p.grid = r.plant.grid;
+    });
+    this._sel = null;
+    this._hint = t(r.kind === "template" ? "ed.auto_done_tpl" : "ed.auto_done", { crossings: r.score.crossings });
+    window.setTimeout(() => (this._hint = ""), 6000);
+  }
+
   private _save() {
     this.dispatchEvent(new CustomEvent("save", { detail: clone(this._draft), bubbles: true, composed: true }));
     this._dirty = false;
@@ -326,6 +339,7 @@ export class CpEditor extends LitElement {
         <button class="icon" title=${t("ed.rotation")} ?disabled=${!(sel?.kind === "c" && TYPES[this._comp()?.type || "label"].rotatable)} @click=${this._rotate}>${icon("rotate")}</button>
         <button class="icon" title=${t("ed.duplicate")} ?disabled=${sel?.kind !== "c"} @click=${this._duplicate}>${icon("copy")}</button>
         <button class="icon danger" title=${t("delete")} ?disabled=${!sel} @click=${this._delete}>${icon("trash")}</button>
+        <button title=${t("ed.auto_title")} @click=${this._autoArrange}>${icon("wand")} ${t("ed.auto")}</button>
         <span class="hint">${this._hint}</span>
         <span class="spacer"></span>
         ${this._dirty ? html`<span class="dirty">${t("unsaved")}</span>
