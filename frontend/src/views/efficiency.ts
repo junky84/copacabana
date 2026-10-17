@@ -1,4 +1,6 @@
 import { LitElement, css, html, nothing, svg } from "lit";
+import "./echart";
+import type { ChartOption, ChartTheme } from "./echart";
 import { fmtNum, getLang, t } from "../i18n";
 import { ui } from "../styles";
 import type { Hass, Plant } from "../types";
@@ -19,11 +21,13 @@ const REFRESH_LIVE_MS = 10 * 60_000;
 const REFRESH_DEMO_MS = 5_000;
 
 function spfColor(v: number | undefined): string {
-  if (v === undefined) return "var(--cp-muted)";
+  if (v === undefined) return "#8b949e";
   return v >= 3.5 ? AMPEL_COLOR.green : v >= 3 ? AMPEL_COLOR.yellow : AMPEL_COLOR.red;
 }
 
 export class CpEfficiency extends LitElement {
+  private _chartKey = "";
+  private _chartOption?: (th: ChartTheme) => ChartOption;
   static properties = {
     plant: { attribute: false },
     src: { attribute: false },
@@ -106,43 +110,114 @@ export class CpEfficiency extends LitElement {
   private _chart(d: EfficiencyData) {
     const days = d.daily.slice(-30);
     if (!days.length) return nothing;
-    const W = 720;
-    const H = 200;
-    const pad = { l: 34, r: 34, t: 10, b: 24 };
-    const maxE = Math.max(1, ...days.map((x) => Math.max(x.heat, x.el)));
-    const bw = (W - pad.l - pad.r) / days.length;
-    const y = (v: number) => pad.t + (H - pad.t - pad.b) * (1 - v / maxE);
-    const ySpf = (v: number) => pad.t + (H - pad.t - pad.b) * (1 - Math.min(6, v) / 6);
-    const fmtDay = (ms: number) => new Date(ms).toLocaleDateString(getLang() === "de" ? "de-DE" : "en-GB", { day: "2-digit", month: "2-digit" });
-    const pts = days
-      .map((x, i) => {
-        const v = spf(x);
-        return v === undefined ? null : `${pad.l + i * bw + bw / 2},${ySpf(v)}`;
-      })
-      .filter(Boolean)
-      .join(" ");
+    const locale = getLang() === "de" ? "de-DE" : "en-GB";
+    const label = (ms: number) => new Date(ms).toLocaleDateString(locale, { day: "2-digit", month: "2-digit" });
+    const longLabel = (ms: number) => new Date(ms).toLocaleDateString(locale, { weekday: "short", day: "2-digit", month: "2-digit" });
+    const key = JSON.stringify(days);
+    if (key !== this._chartKey) {
+      this._chartKey = key;
+      this._chartOption = (th: ChartTheme): ChartOption => ({
+        animationDuration: 400,
+        textStyle: { fontFamily: "inherit" },
+        grid: { left: 8, right: 8, top: 34, bottom: 8, containLabel: true },
+        legend: {
+          top: 0,
+          right: 0,
+          itemWidth: 12,
+          itemHeight: 12,
+          textStyle: { color: th.muted },
+          inactiveColor: th.border,
+          data: [t("eff.heat"), t("eff.el"), { name: t("eff.spf_short"), icon: "circle" }],
+        },
+        tooltip: {
+          trigger: "axis",
+          axisPointer: { type: "shadow", shadowStyle: { color: "rgba(127,127,127,0.12)" } },
+          backgroundColor: th.surface,
+          borderColor: th.border,
+          textStyle: { color: th.text, fontSize: 12 },
+          formatter: (items: any) => {
+            const list = Array.isArray(items) ? items : [items];
+            const i = list[0]?.dataIndex ?? 0;
+            const rows = list
+              .map((it: any) => {
+                const v = it.value;
+                if (v === null || v === undefined || v === "-") return "";
+                const unit = it.seriesIndex === 2 ? "" : " kWh";
+                return `<div style="display:flex;gap:10px;justify-content:space-between"><span>${it.marker}${it.seriesName}</span><b>${fmtNum(v, it.seriesIndex === 2 ? 2 : 1)}${unit}</b></div>`;
+              })
+              .join("");
+            return `<div style="margin-bottom:4px;font-weight:700">${longLabel(days[i].day)}</div>${rows}`;
+          },
+        },
+        dataZoom: [{ type: "inside", minValueSpan: 5 }],
+        xAxis: {
+          type: "category",
+          data: days.map((x) => label(x.day)),
+          axisLine: { lineStyle: { color: th.border } },
+          axisTick: { show: false },
+          axisLabel: { color: th.muted, hideOverlap: true },
+        },
+        yAxis: [
+          {
+            type: "value",
+            name: "kWh",
+            nameTextStyle: { color: th.muted, align: "left" },
+            axisLabel: { color: th.muted },
+            splitLine: { lineStyle: { color: th.border, type: "dashed" } },
+          },
+          {
+            type: "value",
+            name: t("eff.spf_short"),
+            min: 0,
+            max: 6,
+            interval: 2,
+            nameTextStyle: { color: th.muted, align: "right" },
+            axisLabel: { color: th.muted },
+            splitLine: { show: false },
+          },
+        ],
+        series: [
+          {
+            name: t("eff.heat"),
+            type: "bar",
+            data: days.map((x) => Math.round(x.heat * 10) / 10),
+            itemStyle: { color: "#ff8a3d", borderRadius: [3, 3, 0, 0] },
+            barGap: "10%",
+            barCategoryGap: "35%",
+          },
+          {
+            name: t("eff.el"),
+            type: "bar",
+            data: days.map((x) => Math.round(x.el * 10) / 10),
+            itemStyle: { color: "#4d9fff", borderRadius: [3, 3, 0, 0] },
+          },
+          {
+            name: t("eff.spf_short"),
+            type: "line",
+            yAxisIndex: 1,
+            smooth: 0.3,
+            symbol: "circle",
+            symbolSize: 7,
+            connectNulls: true,
+            lineStyle: { color: th.text, width: 1.5, type: "dashed", opacity: 0.7 },
+            data: days.map((x) => {
+              const v = spf(x);
+              return v === undefined ? null : { value: Math.round(v * 100) / 100, itemStyle: { color: spfColor(v) } };
+            }),
+            markLine: {
+              silent: true,
+              symbol: "none",
+              label: { show: false },
+              lineStyle: { color: AMPEL_COLOR.yellow, type: "dotted", opacity: 0.6 },
+              data: [{ yAxis: 3 }],
+            },
+          },
+        ],
+      });
+    }
     return html`<div class="card chart">
-      <div class="row head"><div class="cap">${t("eff.daily")}</div><span class="spacer"></span>
-        <span class="lg"><i style="background:#ff8a3d"></i>${t("eff.heat")}</span>
-        <span class="lg"><i style="background:#4d9fff"></i>${t("eff.el")}</span>
-        <span class="lg"><i class="dot"></i>AZ</span></div>
-      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
-        ${[0, 0.5, 1].map((f) => svg`<line class="grid" x1=${pad.l} x2=${W - pad.r} y1=${y(maxE * f)} y2=${y(maxE * f)} />
-          <text class="axis" x=${pad.l - 4} y=${y(maxE * f) + 3} text-anchor="end">${fmtNum(maxE * f, 0)}</text>`)}
-        ${[2, 4, 6].map((v) => svg`<text class="axis" x=${W - pad.r + 4} y=${ySpf(v) + 3}>${v}</text>`)}
-        ${days.map((x, i) => {
-          const x0 = pad.l + i * bw;
-          return svg`<g><title>${fmtDay(x.day)} · ${fmtNum(x.heat, 1)} / ${fmtNum(x.el, 1)} kWh · AZ ${spf(x) !== undefined ? fmtNum(spf(x)!, 2) : "–"}</title>
-            <rect x=${x0 + bw * 0.12} y=${y(x.heat)} width=${bw * 0.36} height=${H - pad.b - y(x.heat)} rx="2" fill="#ff8a3d" />
-            <rect x=${x0 + bw * 0.5} y=${y(x.el)} width=${bw * 0.36} height=${H - pad.b - y(x.el)} rx="2" fill="#4d9fff" />
-            ${i % 5 === 0 ? svg`<text class="axis" x=${x0 + bw / 2} y=${H - 6} text-anchor="middle">${fmtDay(x.day)}</text>` : nothing}</g>`;
-        })}
-        ${svg`<polyline points=${pts} fill="none" stroke="var(--cp-text)" stroke-width="1.5" stroke-dasharray="3 3" />`}
-        ${days.map((x, i) => {
-          const v = spf(x);
-          return v === undefined ? nothing : svg`<circle cx=${pad.l + i * bw + bw / 2} cy=${ySpf(v)} r="3" fill=${spfColor(v)} />`;
-        })}
-      </svg>
+      <div class="cap">${t("eff.daily")}</div>
+      <cp-echart .option=${this._chartOption}></cp-echart>
       ${d.estimated.month ? html`<p class="muted small">${t("eff.demo_note")}</p>` : nothing}
     </div>`;
   }
@@ -188,7 +263,7 @@ export class CpEfficiency extends LitElement {
       .kv { display: flex; justify-content: space-between; font-size: 13px; color: var(--cp-muted); }
       .kv b { color: var(--cp-text); font-variant-numeric: tabular-nums; }
       .est { font-size: 10px; color: var(--cp-notice); border: 1px solid currentColor; border-radius: 6px; padding: 0 5px; margin-left: 4px; text-transform: none; letter-spacing: 0; }
-      .chart svg { width: 100%; height: 220px; display: block; }
+      .chart .cap { margin-bottom: 4px; }
       .head { margin-bottom: 6px; }
       .lg { display: inline-flex; gap: 5px; align-items: center; font-size: 12px; color: var(--cp-muted); }
       .lg i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }

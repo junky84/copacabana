@@ -1,5 +1,5 @@
 import { LitElement, css, html, svg, nothing, type PropertyValues, type SVGTemplateResult } from "lit";
-import { CELL, TYPES, anchoredSlots, badgesOf, baseSize, portPos, portsOf, sizeOf, slotsOf } from "../catalog";
+import { CELL, TYPES, anchoredSlots, badgesOf, baseSize, outdoorModel, portPos, portsOf, sizeOf, slotsOf } from "../catalog";
 import { shortLabel, slotLabel, t } from "../i18n";
 import type { Pipe, PipeKind, Plant, PlantComponent, PortRef, UserIcon } from "../types";
 import {
@@ -25,6 +25,53 @@ interface Box {
 }
 
 const PILL_H = 18;
+
+/** 2.5D style: depth vector of the extrusion (back and up-right) and its step count */
+const ISO_DX = 16;
+const ISO_DY = 10;
+const ISO_STEPS = 8;
+
+interface IsoBox {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  r: number;
+}
+
+/** Solid body outline of a default icon in local px (unrotated), or null when it has no solid body. */
+function isoBody(c: PlantComponent, w: number, h: number): IsoBox | null {
+  if (c.icon) return null;
+  switch (c.type) {
+    case "outdoor_unit":
+      return outdoorModel(c.model).source === "brine" ? { x: 0, y: 0, w, h: h * 0.55, r: 10 } : { x: 0, y: 0, w, h, r: 12 };
+    case "indoor_unit":
+      return { x: 0, y: 0, w, h, r: 10 };
+    case "buffer":
+    case "dhw_tank": {
+      const r = Math.min(w / 2, 2 * CELL);
+      return { x: -3, y: -3, w: w + 6, h: h + 6, r: r + 3 };
+    }
+    case "pump": {
+      const r = Math.min(w, h) / 2 - 2;
+      return { x: w / 2 - r, y: h / 2 - r, w: 2 * r, h: 2 * r, r };
+    }
+    case "radiators":
+      return { x: 0, y: 0.45 * CELL, w: w - 4, h: h - 0.9 * CELL, r: 6 };
+    case "floor_heating":
+      return { x: 2, y: h * 0.15, w: w - 4, h: h * 0.75, r: 6 };
+    case "water_inlet":
+      return { x: 0, y: h * 0.2, w, h: h * 0.6, r: 5 };
+    case "separator":
+      return c.props.filter ? { x: w * 0.15, y: h * 0.1, w: w * 0.7, h: h * 0.8, r: 5 } : { x: w * 0.2, y: 0, w: w * 0.6, h, r: w * 0.3 };
+    case "expansion_vessel":
+      return { x: 0, y: 0, w, h: h * 0.82, r: w / 2 };
+    case "value_tile":
+      return { x: 0, y: 0, w, h, r: 10 };
+    default:
+      return null;
+  }
+}
 
 interface PillPos {
   c: PlantComponent;
@@ -272,8 +319,10 @@ export class CpSchematic extends LitElement {
         @pointercancel=${this._onUp}
         @wheel=${this._onWheel}
       >
+        ${this._iso && !this.edit ? this._isoFloor(view) : nothing}
         ${this.edit ? this._grid() : nothing}
-        <g class="pipes">
+        ${this._iso ? this._isoLayer() : nothing}
+        <g class="pipes ${this._iso ? "iso" : ""}">
           ${routes.map(({ pipe, route }) => {
             if (!route) return nothing;
             const d = pathD(route.pts);
@@ -285,8 +334,10 @@ export class CpSchematic extends LitElement {
               <path class="pipe-hit" d=${d} />
               ${sel ? svg`<path class="pipe-sel" d=${d} />` : nothing}
               <path class="pipe-outline" d=${d} />
+              ${this._iso ? svg`<path class="pipe-depth" d=${d} style="stroke:${color}" />` : nothing}
               ${active ? svg`<path class="pipe-halo" d=${d} style="stroke:${color}" />` : nothing}
               <path class="pipe-base" d=${d} style="stroke:${color}" />
+              ${this._iso ? svg`<path class="pipe-gloss" d=${d} />` : nothing}
               ${active ? svg`<path class="pipe-flow" d=${d} />` : nothing}
             </g>`;
           })}
@@ -307,6 +358,59 @@ export class CpSchematic extends LitElement {
         <circle cx="0" cy="0" r="1" class="grid-dot" />
       </pattern></defs>
       <rect class="grid-bg" x="0" y="0" width=${w * CELL} height=${h * CELL} fill="url(#cp-grid)" />`;
+  }
+
+  private get _iso(): boolean {
+    return this.plant?.settings?.style === "iso";
+  }
+
+  /** Body outline of a component in schematic px, honouring rotation and mirroring. */
+  private _isoBox(c: PlantComponent): IsoBox | null {
+    const def = { ...TYPES[c.type], ...baseSize(c) };
+    const { w: sw, h: sh } = sizeOf(c);
+    const wpx = (c.type === "value_tile" ? sw : def.w) * CELL;
+    const hpx = (c.type === "value_tile" ? sh : def.h) * CELL;
+    const b = isoBody(c, wpx, hpx);
+    if (!b) return null;
+    let { x, y, w, h } = b;
+    if (c.flip && def.mirrorable) x = wpx - (x + w);
+    const rot = def.rotatable ? c.rot || 0 : 0;
+    if (rot === 90) [x, y, w, h] = [hpx - (y + h), x, h, w];
+    else if (rot === 180) [x, y] = [wpx - (x + w), hpx - (y + h)];
+    else if (rot === 270) [x, y, w, h] = [y, wpx - (x + w), h, w];
+    return { x: c.x * CELL + x, y: c.y * CELL + y, w, h, r: Math.min(b.r, w / 2, h / 2) };
+  }
+
+  /** 2.5D: soft shadows and extruded bodies, drawn behind pipes and components. */
+  private _isoLayer(): SVGTemplateResult {
+    const boxes = this.plant.components.map((c) => this._isoBox(c)).filter((b): b is IsoBox => !!b);
+    const steps = Array.from({ length: ISO_STEPS }, (_, i) => (ISO_STEPS - i) / ISO_STEPS);
+    return svg`
+      <defs>
+        <linearGradient id="cp-iso-grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" style="stop-color: var(--cp-iso-top)" />
+          <stop offset="0.22" style="stop-color: var(--cp-iso-side)" />
+          <stop offset="1" style="stop-color: var(--cp-iso-side)" />
+        </linearGradient>
+        <filter id="cp-iso-blur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6" /></filter>
+      </defs>
+      <g class="iso-shadows" filter="url(#cp-iso-blur)">
+        ${boxes.map((b) => svg`<rect x=${b.x + 6} y=${b.y + 10} width=${b.w} height=${b.h} rx=${b.r} />`)}
+      </g>
+      <g class="iso-bodies">
+        ${boxes.map((b) => steps.map((f) => svg`<rect x=${b.x + ISO_DX * f} y=${b.y - ISO_DY * f} width=${b.w} height=${b.h} rx=${b.r} fill="url(#cp-iso-grad)" />`))}
+      </g>`;
+  }
+
+  /** Isometric floor: two families of lines at ±30°. */
+  private _isoFloor(view: { x: number; y: number; w: number; h: number }): SVGTemplateResult {
+    const pw = CELL * 2 * Math.sqrt(3);
+    const ph = CELL * 2;
+    return svg`
+      <defs><pattern id="cp-iso-floor" width=${pw} height=${ph} patternUnits="userSpaceOnUse">
+        <path d="M 0 ${ph} L ${pw} 0 M 0 0 L ${pw} ${ph}" class="iso-floor-line" />
+      </pattern></defs>
+      <rect x=${view.x - view.w} y=${view.y - view.h} width=${view.w * 3} height=${view.h * 3} fill="url(#cp-iso-floor)" class="iso-floor" />`;
   }
 
   private _transform(c: PlantComponent): string {
@@ -735,6 +839,13 @@ export class CpSchematic extends LitElement {
     .pipe-hit { stroke: transparent; stroke-width: 18; pointer-events: stroke; }
     /* the outline in background colour cuts a gap into pipes drawn earlier: crossings read as bridges */
     .pipe-outline { stroke: var(--cp-surface); stroke-width: 12; }
+    .iso-floor-line { fill: none; stroke: var(--cp-iso-floor); stroke-width: 1; }
+    .iso-shadows rect { fill: #000; opacity: 0.28; }
+    /* 2.5D pipes: a darker body behind, offset like the extrusion, and a highlight on top */
+    .pipe-depth { stroke-width: 7; opacity: 0.35; filter: brightness(0.45); transform: translate(4px, -2.5px); }
+    .pipe.active .pipe-depth { opacity: 0.8; }
+    .pipe-gloss { stroke: #fff; stroke-width: 1.4; opacity: 0.22; transform: translate(-0.8px, -1.2px); }
+    .pipes.iso .pipe-base { stroke-width: 6; }
     .pipe-base { stroke-width: 5; opacity: 0.4; transition: opacity 0.6s; }
     .pipe.active .pipe-base { opacity: 1; }
     .pipe-halo { stroke-width: 12; opacity: 0.12; }

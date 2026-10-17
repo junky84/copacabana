@@ -24,6 +24,9 @@ export const tokens = css`
     --cp-flow: rgba(255, 255, 255, 0.92);
     --cp-pipe-outline: rgba(0, 0, 0, 0.55);
     --cp-casing: #232d3a;
+    --cp-iso-top: #3a475a;
+    --cp-iso-side: #141b24;
+    --cp-iso-floor: rgba(255, 255, 255, 0.05);
     --cp-casing-light: #2c3747;
     --cp-casing-stroke: #3d4a5c;
     --cp-sheen: rgba(255, 255, 255, 0.04);
@@ -51,6 +54,9 @@ export const tokens = css`
     --cp-flow: rgba(255, 255, 255, 0.95);
     --cp-pipe-outline: rgba(15, 23, 42, 0.18);
     --cp-casing: #f7f9fb;
+    --cp-iso-top: #ffffff;
+    --cp-iso-side: #b4bfcc;
+    --cp-iso-floor: rgba(15, 23, 42, 0.07);
     --cp-casing-light: #ffffff;
     --cp-casing-stroke: #b9c4d0;
     --cp-sheen: rgba(255, 255, 255, 0.6);

@@ -455,7 +455,7 @@ export class CpSettings extends LitElement {
       <label class="field">${t("st.style")}
         <select @change=${(e: Event) => this._patch({ style: (e.target as HTMLSelectElement).value as any })}>
           <option value="flat" ?selected=${s.style === "flat"}>${t("st.style.flat")}</option>
-          <option value="iso" disabled>${t("st.style.iso")}</option>
+          <option value="iso" ?selected=${s.style === "iso"}>${t("st.style.iso")}</option>
         </select></label>
       <label class="toggle"><input type="checkbox" .checked=${s.demo} @change=${(e: Event) => this._patch({ demo: (e.target as HTMLInputElement).checked })} />
         <span><b>${t("st.demo")}</b><br /><span class="muted">${t("st.demo_hint")}</span></span></label>

@@ -406,5 +406,8 @@ export function examplePlant(): Plant {
     cfg.indoorModel = indoor;
     cfg.indoorLabel = indoorModel(indoor)!.label.replace(/^Logatherm /, "").split(" – ")[0];
   }
-  return generatePlant(cfg);
+  const plant = generatePlant(cfg);
+  // ?style=iso previews the 2.5D style
+  if (typeof location !== "undefined" && new URLSearchParams(location.search).get("style") === "iso") plant.settings.style = "iso";
+  return plant;
 }
