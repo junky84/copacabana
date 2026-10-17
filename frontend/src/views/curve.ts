@@ -326,7 +326,10 @@ export class CpCurve extends LitElement {
 
   connectedCallback(): void {
     super.connectedCallback();
-    echartLoad ??= import("./echart");
+    echartLoad ??= import("./echart").catch((e) => {
+      echartLoad = null;
+      console.error("COPilot: chart module failed to load", e);
+    });
   }
 
   render() {

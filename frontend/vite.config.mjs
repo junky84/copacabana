@@ -1,6 +1,8 @@
 import { defineConfig } from "vite";
 
 export default defineConfig({
+  // libraries such as ECharts check process.env.NODE_ENV; lib builds do not replace it
+  define: { "process.env.NODE_ENV": JSON.stringify("production") },
   build: {
     outDir: "../custom_components/copilot/frontend",
     emptyOutDir: true,
