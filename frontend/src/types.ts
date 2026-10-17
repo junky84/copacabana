@@ -66,6 +66,24 @@ export interface Pipe {
   bindings?: { temp?: string; flow?: string };
 }
 
+export interface EnergyConfig {
+  enabled?: boolean;
+  pv?: string;
+  grid?: string;
+  /** entity reports export as positive */
+  grid_invert?: boolean;
+  battery?: string;
+  /** entity reports charging as positive */
+  battery_invert?: boolean;
+  battery_soc?: string;
+  house?: string;
+  /** house entity already contains the heat pump (evcc "home power") */
+  house_includes_hp?: boolean;
+  wallbox?: string;
+  /** §14a: guaranteed minimum power while dimmed, kW */
+  limit_14a?: number;
+}
+
 export interface PlantSettings {
   style: "flat" | "iso";
   demo: boolean;
@@ -73,6 +91,8 @@ export interface PlantSettings {
   typeIcons?: Partial<Record<ComponentType, string>>;
   /** heat load at design temperature in kW (simulator) */
   heat_load?: number;
+  /** energy layer (PV, grid, battery, house, wallbox) */
+  energy?: EnergyConfig;
   /** last wizard answers, to reopen the wizard pre-filled */
   wizard?: any;
 }

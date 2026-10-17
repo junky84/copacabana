@@ -16,6 +16,7 @@ Built first for Buderus/Bosch heat pumps read via an **EMS-ESP gateway** (BBQKee
 - **Grid editor**: drag & drop, connect ports, bendable routing, rotate, undo/redo, per-pipe animation conditions
 - **EMS-ESP auto mapping**: scans MQTT-discovery entities and suggests bindings per component (Buderus WLW186i/WLW176i, Bosch CS5800i/CS6800i and other EMS heat pumps). Any Home Assistant entity can be bound manually (e.g. a smart plug driving the circulation pump)
 - **Explain mode** (ⓘ button on the schematic): plain-language description of what the plant is doing right now – heating, hot water, defrost, pauses, heating curve, spread, buffer mixing loss, backup heater, §14a / PV inputs – and a short explanation of every component when you tap it
+- **Energy layer** (⚡ button): live power flow PV / grid / battery → heat pump / house / wallbox with self-supply share, battery state of charge, §14a dimming and PV surplus signal. Entities are detected automatically for evcc and SolaX Modbus (*Configuration → Settings → Energy layer*); simulated in demo mode
 - **Messages**: backend rule engine (defrost, DHW charging, disinfection, backup heater, external inputs such as §14a / PV, pressure limits, new error codes, gateway offline). Fires a `copilot_message` event for your own automations (push, ntfy …)
 - **Demo mode with physics simulator**: realistic heat pump behaviour (heating curve, buffer stratification, COP, icing/defrost, DHW draws, aux heater) plus scenarios: winter morning, mild season (cycling), shower, defrost, §14a limit, PV surplus, disinfection, fault
 - **Custom icons**: bundled artwork is original and brand-neutral; upload your own SVG/PNG/WebP/JPG per component or per type
@@ -74,7 +75,7 @@ EMS-ESP enum values (e.g. compressor activity) are published in the EMS-ESP UI l
 
 ## Roadmap
 
-- **v0.2**: ~~Lovelace card~~ (0.1.4), ~~live COP / SPF with traffic light vs. datasheet~~ (0.1.5), ~~plant check~~ (0.1.8), ~~interactive heating curve~~ (0.1.9), ~~explain mode (“what is happening”)~~ (0.1.21), energy layer (PV, battery, grid, wallbox, §14a), isometric 2.5D style
+- **v0.2**: ~~Lovelace card~~ (0.1.4), ~~live COP / SPF with traffic light vs. datasheet~~ (0.1.5), ~~plant check~~ (0.1.8), ~~interactive heating curve~~ (0.1.9), ~~explain mode (“what is happening”)~~ (0.1.21), ~~energy layer (PV, battery, grid, wallbox, §14a)~~ (0.1.22), isometric 2.5D style
 - **v0.3**: time machine (replay the schematic from recorder history), costs & PV share (fixed or entity tariff), maintenance calendar (anode, separator, expansion vessel …), export/import, write access for selected values
 
 ## Development

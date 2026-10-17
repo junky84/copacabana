@@ -6,6 +6,8 @@ import { componentFlags, normalizeActivity, tempColor, type ValueSource } from "
 import type { Simulator } from "../sim/simulator";
 import { AMPEL_COLOR, liveCop } from "../data/efficiency";
 import { explainComponent, explainPlant, type ExplainTone } from "../data/explain";
+import { energyAvailable, readEnergy } from "../data/energy";
+import "../render/energy";
 import type { CpSchematic } from "../render/schematic";
 import "../render/schematic";
 import "./widgets";
@@ -23,6 +25,7 @@ interface Kpi {
 
 const SPEEDS = [1, 10, 60, 300, 900];
 const LS_EXPLAIN = "copilot.explain";
+const LS_ENERGY = "copilot.energy";
 
 const TONE: Record<ExplainTone, string> = {
   heat: "#ff8a3d",
@@ -66,6 +69,7 @@ export class CpOverview extends LitElement {
     _side: { state: true },
     _explain: { state: true },
     _comp: { state: true },
+    _energy: { state: true },
   };
   plant!: Plant;
   src!: ValueSource;
@@ -81,11 +85,17 @@ export class CpOverview extends LitElement {
   private _pop: { component: PlantComponent; slot: string; x: number; y: number } | null = null;
   private _side = true;
   private _explain = lsGet(LS_EXPLAIN) === "1";
+  private _energy = lsGet(LS_ENERGY) !== "0";
   private _comp: { component: PlantComponent; x: number; y: number } | null = null;
 
   private _toggleExplain() {
     this._explain = !this._explain;
     lsSet(LS_EXPLAIN, this._explain ? "1" : "0");
+  }
+
+  private _toggleEnergy() {
+    this._energy = !this._energy;
+    lsSet(LS_ENERGY, this._energy ? "1" : "0");
   }
 
   private _onComponent(e: CustomEvent) {
@@ -243,6 +253,7 @@ export class CpOverview extends LitElement {
   render() {
     if (!this.plant) return nothing;
     const kpis = this._kpis();
+    const hasEnergy = energyAvailable(this.plant, this.sim);
     const activeCount = this.messages.filter((m) => m.active && (m.level === "warning" || m.level === "error")).length;
     return html`
       ${this._demoBar()}
@@ -255,6 +266,9 @@ export class CpOverview extends LitElement {
           </button>`,
         )}
       </div>` : nothing}
+      ${hasEnergy && this._energy
+        ? html`<div class="energy card"><cp-energy .flow=${readEnergy(this.plant, this.src, this.sim)}></cp-energy></div>`
+        : nothing}
       <div class="main ${this._explain || (this._side && this.showSide) ? "with-side" : ""}">
         <div class="stage card">
           <cp-schematic
@@ -267,6 +281,9 @@ export class CpOverview extends LitElement {
             @cp-component-click=${this._onComponent}
           ></cp-schematic>
           <div class="zoom">
+            ${hasEnergy
+              ? html`<button class="icon ${this._energy ? "on" : ""}" title=${t("en.toggle")} aria-pressed=${this._energy ? "true" : "false"} @click=${this._toggleEnergy}>${icon("bolt")}</button>`
+              : nothing}
             <button class="icon ${this._explain ? "on" : ""}" title=${t("ex.toggle")} aria-pressed=${this._explain ? "true" : "false"} @click=${this._toggleExplain}>${icon("info")}</button>
             <button class="icon" title=${t("zoom_in")} @click=${() => this._sch()?.zoom(0.8)}>${icon("plus")}</button>
             <button class="icon" title=${t("zoom_out")} @click=${() => this._sch()?.zoom(1.25)}>${icon("minus")}</button>
@@ -344,6 +361,7 @@ export class CpOverview extends LitElement {
       .zoom .badge { position: absolute; top: -6px; right: -6px; }
       .side { overflow: auto; padding: 12px 14px; min-height: 0; }
       .side-head { font-size: 14px; margin-bottom: 4px; }
+      .energy { padding: 10px 14px 6px; }
       .zoom button.on { background: var(--cp-accent); color: var(--cp-bg); }
       .explain { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 10px; font-size: 13px; line-height: 1.45; }
       .explain li { display: grid; grid-template-columns: 10px 1fr; gap: 10px; padding: 8px 10px; border-radius: 10px;

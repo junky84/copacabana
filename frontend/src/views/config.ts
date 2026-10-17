@@ -2,7 +2,9 @@ import { LitElement, css, html, nothing } from "lit";
 import { INDOOR_MODELS, OUTDOOR_MODELS, slotsOf } from "../catalog";
 import { slotLabel, t } from "../i18n";
 import { icon, ui } from "../styles";
-import type { ComponentType, Hass, Plant, UserIcon } from "../types";
+import type { ComponentType, EnergyConfig, Hass, Plant, UserIcon } from "../types";
+import { suggestEnergy } from "../data/energy";
+import "./editor";
 import { exampleConfig, generatePlant, type WizardConfig } from "../templates";
 import type { Api, ScanResult } from "../api";
 
@@ -377,9 +379,68 @@ export class CpIcons extends LitElement {
 // --------------------------------------------------------------- settings
 
 export class CpSettings extends LitElement {
-  static properties = { plant: { attribute: false }, version: {} };
+  static properties = { plant: { attribute: false }, version: {}, hass: { attribute: false }, _energy: { state: true }, _note: { state: true } };
   plant!: Plant;
   version = "";
+  hass?: Hass;
+  /** unsaved energy settings */
+  private _energy: EnergyConfig | null = null;
+  private _note = "";
+
+  private _en(): EnergyConfig {
+    return this._energy ?? this.plant.settings.energy ?? {};
+  }
+
+  private _setEn(patch: Partial<EnergyConfig>) {
+    this._energy = { ...this._en(), ...patch };
+  }
+
+  private _detect() {
+    if (!this.hass) return;
+    const s = suggestEnergy(this.hass);
+    const found = Object.entries(s).some(([k, v]) => typeof v === "string" && k !== "enabled");
+    this._energy = { ...this._en(), ...s };
+    this._note = t(found ? "st.energy_detected" : "st.energy_none");
+  }
+
+  private _saveEnergy() {
+    this._patch({ energy: this._en() });
+    this._energy = null;
+    this._note = "";
+  }
+
+  private _energySection() {
+    const e = this._en();
+    const pick = (key: keyof EnergyConfig, label: string) =>
+      html`<label class="field">${label}
+        <cp-entity-picker .hass=${this.hass} .value=${(e[key] as string) || ""}
+          @value-changed=${(ev: CustomEvent) => this._setEn({ [key]: ev.detail || undefined })}></cp-entity-picker></label>`;
+    const check = (key: keyof EnergyConfig, label: string, def = false) =>
+      html`<label class="check"><input type="checkbox" .checked=${(e[key] as boolean | undefined) ?? def}
+        @change=${(ev: Event) => this._setEn({ [key]: (ev.target as HTMLInputElement).checked })} />${label}</label>`;
+    return html`<div class="card wrap">
+      <h2>${t("st.energy")}</h2>
+      <p class="muted">${t("st.energy_hint")}</p>
+      ${check("enabled", t("st.energy_enabled"))}
+      ${this.hass && !(this.hass as any).__standalone
+        ? html`<div class="row"><button @click=${this._detect}>${icon("search")} ${t("st.energy_detect")}</button>
+            ${this._note ? html`<span class="muted">${this._note}</span>` : nothing}</div>`
+        : nothing}
+      <div class="grid2">
+        ${pick("pv", t("st.e_pv"))}
+        <div>${pick("grid", t("st.e_grid"))}${check("grid_invert", t("st.e_grid_invert"))}</div>
+        <div>${pick("battery", t("st.e_battery"))}${check("battery_invert", t("st.e_battery_invert"))}</div>
+        ${pick("battery_soc", t("st.e_soc"))}
+        <div>${pick("house", t("st.e_house"))}${check("house_includes_hp", t("st.e_house_hp"), true)}</div>
+        ${pick("wallbox", t("st.e_wallbox"))}
+        <label class="field">${t("st.e_limit")}
+          <input type="number" step="0.1" min="0" .value=${String(e.limit_14a ?? 4.2)}
+            @change=${(ev: Event) => this._setEn({ limit_14a: Number((ev.target as HTMLInputElement).value) })} /></label>
+      </div>
+      <div class="row"><span class="spacer"></span>
+        <button class="primary" ?disabled=${!this._energy} @click=${this._saveEnergy}>${icon("save")} ${t("st.save")}</button></div>
+    </div>`;
+  }
 
   private _patch(patch: Partial<Plant["settings"]>) {
     const plant: Plant = structuredClone(this.plant);
@@ -409,7 +470,8 @@ export class CpSettings extends LitElement {
         <span class="spacer"></span>
         <button class="danger" @click=${() => confirm(t("st.reset_confirm")) && emit(this, "reset-plant")}>${t("st.reset")}</button>
       </div>
-    </div>`;
+    </div>
+    ${this._energySection()}`;
   }
 
   static styles = [
@@ -419,6 +481,11 @@ export class CpSettings extends LitElement {
       .toggle { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; }
       .toggle input { margin-top: 4px; }
       .foot { margin-top: 8px; }
+      :host { display: grid; gap: 16px; align-content: start; }
+      h2 { margin: 0; }
+      .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px 16px; }
+      .check { display: flex; gap: 8px; align-items: center; font-size: 13px; margin-top: 6px; }
+      .check input { width: auto; margin: 0; }
     `,
   ];
 }

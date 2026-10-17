@@ -10,7 +10,7 @@
 import type { HistoryPoint, Level, PlantMessage } from "../types";
 import { defaultCurve, flowTarget, type CurveParams } from "../data/curve";
 
-export type SimGroup = "outdoor" | "indoor" | "pc0" | "pc1" | "circ" | "vw1" | "buffer" | "dhw" | "hc" | "tap" | "mixer";
+export type SimGroup = "outdoor" | "indoor" | "pc0" | "pc1" | "circ" | "vw1" | "buffer" | "dhw" | "hc" | "tap" | "mixer" | "energy";
 export type SimValues = Record<SimGroup, Record<string, number | string | boolean>>;
 
 export interface SimParams {
@@ -97,6 +97,10 @@ export class Simulator {
   e = { el: 0, heat: 0, elHeat: 0, elDhw: 0, heatHeat: 0, heatDhw: 0, aux: 0 };
   dim14a = false;
   pv = false;
+  /** household energy: PV generator, 10 kWh battery, wallbox (all kW) */
+  soc = 55;
+  private cloud = 0.8;
+  private en = { pv: 0, house: 0.4, wallbox: 0, battery: 0, grid: 0, hp: 0 };
   disinfect = false;
   fault = false;
   private lastDrawDay = new Map<number, number>();
@@ -393,12 +397,41 @@ export class Simulator {
     }
 
     this.emitConditions();
+    this.energyStep(dt, h);
     this.values = this.buildValues(vlSet, dhwSet, circOn, pumpOn, m0);
     this.sampleAcc += dt;
     if (this.sampleAcc >= 60) {
       this.sampleAcc = 0;
       this.sample();
     }
+  }
+
+  /** Household power balance around the heat pump (PV, battery, house, wallbox, grid). */
+  private energyStep(dt: number, h: number): void {
+    const hrs = dt / 3600;
+    // PV: 9.9 kWp, weaker in the cold season, passing clouds
+    this.cloud += (Math.random() - 0.5) * 0.08 * Math.sqrt(dt / 10);
+    this.cloud = Math.max(0.35, Math.min(1, this.cloud));
+    const season = Math.max(0.25, Math.min(1, 0.45 + (this.outdoorMean - 2) / 25));
+    const sun = h > 7 && h < 19 ? Math.sin(((h - 7) / 12) * Math.PI) : 0;
+    let pv = 9.9 * 0.8 * season * sun * this.cloud;
+    if (this.pv) pv = Math.max(pv, 6.5);
+    // household base load with morning, noon and evening peaks
+    const peak = (a: number, b: number, kw: number) => (h >= a && h < b ? kw : 0);
+    const house = 0.35 + peak(6.5, 8, 0.6) + peak(11.5, 13, 0.9) + peak(18, 21, 0.8) + 0.05 * Math.sin(this.time / 97);
+    // car charging on even days in the evening; §14a limits it like the heat pump
+    const day = Math.floor(this.time / 86400);
+    let wallbox = day % 2 === 0 && h >= 18 && h < 21.5 ? 7.4 : 0;
+    if (this.dim14a && wallbox) wallbox = 4.2;
+    const hp = this.pEl + this.aux;
+    // battery: charge from surplus, discharge to cover the deficit (±5 kW)
+    const surplus = pv - house - wallbox - hp;
+    let battery = 0;
+    if (surplus > 0 && this.soc < 100) battery = -Math.min(surplus, 5);
+    else if (surplus < 0 && this.soc > 10 && !wallbox) battery = Math.min(-surplus, 5);
+    this.soc = Math.max(0, Math.min(100, this.soc - (battery * hrs * 100) / 10));
+    const grid = house + wallbox + hp - pv - battery;
+    this.en = { pv, house, wallbox, battery, grid, hp };
   }
 
   startDraw(minutes: number, lpm: number): void {
@@ -454,6 +487,15 @@ export class Simulator {
         heat_energy_dhw: r1(this.e.heatDhw),
         aux_energy_total: r1(this.e.aux),
         service_code: this.fault ? "SIM" : "",
+      },
+      energy: {
+        pv_power: Math.round(this.en.pv * 1000),
+        house_power: Math.round(this.en.house * 1000),
+        wallbox_power: Math.round(this.en.wallbox * 1000),
+        battery_power: Math.round(this.en.battery * 1000),
+        battery_soc: Math.round(this.soc),
+        grid_power: Math.round(this.en.grid * 1000),
+        hp_power: Math.round(this.en.hp * 1000),
       },
       pc0: { running: pumpOn, speed: pumpOn ? 72 : 0, flow: pumpOn ? 1100 : 0 },
       pc1: { running: this.tOut < 16, speed: this.tOut < 16 ? 55 : 0, flow: this.tOut < 16 ? 650 : 0 },

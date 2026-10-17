@@ -183,7 +183,7 @@ export class CopilotPanel extends LitElement {
           ? html`<cp-icons .plant=${plant} .api=${this._ctl.api} .icons=${this._ctl.icons} @save=${onSave} @icons-changed=${() => this._ctl.loadIcons()}></cp-icons>`
           : nothing}
         ${this._sub === "settings"
-          ? html`<cp-settings .plant=${plant} .version=${this._ctl.backendVersion} @save=${onSave}
+          ? html`<cp-settings .plant=${plant} .hass=${this.hass} .version=${this._ctl.backendVersion} @save=${onSave}
               @reset-plant=${() => this._save({ ...examplePlant(), settings: { ...examplePlant().settings, demo: true } })}></cp-settings>`
           : nothing}
       </div>
