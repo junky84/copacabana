@@ -3,7 +3,7 @@
 SCADA-style heat pump dashboard for Home Assistant – modern, animated, configurable.
 Built first for Buderus/Bosch heat pumps read via an **EMS-ESP gateway** (BBQKees E32 V2), designed to support other data sources later.
 
-> Status: **v0.1 (preview)** – private test version. Not affiliated with Bosch, Buderus or BBQKees.
+> Status: **v0.1 (preview)** – early test version, not yet verified on a real plant. Not affiliated with Bosch, Buderus or BBQKees.
 
 ## Features (v0.1)
 
@@ -19,17 +19,17 @@ Built first for Buderus/Bosch heat pumps read via an **EMS-ESP gateway** (BBQKee
 - **Custom icons**: bundled artwork is original and brand-neutral; upload your own SVG/PNG/WebP/JPG per component or per type
 - German & English, light & dark (follows HA theme), wall display / phone / tablet / desktop
 
-## Installation (test phase, private repository)
+## Installation (HACS)
 
-HACS cannot install from private repositories, so install manually:
-
-1. Download `copilot.zip` from the latest GitHub release (or copy the folder `custom_components/copilot` from this repo).
-2. Copy the folder to `/config/custom_components/copilot` on your Home Assistant (Samba share, File editor or Studio Code Server add-on).
+1. HACS → ⋮ (top right) → **Custom repositories** → URL `https://github.com/junky84/copilot`, type **Integration** → *Add*.
+2. Search for **COPilot** in HACS → **Download**.
 3. Restart Home Assistant.
 4. *Settings → Devices & services → Add integration → COPilot*.
 5. Open **COPilot** in the sidebar. An example plant in demo mode is created automatically.
 
-Once the repository is public it can be added to HACS as a custom repository (type *Integration*).
+Updates appear in HACS (and under *Settings → Updates*); install them and restart Home Assistant.
+
+Manual installation: copy `custom_components/copilot` from the release zip to `/config/custom_components/` and restart.
 
 ## Connecting the EMS-ESP gateway
 

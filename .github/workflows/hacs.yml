@@ -1,7 +1,8 @@
 name: HACS validation
 
-# Run manually once the repository is public (HACS rejects private repositories).
 on:
+  push:
+  pull_request:
   workflow_dispatch:
 
 jobs:
@@ -11,3 +12,5 @@ jobs:
       - uses: hacs/action@main
         with:
           category: integration
+          # not (yet) listed in home-assistant/brands
+          ignore: brands
