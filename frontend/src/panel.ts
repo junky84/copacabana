@@ -104,7 +104,7 @@ export class CopilotPanel extends LitElement {
         <div class="brand">${logo}<span>COP<b>ilot</b></span></div>
         <nav>
           ${(["overview", "efficiency", "check", "curve", "messages", "config"] as View[]).map(
-            (v) => html`<button class="tab ${this._view === v ? "on" : ""}" @click=${() => this._go(v)}>
+            (v) => html`<button class="tab ${this._view === v ? "on" : ""}" title=${t(`nav.${v}`)} @click=${() => this._go(v)}>
               ${icon(v === "overview" ? "grid" : v === "efficiency" ? "chart" : v === "check" ? "check" : v === "curve" ? "curve" : v === "messages" ? "bell" : "gear")}
               <span class="tl">${t(`nav.${v}`)}</span>
               ${v === "messages" && alerts ? html`<span class="badge">${alerts}</span>` : nothing}
@@ -245,6 +245,11 @@ export class CopilotPanel extends LitElement {
       .cfg.fill > cp-editor { flex: 1; min-height: 640px; }
       @media (max-width: 900px) {
         main > cp-overview { flex: none; }
+      }
+      /* six tabs: show only the active tab's label when space gets tight */
+      @media (max-width: 1250px) {
+        .tab:not(.on) .tl { display: none; }
+        .brand span { display: none; }
       }
       @media (max-width: 700px) {
         header { padding: 8px 10px; gap: 6px; }
