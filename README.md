@@ -31,6 +31,18 @@ Updates appear in HACS (and under *Settings → Updates*); install them and rest
 
 Manual installation: copy `custom_components/copilot` from the release zip to `/config/custom_components/` and restart.
 
+## Connection positions
+
+Components are drawn with their connections where the manufacturer documents them:
+
+- **Indoor units**: wall-hung E units have all connections at the bottom (to/from heat pump, DHW flow/return, heating return/flow); T180 and TP70 floor-standing units on top. PC0, VW1, the electric backup heater and the manometer are built in and drawn inside the unit (TP70/T180 also PC1 and the integrated buffer/cylinder).
+- **Outdoor units (MB AR)**: water connections at the rear, bottom right seen from the front.
+- **Buffer P120.5**: all four connections on top, the two returns through dip tubes.
+- **DHW cylinder SH290**: connection heights from the datasheet.
+- **Return accessories**: particle filter SC1, expansion vessel and magnetite/dirt separator sit in the return directly in front of the indoor unit, as required by the Buderus installation manual.
+
+Sources: Buderus installation manuals WLW186i E (6721892057), WLW186i T180 (6721877118), WLW186i TP70 (6721851711), Logatherm WLW MB AR (6721843846), Logalux P120.5 (6720819646) and the SH290 RS datasheet. Layouts of the brine units (WSW) are approximated.
+
 ## Lovelace card
 
 The integration loads the card automatically – no manual resource needed. For a full-screen tab (e.g. on a wall display) add a view of type **Panel (1 card)**:

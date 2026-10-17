@@ -10,7 +10,7 @@ import type { Hass, Plant, PlantMessage, UserIcon } from "./types";
 import { HassSource, type ValueSource } from "./data/values";
 import { Simulator } from "./sim/simulator";
 import { SimSource, simParamsFor } from "./sim/source";
-import { examplePlant } from "./templates";
+import { examplePlant, generatePlant } from "./templates";
 
 const SIM_FPS = 4;
 
@@ -130,6 +130,10 @@ export class PlantController implements ReactiveController {
       let plant = cfg.plant;
       if (!plant) {
         plant = examplePlant();
+        if (cfg.is_admin && this.saveExample) await this.api.saveConfig(plant);
+      } else if ((plant.version ?? 1) < 2 && plant.settings?.wizard) {
+        // v1 plants had separate PC0/VW1 parts and simplified connections: rebuild from the wizard answers
+        plant = generatePlant(plant.settings.wizard, plant);
         if (cfg.is_admin && this.saveExample) await this.api.saveConfig(plant);
       }
       this.setPlant(plant);

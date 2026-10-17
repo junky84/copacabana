@@ -1,4 +1,4 @@
-import { outdoorModel } from "../catalog";
+import { indoorModel, outdoorModel, variantOf } from "../catalog";
 import type { HistoryPoint, Plant, PlantComponent, SlotValue } from "../types";
 import type { ValueSource } from "../data/values";
 import { Simulator, type SimGroup, type SimParams } from "./simulator";
@@ -40,13 +40,14 @@ export function simParamsFor(plant: Plant | null): Partial<SimParams> {
   const iu = plant.components.find((c) => c.type === "indoor_unit");
   const buf = plant.components.find((c) => c.type === "buffer");
   const dhw = plant.components.find((c) => c.type === "dhw_tank");
+  const im = indoorModel(iu?.model);
   const model = outdoorModel(ou?.model);
   const hcs = plant.components.filter((c) => c.type === "radiators" || c.type === "floor_heating");
   return {
     nominal: Number(ou?.props.nominal_kw) || model.nominal,
     source: model.source,
-    bufferL: Number(buf?.props.volume) || (buf ? 120 : 30),
-    dhwL: Number(dhw?.props.volume) || 274,
+    bufferL: Number(buf?.props.volume) || im?.buffer || (buf ? 120 : 30),
+    dhwL: Number(dhw?.props.volume) || im?.dhw || 274,
     auxKw: Number(iu?.props.aux_kw) || 6,
     heatLoad: Number(plant.settings?.heat_load) || 6.2,
     floor: hcs.length > 0 && hcs.every((c) => c.type === "floor_heating"),
@@ -72,6 +73,27 @@ export class SimSource implements ValueSource {
       if (!entry?.sim) return undefined;
       const [g, s] = entry.sim.split(".");
       return this.wrap((this.sim.values as any)[g]?.[s]);
+    }
+    // parts built into the indoor unit
+    if (c.type === "indoor_unit") {
+      const inner: Record<string, [SimGroup, string]> = {
+        pc0_running: ["pc0", "running"],
+        pc0_speed: ["pc0", "speed"],
+        vw1_position: ["vw1", "position"],
+        pc1_running: ["pc1", "running"],
+        pc1_speed: ["pc1", "speed"],
+        dhw_temp: ["dhw", "temp_top"],
+        dhw_setpoint: ["dhw", "setpoint"],
+        dhw_charging: ["dhw", "charging"],
+        buffer_temp: ["buffer", "temp_top"],
+      };
+      const m = inner[slot];
+      if (m) {
+        const variant = variantOf(c)?.id;
+        if ((slot.startsWith("dhw_") && variant !== "t180") || (slot === "buffer_temp" && variant !== "tp70") || (slot.startsWith("pc1") && variant === "wall_e"))
+          return undefined;
+        return this.wrap(this.sim.values[m[0]]?.[m[1]]);
+      }
     }
     const group = simGroup(c);
     if (!group) return undefined;

@@ -55,7 +55,7 @@ def test_collect_and_suggest():
     assert EmsKey("boiler", None, "hptc3") not in entities
     plant = {
         "components": [
-            {"id": "iu", "type": "indoor_unit"},
+            {"id": "iu", "type": "indoor_unit", "model": "buderus-wlw186i-t180"},
             {"id": "ou", "type": "outdoor_unit"},
             {"id": "ww", "type": "dhw_tank"},
             {"id": "hk2", "type": "radiators", "props": {"circuit": 2}},
@@ -69,6 +69,8 @@ def test_collect_and_suggest():
     assert got[("ww", "charging")]["entity_id"] == "binary_sensor.boiler_dhw_charging"
     assert got[("hk2", "room_temp")]["entity_id"] == "sensor.thermostat_hc2_currtemp"
     assert ("iu", "return_temp") not in got
+    # built-in DHW of floor-standing units maps onto the indoor unit
+    assert got[("iu", "dhw_temp")]["entity_id"] == "sensor.boiler_dhw_curtemp"
 
 
 def test_suggest_falls_back_to_second_candidate():

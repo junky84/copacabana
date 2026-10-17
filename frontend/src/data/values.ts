@@ -124,10 +124,17 @@ export function componentFlags(c: PlantComponent, src: ValueSource): Set<string>
       if (act) f.add(`mode_${act}`);
       break;
     }
-    case "indoor_unit":
+    case "indoor_unit": {
+      // PC0, VW1 and (in floor-standing units) PC1 are built into the indoor unit
       if (truthy(g("aux_level")) || truthy(g("aux_step1")) || truthy(g("aux_step2")) || truthy(g("aux_step3"))) f.add("aux");
-      if (truthy(g("flow"))) f.add("running");
+      if (truthy(g("pc0_running")) || truthy(g("pc0_speed")) || truthy(g("flow"))) f.add("running");
+      f.add(truthy(g("vw1_position")) || (!c.bindings.vw1_position && truthy(g("dhw_active")) && !truthy(g("heating_active"))) ? "b" : "a");
+      if (truthy(g("pc1_running")) || truthy(g("pc1_speed"))) f.add("pc1");
+      if (truthy(g("dhw_charging"))) f.add("charging");
+      const mode = truthy(g("dhw_active")) || (f.has("running") && f.has("b")) ? "hot_water" : truthy(g("heating_active")) || f.has("running") ? "heating" : "off";
+      f.add(`mode_${mode}`);
       break;
+    }
     case "dhw_tank":
       if (truthy(g("charging"))) f.add("charging");
       if (truthy(g("disinfecting"))) f.add("disinfecting");

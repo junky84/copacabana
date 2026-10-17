@@ -149,6 +149,13 @@ RULES: dict[tuple[str, str | None], dict[str, list[Cand]]] = {
         "aux_energy_total": [("boiler", None, "auxelecheatnrgconstotal"), ("boiler", None, "metereheat")],
         "uptime_total": [("boiler", None, "uptimetotal")],
         "heating_active": [("boiler", None, "heatingactive"), ("boiler", None, "hpheatingon")],
+        # parts built into the indoor unit
+        "pc0_running": [("boiler", None, "heatingpump"), ("boiler", None, "primepump")],
+        "pc0_speed": [("boiler", None, "primepumpmod"), ("boiler", None, "heatingpumpmod")],
+        "vw1_position": [("boiler", "{dhw}", "3wayvalve"), ("boiler", None, "hpswitchvalve"), ("boiler", None, "hp3way")],
+        "dhw_temp": [("boiler", "{dhw}", "curtemp"), ("boiler", None, "hptw1")],
+        "dhw_setpoint": [("boiler", "{dhw}", "settemp"), ("boiler", "{dhw}", "seltemp")],
+        "dhw_charging": [("boiler", "{dhw}", "charging")],
         "dhw_active": [("boiler", None, "tapwateractive"), ("boiler", "dhw", "hpdhwon")],
     },
     ("pump", "primary"): {
@@ -241,7 +248,11 @@ def suggest_bindings(
     """Suggest an entity for every slot of every component that has a rule."""
     suggestions: list[dict[str, Any]] = []
     for component in (plant or {}).get("components", []):
+        model = str(component.get("model") or "")
         for slot, candidates in _component_rules(component).items():
+            # built-in cylinder values only for units that have one (e.g. T180)
+            if component.get("type") == "indoor_unit" and slot.startswith("dhw_") and "t180" not in model and "-m" not in model:
+                continue
             for rank, (device, tag, short) in enumerate(candidates):
                 key = EmsKey(device, _resolve_tag(tag, component), short)
                 entity_id = entities.get(key)

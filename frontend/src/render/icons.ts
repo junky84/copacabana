@@ -3,8 +3,8 @@
  * so the project ships without manufacturer graphics.
  */
 
-import { svg, type SVGTemplateResult } from "lit";
-import { outdoorModel } from "../catalog";
+import { nothing, svg, type SVGTemplateResult } from "lit";
+import { outdoorModel, variantOf } from "../catalog";
 import { t } from "../i18n";
 import type { PlantComponent } from "../types";
 import { tempColor } from "../data/values";
@@ -91,38 +91,170 @@ function snowflake(r: number): SVGTemplateResult {
   return svg`<g class="snow">${arms}</g>`;
 }
 
-function indoor(ctx: IconCtx): SVGTemplateResult {
+// ------------------------------------------------------------ indoor unit
+
+type P = [number, number];
+const C = 20; // cell size in px (matches catalog CELL)
+
+/** Internal pipe of a unit, drawn in cell coordinates; animated while water flows. */
+function ipipe(pts: P[], color: string, active: boolean): SVGTemplateResult {
+  const d = pts.map(([x, y], i) => `${i ? "L" : "M"} ${x * C} ${y * C}`).join(" ");
+  return svg`<path class="ipipe" d=${d} style="stroke:${color}" />
+    ${active ? svg`<path class="ipipe-flow" d=${d} />` : nothing}`;
+}
+
+function ipump([x, y]: P, running: boolean, dir: "l" | "r" | "u" | "d" = "l"): SVGTemplateResult {
+  const r = 0.55 * C;
+  const rot = { r: 0, d: 90, l: 180, u: 270 }[dir];
+  return svg`<g transform="translate(${x * C} ${y * C})">
+    ${running ? svg`<circle class="pump-glow pulse" r=${r + 4} />` : nothing}
+    <circle class=${running ? "pump-body on" : "pump-body"} r=${r} />
+    <path class=${running ? "pump-tri on" : "pump-tri"} transform="rotate(${rot})" d="M ${-r * 0.5} ${-r * 0.8} L ${r} 0 L ${-r * 0.5} ${r * 0.8} Z" />
+    <circle class=${running ? "impeller spin" : "impeller"} style="--dur:0.9s" r=${r * 0.36} />
+    <text class="itag" y=${r + 9} text-anchor="middle">PC0</text>
+  </g>`;
+}
+
+function ivalve([x, y]: P, b: boolean, label = "VW1"): SVGTemplateResult {
+  const s = 0.5 * C;
+  return svg`<g transform="translate(${x * C} ${y * C})">
+    <path class="valve-tri on" d="M ${-s} ${-s * 0.6} L 0 0 L ${-s} ${s * 0.6} Z" transform="rotate(-90)" />
+    <path class=${b ? "valve-tri" : "valve-tri on"} d="M ${s} ${-s * 0.6} L 0 0 L ${s} ${s * 0.6} Z" />
+    <path class=${b ? "valve-tri on" : "valve-tri"} d="M ${-s} ${-s * 0.6} L 0 0 L ${-s} ${s * 0.6} Z" />
+    <text class="itag" x=${s + 3} y=${-s} >${label} ${b ? "B" : "A"}</text>
+  </g>`;
+}
+
+function iheater([x, y]: P, len: number, on: boolean): SVGTemplateResult {
+  return svg`<g transform="translate(${x * C} ${y * C})">
+    ${on ? svg`<rect class="aux-glow pulse" x=${-0.55 * C} y="-6" width=${1.1 * C} height=${len * C + 12} rx="10" />` : nothing}
+    <rect class=${on ? "rod hot" : "rod"} x=${-0.35 * C} y="0" width=${0.7 * C} height=${len * C} rx="6" />
+    <path class=${on ? "coil hot" : "coil"} d=${zigzagV(0, 6, len * C - 12, 4, 8)} />
+  </g>`;
+}
+
+function imanometer([x, y]: P): SVGTemplateResult {
+  return svg`<g transform="translate(${x * C} ${y * C})"><circle class="gauge" r="7" /><line class="gauge-needle" x1="0" y1="0" x2="4" y2="-4" /></g>`;
+}
+
+function zigzagV(x: number, y: number, len: number, amp: number, n: number): string {
+  const step = len / n;
+  let d = `M${x} ${y}`;
+  for (let i = 1; i <= n; i++) d += ` L${x + (i % 2 ? -amp : amp)} ${y + i * step}`;
+  return d;
+}
+
+function screen(ctx: IconCtx, x: number, y: number, w: number): SVGTemplateResult {
+  const act = [...ctx.flags].find((f) => f.startsWith("mode_"))?.slice(5);
+  const color = MODE_COLORS[act || "off"] || MODE_COLORS.off;
+  return svg`<rect class="screen" x=${x} y=${y} width=${w} height="18" rx="4" />
+    <rect x=${x + 4} y=${y + 4} width="14" height="10" rx="2" fill=${color} class=${act && act !== "off" ? "pulse" : ""} />
+    <text class="screen-text" x=${x + 24} y=${y + 13}>${act ? t(`mode.${act}`) : ""}</text>`;
+}
+
+function indoor(ctx: IconCtx, variant: string): SVGTemplateResult {
   const { w, h, flags, c } = ctx;
-  const act = [...flags].find((f) => f.startsWith("mode_"))?.slice(5);
-  const modeColor = MODE_COLORS[act || "off"] || MODE_COLORS.off;
+  const run = flags.has("running");
+  const b = flags.has("b");
   const aux = flags.has("aux");
-  const sup = ctx.num("supply_temp");
-  const ret = ctx.num("return_temp");
-  const short = (c.model || "").includes("wlw186i") ? "WLW186i" : (c.model || "").includes("wlw176i") ? "WLW176i" : "";
-  const y1 = 2 * 20;
-  const y2 = 8 * 20;
+  const pc1 = flags.has("pc1");
+  const sup = tempColor(ctx.num("supply_temp"), "#ff7a45");
+  const ret = tempColor(ctx.num("return_temp"), "#4d9fff");
+  const name = (c.model || "").match(/w[ls]w\d{3}i/i)?.[0]?.toUpperCase().replace("I", "i") || "";
+  let body: SVGTemplateResult;
+  if (variant === "t180") {
+    const dhwC = tempColor(ctx.num("dhw_temp"), "#ff4f8b");
+    body = svg`
+      <rect class="tank-in" x=${0.6 * C} y=${10 * C} width=${6.8 * C} height=${11.2 * C} rx=${C} style="fill:${dhwC}" />
+      <path class=${run && b ? "tank-coil hot" : "tank-coil"} d=${coilSpiral(2.4, 14, 5.6, 19.6)} />
+      ${screen(ctx, 1.6 * C, 0.8 * C, 4.6 * C)}
+      ${ipipe([[6, 0], [6, 6.2], [4.6, 6.2]], sup, run)}
+      ${ipipe([[4.6, 6.2], [3, 6.2], [3, 0]], sup, run && !b)}
+      ${ipipe([[4.6, 6.2], [4.6, 14]], sup, run && b)}
+      ${ipipe([[2.4, 19.6], [1.6, 19.6], [1.6, 7.6]], ret, run && b)}
+      ${ipipe([[1, 0], [1, 7.6]], ret, run && !b)}
+      ${ipipe([[1, 7.6], [7, 7.6], [7, 0]], ret, run)}
+      ${ipipe([[4, 10.2], [4, 0]], dhwC, flags.has("flowing"))}
+      ${ipipe([[5, 0], [5, 3], [5.6, 3], [5.6, 20.6]], "#38d0ff", flags.has("flowing"))}
+      ${iheater([6, 1.4], 4, aux)}
+      ${ivalve([4.6, 6.2], b)}
+      ${ipump([4.2, 7.6], run, "r")}
+      ${pc1 || true ? svg`<g transform="translate(${3 * C} ${3.4 * C})"><circle class=${pc1 ? "pump-body on" : "pump-body"} r="8" /><text class="itag" x="12" y="4">PC1</text></g>` : nothing}
+      ${imanometer([0.6, 8.2])}`;
+  } else if (variant === "tp70") {
+    const bufC = tempColor(ctx.num("buffer_temp"), "#ff9f45");
+    body = svg`
+      <rect class="tank-in" x=${0.6 * C} y=${9 * C} width=${7.8 * C} height=${6.4 * C} rx=${C} style="fill:${bufC}" />
+      <text class="tank-label" x=${4.5 * C} y=${13.6 * C} text-anchor="middle">${c.props.buffer_l || 70} l</text>
+      ${screen(ctx, 2.2 * C, 0.8 * C, 4.6 * C)}
+      ${ipipe([[5, 0], [5, 5.2]], sup, run)}
+      ${ipipe([[5, 5.2], [5, 9]], sup, run && !b)}
+      ${ipipe([[5, 5.2], [7, 5.2], [7, 0]], sup, run && b)}
+      ${ipipe([[8, 0], [8, 6.4], [6, 6.4]], ret, run && b)}
+      ${ipipe([[6.2, 15], [6.2, 9]], ret, run && !b)}
+      ${ipipe([[6, 9], [6, 0]], ret, run)}
+      ${ipipe([[1.6, 9], [1.6, 6.4], [1, 6.4], [1, 0]], bufC, pc1)}
+      ${ipipe([[2, 0], [2, 14.8]], ret, pc1)}
+      ${ipipe([[3, 0], [3, 1.4]], bufC, false)}
+      ${ipipe([[4, 0], [4, 1.4]], ret, false)}
+      ${iheater([4.5, 1.4], 2.6, aux)}
+      ${ivalve([5, 5.2], b)}
+      ${ipump([6.5, 6.4], run, "u")}
+      <g transform="translate(${1.6 * C} ${6.4 * C})"><circle class=${pc1 ? "pump-body on" : "pump-body"} r="8" />
+        ${pc1 ? svg`<circle class="impeller spin" style="--dur:0.9s" r="3.5" />` : nothing}<text class="itag" x="11" y="4">PC1</text></g>
+      ${imanometer([0.7, 6.6])}`;
+  } else if (variant === "brine") {
+    body = svg`
+      ${screen(ctx, 1.6 * C, 0.8 * C, 4.6 * C)}
+      <circle class="compressor" cx=${2.2 * C} cy=${8.5 * C} r=${1.2 * C} />
+      <text class="itag" x=${2.2 * C} y=${10.4 * C} text-anchor="middle">Verdichter</text>
+      ${ipipe([[1, 0], [1, 6], [2.2, 6], [2.2, 7.3]], "#38d0ff", run)}
+      ${ipipe([[2.2, 9.7], [2.2, 11.5], [2, 11.5], [2, 0]], "#2b6cff", run)}
+      ${ipipe([[4, 9], [4, 4], [5.5, 4], [5.5, 9]], sup, run)}
+      ${ipipe([[5.5, 9], [7, 9], [7, 0]], sup, run && !b)}
+      ${ipipe([[5.5, 9], [5.5, 10.4], [4, 10.4], [4, 0]], sup, run && b)}
+      ${ipipe([[6, 0], [6, 11.6], [4, 11.6], [4, 9]], ret, run && !b)}
+      ${ipipe([[5, 0], [5, 3.4]], ret, run && b)}
+      ${iheater([4, 3], 3, aux)}
+      ${ivalve([5.5, 9], b)}
+      ${ipump([5.5, 11.6], run, "l")}
+      ${imanometer([0.7, 9])}`;
+  } else {
+    // wall_e: everything enters and leaves at the bottom
+    body = svg`
+      ${screen(ctx, 1.6 * C, 0.8 * C, 4.6 * C)}
+      ${ipipe([[2, 12], [2, 8.2], [3.3, 8.2], [3.3, 2.6], [5.6, 2.6], [5.6, 9]], sup, run)}
+      ${ipipe([[5.6, 9], [7, 9], [7, 12]], sup, run && !b)}
+      ${ipipe([[5.6, 9], [5.6, 9.9], [4, 9.9], [4, 12]], sup, run && b)}
+      ${ipipe([[6, 12], [6, 11.2], [5, 11.2]], ret, run && !b)}
+      ${ipipe([[5, 12], [5, 11.2]], ret, run && b)}
+      ${ipipe([[5, 11.2], [1, 11.2], [1, 12]], ret, run)}
+      ${iheater([3.3, 3.2], 4.3, aux)}
+      ${ivalve([5.6, 9], b)}
+      ${ipump([3.3, 11.2], run, "l")}
+      ${imanometer([0.6, 8.6])}`;
+  }
   return svg`
     ${casing(w, h, 10, "casing light")}
-    <rect class="screen" x=${w * 0.18} y=${h * 0.08} width=${w * 0.64} height=${h * 0.11} rx="4" />
-    <rect x=${w * 0.22} y=${h * 0.105} width=${w * 0.14} height=${h * 0.06} rx="2" fill=${modeColor} class=${act && act !== "off" ? "pulse" : ""} />
-    <text class="screen-text" x=${w * 0.42} y=${h * 0.155}>${act ? t(`mode.${act}`) : ""}</text>
-    <path class="internal" style="stroke:${tempColor(sup, "#ff7a45")}" d="M0 ${y1} H ${w * 0.3} M ${w * 0.7} ${y1} H ${w}" />
-    <path class="internal" style="stroke:${tempColor(ret, "#4d9fff")}" d="M0 ${y2} H ${w}" />
-    <g transform="translate(${w * 0.3} ${y1 - 9})">
-      <rect class=${aux ? "rod hot" : "rod"} x="0" y="0" width=${w * 0.4} height="18" rx="9" />
-      <path class=${aux ? "coil hot" : "coil"} d=${zigzag(6, 9, w * 0.4 - 12, 5, 7)} />
-    </g>
-    ${aux ? svg`<rect class="aux-glow pulse" x=${w * 0.26} y=${y1 - 14} width=${w * 0.48} height="28" rx="14" />` : ""}
-    <text class="tag" x=${w / 2} y=${h * 0.93} text-anchor="middle">${short}</text>
+    ${body}
+    ${variant === "wall_e" ? nothing : svg`<text class="tag" x=${w / 2} y=${2.4 * C} text-anchor="middle">${name}</text>`}
   `;
 }
 
-function zigzag(x: number, y: number, len: number, amp: number, n: number): string {
-  const step = len / n;
-  let d = `M${x} ${y}`;
-  for (let i = 1; i <= n; i++) d += ` L${x + i * step} ${y + (i % 2 ? -amp : amp)}`;
+function coilSpiral(x0: number, y0: number, x1: number, y1: number): string {
+  const turns = 5;
+  const step = (y1 - y0) / turns;
+  let d = `M ${x1 * C} ${y0 * C - 2 * C}`;
+  d += ` L ${x1 * C} ${y0 * C}`;
+  for (let i = 0; i < turns; i++) {
+    const y = (y0 + i * step) * C;
+    d += ` C ${(x0 - 0.3) * C} ${y}, ${(x0 - 0.3) * C} ${y + (step / 2) * C}, ${x1 * C} ${y + (step / 2) * C}`;
+    d += ` C ${(x1 + 0.3) * C} ${y + (step / 2) * C}, ${(x1 + 0.3) * C} ${y + step * C}, ${x0 * C} ${y + step * C}`;
+  }
   return d;
 }
+
+// ------------------------------------------------------------ storage
 
 function tank(ctx: IconCtx, kind: "buffer" | "dhw"): SVGTemplateResult {
   const { w, h, c, flags } = ctx;
@@ -133,7 +265,7 @@ function tank(ctx: IconCtx, kind: "buffer" | "dhw"): SVGTemplateResult {
   const fallbackTop = kind === "dhw" ? "#ff4f8b" : "#ff7a45";
   const charging = flags.has("charging");
   const vol = c.props.volume ? `${c.props.volume} l` : "";
-  const r = w / 2;
+  const r = Math.min(w / 2, 2 * C);
   return svg`
     <defs>
       <linearGradient id=${gid} x1="0" y1="0" x2="0" y2="1">
@@ -144,28 +276,34 @@ function tank(ctx: IconCtx, kind: "buffer" | "dhw"): SVGTemplateResult {
     </defs>
     <rect class="insulation" x="-3" y="-3" width=${w + 6} height=${h + 6} rx=${r + 3} />
     <rect x="0" y="0" width=${w} height=${h} rx=${r} fill="url(#${gid})" class="tank-fill" />
-    <rect class="tank-glass" x=${w * 0.12} y=${h * 0.06} width=${w * 0.16} height=${h * 0.88} rx=${w * 0.08} />
+    <rect class="tank-glass" x=${w * 0.1} y=${h * 0.06} width=${w * 0.12} height=${h * 0.88} rx=${w * 0.06} />
     ${kind === "dhw"
-      ? svg`<path class=${charging ? "tank-coil hot" : "tank-coil"} d=${coilPath(w, h)} />`
-      : svg`${[0.25, 0.5, 0.75].map((f) => svg`<line class="strat" x1=${w * 0.35} x2=${w * 0.85} y1=${h * f} y2=${h * f} />`)}`}
-    <text class="tank-label" x=${w / 2} y=${h * (kind === "dhw" ? 0.3 : 0.52)} text-anchor="middle">${vol}</text>
+      ? svg`<path class=${charging ? "tank-coil hot" : "tank-coil"} d=${coilRight(w)} />
+        <path class="dip" d="M 0 ${10 * C} H ${0.8 * C} V ${h - 0.4 * C}" />`
+      : svg`
+        <path class="dip" d="M ${2 * C} 0 V ${h - 0.5 * C}" />
+        <path class="dip" d="M ${3 * C} 0 V ${h - 0.5 * C}" />
+        ${[0.3, 0.55, 0.8].map((f) => svg`<line class="strat" x1=${w * 0.62} x2=${w * 0.9} y1=${h * f} y2=${h * f} />`)}`}
+    <text class="tank-label" x=${w / 2} y=${h * (kind === "dhw" ? 0.3 : 0.5)} text-anchor="middle">${vol}</text>
     ${flags.has("disinfecting") ? svg`<text class="tank-badge" x=${w / 2} y=${h * 0.18} text-anchor="middle">60°</text>` : ""}
   `;
 }
 
-function coilPath(w: number, h: number): string {
-  const x0 = w * 0.25;
-  const x1 = w * 0.78;
-  const y0 = 5 * 20;
-  const y1 = 9 * 20;
+/** Heating coil entering at 4 cells and leaving at 9 cells on the right-hand side. */
+function coilRight(w: number): string {
+  const x1 = w;
+  const xa = w * 0.78;
+  const xb = w * 0.3;
+  const y0 = 4 * C;
+  const y1 = 9 * C;
   const turns = 5;
   const step = (y1 - y0) / turns;
-  let d = `M0 ${y0} H ${x0}`;
+  let d = `M ${x1} ${y0} H ${xa}`;
   for (let i = 0; i < turns; i++) {
     const y = y0 + i * step;
-    d += ` C ${x1 + 6} ${y}, ${x1 + 6} ${y + step / 2}, ${x0} ${y + step / 2} C ${x0 - 6} ${y + step / 2}, ${x0 - 6} ${y + step}, ${x0} ${y + step}`;
+    d += ` C ${xb - 6} ${y}, ${xb - 6} ${y + step / 2}, ${xa} ${y + step / 2} C ${xa + 6} ${y + step / 2}, ${xa + 6} ${y + step}, ${xa} ${y + step}`;
   }
-  return `${d} H 0`;
+  return `${d} H ${x1}`;
 }
 
 function pump(ctx: IconCtx): SVGTemplateResult {
@@ -243,13 +381,12 @@ function floor(ctx: IconCtx): SVGTemplateResult {
 function tap(ctx: IconCtx): SVGTemplateResult {
   const { w, h, flags } = ctx;
   const flowing = flags.has("flowing");
+  // spout points left, supply comes from the right
   return svg`
-    <path class="tap-body" d="M 0 ${h * 0.25} H ${w * 0.55} a ${w * 0.25} ${w * 0.25} 0 0 1 ${w * 0.25} ${w * 0.25} V ${h * 0.62} h ${-w * 0.16} V ${h * 0.52} a ${w * 0.1} ${w * 0.1} 0 0 0 ${-w * 0.1} ${-w * 0.1} H 0 Z" />
-    <rect class="tap-handle" x=${w * 0.28} y=${h * 0.06} width=${w * 0.26} height=${h * 0.12} rx="3" />
+    <path class="tap-body" d="M ${w} ${h * 0.25} H ${w * 0.45} a ${w * 0.25} ${w * 0.25} 0 0 0 ${-w * 0.25} ${w * 0.25} V ${h * 0.62} h ${w * 0.16} V ${h * 0.52} a ${w * 0.1} ${w * 0.1} 0 0 1 ${w * 0.1} ${-w * 0.1} H ${w} Z" />
+    <rect class="tap-handle" x=${w * 0.46} y=${h * 0.06} width=${w * 0.26} height=${h * 0.12} rx="3" />
     ${flowing
-      ? [0, 1, 2].map(
-          (i) => svg`<circle class="drop" style="animation-delay:${i * 0.25}s" cx=${w * 0.72} cy=${h * 0.7} r="2.5" />`,
-        )
+      ? [0, 1, 2].map((i) => svg`<circle class="drop" style="animation-delay:${i * 0.25}s" cx=${w * 0.28} cy=${h * 0.7} r="2.5" />`)
       : ""}
   `;
 }
@@ -263,7 +400,14 @@ function inlet(ctx: IconCtx): SVGTemplateResult {
 }
 
 function separator(ctx: IconCtx): SVGTemplateResult {
-  const { w, h } = ctx;
+  const { w, h, c } = ctx;
+  if (c.props.filter) {
+    // particle filter with sieve
+    return svg`
+      <rect class="casing" x=${w * 0.15} y=${h * 0.1} width=${w * 0.7} height=${h * 0.8} rx="5" />
+      ${[0.3, 0.45, 0.6, 0.75].map((f) => svg`<line class="sieve" x1=${w * 0.25} x2=${w * 0.75} y1=${h * f} y2=${h * f} />`)}
+      ${[0.35, 0.5, 0.65].map((f) => svg`<line class="sieve" x1=${w * f} x2=${w * f} y1=${h * 0.22} y2=${h * 0.8} />`)}`;
+  }
   return svg`
     <rect class="casing" x=${w * 0.2} y="0" width=${w * 0.6} height=${h} rx=${w * 0.3} />
     <path class="magnet" d="M ${w * 0.38} ${h * 0.3} v ${h * 0.25} a ${w * 0.12} ${w * 0.12} 0 0 0 ${w * 0.24} 0 v ${-h * 0.25}" />
@@ -284,7 +428,7 @@ export function renderDefaultIcon(ctx: IconCtx): SVGTemplateResult {
     case "outdoor_unit":
       return outdoor(ctx);
     case "indoor_unit":
-      return indoor(ctx);
+      return indoor(ctx, variantOf(ctx.c)?.id || "wall_e");
     case "buffer":
       return tank(ctx, "buffer");
     case "dhw_tank":

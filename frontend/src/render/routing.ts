@@ -34,6 +34,23 @@ export function routePipe(pipe: Pipe, byId: Map<string, PlantComponent>): { pts:
   const hStart = horizontal(pa.dir);
   const pts: Pt[] = [s, s1];
 
+  if (pipe.via?.length) {
+    // explicit waypoints: connect orthogonally, continuing in the current direction first
+    let prevVertical = !hStart;
+    for (const [x, y] of [...pipe.via, [e1.x, e1.y] as [number, number]]) {
+      const last = pts[pts.length - 1];
+      if (last.x !== x && last.y !== y) {
+        const corner = prevVertical ? { x: last.x, y } : { x, y: last.y };
+        pts.push(corner);
+      }
+      const prev = pts[pts.length - 1];
+      prevVertical = prev.x === x;
+      pts.push({ x, y });
+    }
+    pts.push(e);
+    return { pts: simplify(pts), horizontalStart: hStart };
+  }
+
   if (hStart) {
     if (s1.y === e1.y && pipe.bend === undefined) {
       pts.push(e1);

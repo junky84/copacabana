@@ -56,6 +56,8 @@ export interface Pipe {
   kind: PipeKind;
   /** absolute grid coordinate of the middle segment (x for horizontal starts, y for vertical) */
   bend?: number;
+  /** explicit waypoints (cells); orthogonal corners are added between them */
+  via?: [number, number][];
   flow?: FlowCond[];
   /** additionally at least one of these must hold (OR group) */
   flowAny?: FlowCond[];
@@ -74,7 +76,8 @@ export interface PlantSettings {
 }
 
 export interface Plant {
-  version: 1;
+  /** 2 = indoor unit with built-in PC0/VW1 and real connection positions */
+  version: 1 | 2;
   name: string;
   grid: { w: number; h: number };
   components: PlantComponent[];

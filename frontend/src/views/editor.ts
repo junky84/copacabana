@@ -1,5 +1,5 @@
 import { LitElement, css, html, nothing } from "lit";
-import { INDOOR_MODELS, OUTDOOR_MODELS, TYPES, portPos, sizeOf, slotsOf, type SlotKind } from "../catalog";
+import { INDOOR_MODELS, OUTDOOR_MODELS, TYPES, baseSize, portPos, sizeOf, slotsOf, type SlotKind } from "../catalog";
 import { slotLabel, t } from "../i18n";
 import { icon, ui } from "../styles";
 import type { ComponentType, FlowCond, Hass, Pipe, PipeKind, Plant, PlantComponent, PortRef, Rotation, UserIcon } from "../types";
@@ -33,7 +33,7 @@ const STATES: Partial<Record<ComponentType, string[]>> = {
   mixer: ["running"],
   valve_3way: ["a", "b"],
   outdoor_unit: ["running", "defrost", "!defrost"],
-  indoor_unit: ["running", "aux"],
+  indoor_unit: ["running", "a", "b", "aux", "pc1"],
   tap: ["flowing"],
   dhw_tank: ["charging"],
 };
@@ -189,7 +189,7 @@ export class CpEditor extends LitElement {
       id,
       type,
       label: type === "junction" ? "" : t(`type.${type}`),
-      ...this._freeSpot(def.w, def.h),
+      ...this._freeSpot(def.variants ? baseSize({ type, props: {} } as PlantComponent).w : def.w, def.variants ? baseSize({ type, props: {} } as PlantComponent).h : def.h),
       bindings: {},
       props: type === "value_tile" ? { entries: [] } : type === "label" ? { text: t("type.label"), size: 18 } : {},
     };
@@ -301,7 +301,10 @@ export class CpEditor extends LitElement {
       if (!this._bendStart) this._bendStart = JSON.stringify(this._draft);
       const next = clone(this._draft);
       const x = next.pipes.find((p) => p.id === id);
-      if (x) x.bend = bend;
+      if (x) {
+        x.bend = bend;
+        delete x.via;
+      }
       this._draft = next;
     } else if (this._bendStart) {
       this._undo.push(this._bendStart);
@@ -530,7 +533,10 @@ export class CpEditor extends LitElement {
         <cp-entity-picker .hass=${this.hass} .value=${p.bindings?.temp || ""}
           @value-changed=${(e: CustomEvent) => this._setPipe((x) => (x.bindings = { ...(x.bindings || {}), temp: e.detail || undefined }))}></cp-entity-picker></label>
       <div class="row" style="margin-top:12px">
-        <button ?disabled=${p.bend === undefined} @click=${() => this._setPipe((x) => delete x.bend)}>${t("ed.reset_bend")}</button>
+        <button ?disabled=${p.bend === undefined && !p.via} @click=${() => this._setPipe((x) => {
+          delete x.bend;
+          delete x.via;
+        })}>${t("ed.reset_bend")}</button>
       </div>
     `;
   }

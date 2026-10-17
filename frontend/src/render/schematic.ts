@@ -1,7 +1,7 @@
 import { LitElement, css, html, svg, nothing, type PropertyValues, type SVGTemplateResult } from "lit";
-import { CELL, TYPES, portPos, sizeOf, slotsOf } from "../catalog";
-import { slotLabel, t } from "../i18n";
-import type { PipeKind, Plant, PlantComponent, PortRef, UserIcon } from "../types";
+import { CELL, TYPES, anchoredSlots, badgesOf, baseSize, portPos, portsOf, sizeOf, slotsOf } from "../catalog";
+import { shortLabel, slotLabel, t } from "../i18n";
+import type { Pipe, PipeKind, Plant, PlantComponent, PortRef, UserIcon } from "../types";
 import {
   KIND_COLORS,
   componentFlags,
@@ -22,6 +22,16 @@ interface Box {
   y: number;
   w: number;
   h: number;
+}
+
+const PILL_H = 18;
+
+interface PillPos {
+  c: PlantComponent;
+  slot: string;
+  x: number;
+  y: number;
+  w: number;
 }
 
 const CHIP_W = 88;
@@ -61,6 +71,7 @@ export class CpSchematic extends LitElement {
   private _pointers = new Map<number, { x: number; y: number }>();
   private _gesture: any = null;
   private _segments: { x1: number; x2: number; y1: number; y2: number }[] = [];
+  private _pills: PillPos[] = [];
 
   /** Does any pipe pass through the given pixel rectangle (with a small margin)? */
   private _hitsPipe(x1: number, y1: number, x2: number, y2: number): boolean {
@@ -134,10 +145,16 @@ export class CpSchematic extends LitElement {
     return slots.filter((s) => this.src.get(c, s) !== undefined);
   }
 
+  /** Slots shown in the component's value list (not anchored to a pipe or a measuring point). */
+  private _listSlots(c: PlantComponent): string[] {
+    const anchored = new Set(anchoredSlots(c).filter((s) => s.at || s.pos).map((s) => s.key));
+    return this._shownSlots(c).filter((s) => !anchored.has(s));
+  }
+
   private _badgeLayout(c: PlantComponent): { slot: string; x: number; y: number; w?: number }[] {
-    const def = TYPES[c.type];
-    if (def.badges === "none" || def.badges === "inside") return [];
-    const slots = this._shownSlots(c);
+    const badges = badgesOf(c);
+    if (badges === "none" || badges === "inside") return [];
+    const slots = this._listSlots(c);
     if (!slots.length) return [];
     const { w, h } = sizeOf(c);
     const x = c.x * CELL;
@@ -145,28 +162,30 @@ export class CpSchematic extends LitElement {
     const wpx = w * CELL;
     const hpx = h * CELL;
     const out: { slot: string; x: number; y: number; w?: number }[] = [];
-    if (def.badges === "tank") {
+    if (badges === "tank") {
       const pos: Record<string, number> = { temp_top: 0.16, temp_mid: 0.48, temp_bottom: 0.8 };
       const below: string[] = [];
       for (const slot of slots) {
         if (slot in pos) out.push({ slot, x: x + 5, y: y + hpx * pos[slot] - 11, w: wpx - 10 });
         else below.push(slot);
       }
-      // DHW cylinders have pipes underneath, so their extra values go to the right
-      below.forEach((slot, i) =>
-        out.push(
-          c.type === "dhw_tank"
-            ? { slot, x: x + wpx + 12, y: y + 4 + i * (CHIP_H + CHIP_GAP) }
-            : { slot, x: x + wpx / 2 - CHIP_W / 2, y: y + hpx + 26 + i * (CHIP_H + CHIP_GAP) },
-        ),
-      );
+      // further values next to the tank, on a side without pipes
+      const n = below.length;
+      const stackH = n * (CHIP_H + CHIP_GAP);
+      const options = [
+        { x: x + wpx / 2 - CHIP_W / 2, y: y + hpx + 26, dy: CHIP_H + CHIP_GAP },
+        { x: x + wpx + 12, y: y + hpx * 0.35, dy: CHIP_H + CHIP_GAP },
+        { x: x - 12 - CHIP_W, y: y + hpx * 0.35, dy: CHIP_H + CHIP_GAP },
+      ];
+      const pick = options.find((o) => !this._hitsPipe(o.x, o.y, o.x + CHIP_W, o.y + stackH)) || options[0];
+      below.forEach((slot, i) => out.push({ slot, x: pick.x, y: pick.y + i * pick.dy }));
       return out;
     }
-    if (def.badges === "right") {
+    if (badges === "right") {
       slots.forEach((slot, i) => out.push({ slot, x: x + wpx + 12, y: y + 4 + i * (CHIP_H + CHIP_GAP) }));
-    } else if (def.badges === "left") {
+    } else if (badges === "left") {
       slots.forEach((slot, i) => out.push({ slot, x: x - 12 - CHIP_W, y: y + 4 + i * (CHIP_H + CHIP_GAP) }));
-    } else if (def.badges === "above") {
+    } else if (badges === "above") {
       const total = slots.length * (CHIP_W + CHIP_GAP) - CHIP_GAP;
       slots.forEach((slot, i) =>
         out.push({ slot, x: x + wpx / 2 - total / 2 + i * (CHIP_W + CHIP_GAP), y: y - CHIP_H - 10 }),
@@ -208,6 +227,10 @@ export class CpSchematic extends LitElement {
         add(b.x + CHIP_W, b.y + CHIP_H);
       }
     }
+    for (const p of this._pills) {
+      add(p.x, p.y);
+      add(p.x + p.w, p.y + PILL_H);
+    }
     if (this.edit || !Number.isFinite(minX)) {
       add(0, 0);
       add(this.plant.grid.w * CELL, this.plant.grid.h * CELL);
@@ -231,6 +254,8 @@ export class CpSchematic extends LitElement {
         return { x1: Math.min(a.x, b.x) * CELL, x2: Math.max(a.x, b.x) * CELL, y1: Math.min(a.y, b.y) * CELL, y2: Math.max(a.y, b.y) * CELL };
       }),
     );
+
+    this._pills = this.edit ? [] : this._placePills(byId, routes);
 
     return html`
       <svg
@@ -265,6 +290,7 @@ export class CpSchematic extends LitElement {
         <g class="components">
           ${this.plant.components.map((c0) => this._component(byId.get(c0.id)!, flags.get(c0.id)!))}
         </g>
+        <g class="pills">${this._pills.map((p) => this._anchorPill(p))}</g>
         ${this.edit ? this._editOverlays(byId, routes) : nothing}
       </svg>
     `;
@@ -280,7 +306,7 @@ export class CpSchematic extends LitElement {
   }
 
   private _transform(c: PlantComponent): string {
-    const def = TYPES[c.type];
+    const def = { ...TYPES[c.type], ...baseSize(c) };
     const rot = c.rot || 0;
     const base = `translate(${c.x * CELL} ${c.y * CELL})`;
     if (!def.rotatable || rot === 0) return base;
@@ -290,7 +316,7 @@ export class CpSchematic extends LitElement {
   }
 
   private _component(c: PlantComponent, flags: Set<string>): SVGTemplateResult {
-    const def = TYPES[c.type];
+    const def = { ...TYPES[c.type], ...baseSize(c), ports: portsOf(c), badges: badgesOf(c) };
     const { w, h } = sizeOf(c);
     const wpx = (c.type === "value_tile" ? w : def.w) * CELL;
     const hpx = (c.type === "value_tile" ? h : def.h) * CELL;
@@ -369,6 +395,103 @@ export class CpSchematic extends LitElement {
       </g>`;
   }
 
+  /**
+   * Values anchored to a pipe ("at") sit on that pipe; values with a measuring point ("pos")
+   * sit at that point. Positions avoid overlapping each other.
+   */
+  private _placePills(
+    byId: Map<string, PlantComponent>,
+    routes: { pipe: Pipe; route: { pts: Pt[]; horizontalStart: boolean } | null }[],
+  ): PillPos[] {
+    const placed: PillPos[] = [];
+    // keep pipe pills off other parts and their labels
+    const blocks = [...byId.values()]
+      .filter((c) => !["junction", "label"].includes(c.type))
+      .map((c) => {
+        const { w, h } = sizeOf(c);
+        return { x: c.x * CELL - 4, y: c.y * CELL - 4, w: w * CELL + 8, h: h * CELL + 26 };
+      });
+    const free = (x: number, y: number, w: number, pipe = true) =>
+      placed.every((p) => x + w + 4 <= p.x || x >= p.x + p.w + 4 || y + PILL_H + 3 <= p.y || y >= p.y + PILL_H + 3) &&
+      (!pipe || blocks.every((b) => x + w <= b.x || x >= b.x + b.w || y + PILL_H <= b.y || y >= b.y + b.h));
+    for (const c of byId.values()) {
+      const shown = new Set(this._shownSlots(c));
+      for (const s of anchoredSlots(c)) {
+        if (!shown.has(s.key) || (!s.at && !s.pos)) continue;
+        const w = this._pillWidth(c, s.key);
+        if (s.pos) {
+          placed.push({ c, slot: s.key, x: (c.x + s.pos[0]) * CELL - w / 2, y: (c.y + s.pos[1]) * CELL - PILL_H / 2, w });
+          continue;
+        }
+        let spot: { x: number; y: number } | null = null;
+        // walk away from this component along the pipe (and through passive parts like filters)
+        let at: { c: string; p: string } | null = { c: c.id, p: s.at! };
+        const seen = new Set<string>();
+        for (let hop = 0; hop < 4 && at && !spot; hop++) {
+          const cur: { c: string; p: string } = at;
+          const r = routes.find(
+            ({ pipe }) => !seen.has(pipe.id) && ((pipe.from.c === cur.c && pipe.from.p === cur.p) || (pipe.to.c === cur.c && pipe.to.p === cur.p)),
+          );
+          at = null;
+          if (!r?.route) break;
+          seen.add(r.pipe.id);
+          const forward = r.pipe.from.c === cur.c && r.pipe.from.p === cur.p;
+          const pts = forward ? r.route.pts : [...r.route.pts].reverse();
+          for (let i = 1; i < pts.length && !spot; i++) {
+            const a = pts[i - 1];
+            const b = pts[i];
+            const len = Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+            if (len < 1 || (a.x === b.x && len < 3)) continue;
+            for (const f of [0.5, 0.35, 0.65, 0.2, 0.8]) {
+              const cx = (a.x + (b.x - a.x) * f) * CELL;
+              const cy = (a.y + (b.y - a.y) * f) * CELL;
+              const horizontal = a.y === b.y;
+              if (horizontal && len * CELL < w + 8) break;
+              const x = cx - w / 2;
+              const y = cy - PILL_H / 2;
+              if (free(x, y, w)) {
+                spot = { x, y };
+                break;
+              }
+            }
+          }
+          // continue through a passive part (filter, separator, junction, pump) to the next pipe
+          const other = forward ? r.pipe.to : r.pipe.from;
+          const oc = byId.get(other.c);
+          if (!spot && oc && TYPES[oc.type].passive && oc.type !== "pump") {
+            const next = portsOf(oc).find((p) => p.id !== other.p && routes.some(({ pipe }) => !seen.has(pipe.id) && ((pipe.from.c === oc.id && pipe.from.p === p.id) || (pipe.to.c === oc.id && pipe.to.p === p.id))));
+            if (next) at = { c: oc.id, p: next.id };
+          }
+        }
+        if (!spot) {
+          const pp = portPos(c, s.at!);
+          if (!pp) continue;
+          spot = { x: pp.x * CELL + 6, y: pp.y * CELL + 6 };
+        }
+        placed.push({ c, slot: s.key, ...spot, w });
+      }
+    }
+    return placed;
+  }
+
+  private _pillWidth(c: PlantComponent, slot: string): number {
+    const { text, unit } = formatValue(this.src.get(c, slot), kindOf(c, slot));
+    return Math.round((shortLabel(c.type, slot).length + text.length + unit.length) * 6.4 + 22);
+  }
+
+  private _anchorPill(p: PillPos): SVGTemplateResult {
+    const v = this.src.get(p.c, p.slot);
+    const kind = kindOf(p.c, p.slot);
+    const { text, unit } = formatValue(v, kind);
+    const accent = kind === "temp" && v?.available && v.num !== null ? tempColor(v.num, "#8b949e") : "var(--cp-accent)";
+    return svg`
+      <g class="apill" @click=${(e: MouseEvent) => this._slotClick(e, p.c, p.slot)}>
+        <title>${slotLabel(p.c.type, p.slot)}</title>
+        <rect x=${p.x} y=${p.y} width=${p.w} height=${PILL_H} rx=${PILL_H / 2} style="stroke:${accent}" />
+        <text x=${p.x + 8} y=${p.y + 13}><tspan class="apill-label">${shortLabel(p.c.type, p.slot)}</tspan> ${text}<tspan class="chip-unit" dx="1">${unit}</tspan></text>
+      </g>`;
+  }
+
   /** Compact value-only pill drawn inside a tank at the sensor height. */
   private _pill(c: PlantComponent, slot: string, x: number, y: number, w: number): SVGTemplateResult {
     const v = this.src.get(c, slot);
@@ -399,7 +522,7 @@ export class CpSchematic extends LitElement {
   private _editOverlays(byId: Map<string, PlantComponent>, routes: { pipe: any; route: { pts: Pt[]; horizontalStart: boolean } | null }[]): SVGTemplateResult {
     const ports: SVGTemplateResult[] = [];
     for (const c of byId.values()) {
-      for (const p of TYPES[c.type].ports) {
+      for (const p of portsOf(c)) {
         const pos = portPos(c, p.id);
         if (!pos) continue;
         const isSrc = this._connect?.c === c.id && this._connect.p === p.id;
@@ -681,6 +804,7 @@ export class CpSchematic extends LitElement {
     .tap-handle { fill: var(--cp-casing-stroke); }
     .drop { fill: #38d0ff; animation: cp-drop 0.75s linear infinite; }
     .magnet { fill: none; stroke: #e5484d; stroke-width: 3; }
+    .sieve { stroke: var(--cp-muted); stroke-width: 1; }
     .vessel { fill: #c8343b; stroke: #8e1f25; }
     .junction { fill: var(--cp-text); }
     .user-glow { fill: var(--cp-accent); opacity: 0.12; }
@@ -699,6 +823,18 @@ export class CpSchematic extends LitElement {
     .chip-value { fill: var(--cp-text); font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
     .chip-unit { fill: var(--cp-muted); font-size: 10px; font-weight: 500; }
     .chip.na .chip-value { fill: var(--cp-muted); }
+    .apill { cursor: pointer; }
+    .apill rect { fill: var(--cp-chip); stroke-width: 1.4; }
+    .apill text { fill: var(--cp-text); font-size: 11.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .apill-label { fill: var(--cp-muted); font-weight: 600; font-size: 10px; }
+    .ipipe { fill: none; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; opacity: 0.85; }
+    .ipipe-flow { fill: none; stroke: var(--cp-flow); stroke-width: 1.8; stroke-dasharray: 2 9; animation: cp-flow 0.9s linear infinite; }
+    .itag { fill: var(--cp-muted); font-size: 8.5px; font-weight: 700; }
+    .gauge { fill: var(--cp-casing-light); stroke: var(--cp-casing-stroke); stroke-width: 1.4; }
+    .gauge-needle { stroke: #ff5a5f; stroke-width: 1.6; stroke-linecap: round; }
+    .tank-in { opacity: 0.55; stroke: var(--cp-casing-stroke); }
+    .compressor { fill: var(--cp-casing); stroke: var(--cp-casing-stroke); stroke-width: 1.5; }
+    .dip { fill: none; stroke: rgba(255, 255, 255, 0.45); stroke-width: 2.5; stroke-dasharray: 5 4; }
     .pill { cursor: pointer; }
     .pill rect { fill: rgba(10, 14, 20, 0.62); stroke: rgba(255, 255, 255, 0.25); }
     .pill text { fill: #fff; font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; }

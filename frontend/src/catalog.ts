@@ -21,8 +21,12 @@ export type SlotKind =
 export interface SlotDef {
   key: string;
   kind: SlotKind;
-  /** shown as badge by default */
+  /** shown by default */
   show?: boolean;
+  /** measured in the pipe at this port: shown as a pill on that pipe */
+  at?: string;
+  /** measured at this local cell position inside the component (e.g. manometer) */
+  pos?: [number, number];
 }
 
 export interface PortDef {
@@ -34,6 +38,19 @@ export interface PortDef {
   tempSlot?: string;
   fixedTemp?: number;
   kind?: PipeKind;
+}
+
+/** A product variant with its own housing, connections and value positions. */
+export interface VariantDef {
+  id: string;
+  w: number;
+  h: number;
+  ports: PortDef[];
+  /** local positions of values measured inside the unit */
+  pos?: Record<string, [number, number]>;
+  /** anchors of values measured in a pipe */
+  at?: Record<string, string>;
+  badges?: TypeDef["badges"];
 }
 
 export interface TypeDef {
@@ -48,6 +65,7 @@ export interface TypeDef {
   /** where value badges are placed */
   badges: "below" | "right" | "left" | "above" | "inside" | "tank" | "none";
   roles?: string[];
+  variants?: Record<string, VariantDef>;
   /** palette group */
   group: "generator" | "storage" | "hydraulic" | "consumer" | "misc";
 }
@@ -61,18 +79,20 @@ export const TYPES: Record<ComponentType, TypeDef> = {
     h: 7,
     group: "generator",
     badges: "below",
+    // monoblock: both water connections at the rear, 202 mm above the floor,
+    // on the right when seen from the front (Logatherm WLW-… MB AR manual, fig. 4)
     ports: [
-      { id: "out", x: 9, y: 2, dir: "r", kind: "supply" },
-      { id: "in", x: 9, y: 5, dir: "r", kind: "return" },
+      { id: "out", x: 9, y: 5, dir: "r", kind: "supply" },
+      { id: "in", x: 9, y: 6, dir: "r", kind: "return" },
     ],
     slots: [
-      T("outdoor_temp", true),
+      { key: "outdoor_temp", kind: "temp", show: true, pos: [0.9, -0.6] },
       { key: "activity", kind: "enum" },
       { key: "heat_power", kind: "power_kw", show: true },
       { key: "el_power", kind: "power_w", show: true },
       { key: "compressor_speed", kind: "percent", show: true },
       { key: "compressor_on", kind: "bool" },
-      { key: "fan_speed", kind: "percent" },
+      { key: "fan_speed", kind: "percent", pos: [3.2, 3.5] },
       T("air_in_temp"),
       { key: "compressor_starts", kind: "count" },
       T("evap_in_temp"),
@@ -86,16 +106,86 @@ export const TYPES: Record<ComponentType, TypeDef> = {
   },
   indoor_unit: {
     type: "indoor_unit",
-    w: 6,
-    h: 10,
+    w: 8,
+    h: 12,
     group: "generator",
-    badges: "below",
-    ports: [
-      { id: "src_in", x: 0, y: 2, dir: "l", tempSlot: "supply_temp", kind: "supply" },
-      { id: "src_out", x: 0, y: 8, dir: "l", tempSlot: "return_temp", kind: "return" },
-      { id: "sup", x: 6, y: 2, dir: "r", tempSlot: "supply_temp", kind: "supply" },
-      { id: "ret", x: 6, y: 8, dir: "r", tempSlot: "return_temp", kind: "return" },
-    ],
+    badges: "right",
+    ports: [],
+    variants: {
+      // wall-hung E unit: all connections at the bottom (WLW186i E manual, fig. 3/6),
+      // from left: to heat pump, from heat pump, DHW flow, DHW return, heating return, heating flow
+      wall_e: {
+        id: "wall_e",
+        w: 8,
+        h: 12,
+        badges: "right",
+        ports: [
+          { id: "src_out", x: 1, y: 12, dir: "b", tempSlot: "return_temp", kind: "return" },
+          { id: "src_in", x: 2, y: 12, dir: "b", tempSlot: "supply_temp", kind: "supply" },
+          { id: "dhw_sup", x: 4, y: 12, dir: "b", tempSlot: "supply_temp", kind: "supply" },
+          { id: "dhw_ret", x: 5, y: 12, dir: "b", tempSlot: "return_temp", kind: "return" },
+          { id: "ret", x: 6, y: 12, dir: "b", tempSlot: "return_temp", kind: "return" },
+          { id: "sup", x: 7, y: 12, dir: "b", tempSlot: "supply_temp", kind: "supply" },
+        ],
+        pos: { pressure: [0.6, 8.6], aux_level: [3.6, 2.4], pc0_speed: [0.6, 10.2] },
+        at: { supply_temp: "sup", return_temp: "ret" },
+      },
+      // floor-standing T180 with 180 l DHW cylinder: all connections on top (T180 manual, fig. 4/6),
+      // from left: heating return, circulation, heating flow, DHW out, cold in, from heat pump, to heat pump
+      t180: {
+        id: "t180",
+        w: 8,
+        h: 22,
+        badges: "right",
+        ports: [
+          { id: "ret", x: 1, y: 0, dir: "t", tempSlot: "return_temp", kind: "return" },
+          { id: "circ", x: 2, y: 0, dir: "t", kind: "circulation" },
+          { id: "sup", x: 3, y: 0, dir: "t", tempSlot: "supply_temp", kind: "supply" },
+          { id: "dhw_hot", x: 4, y: 0, dir: "t", tempSlot: "dhw_temp", kind: "dhw_hot" },
+          { id: "dhw_cold", x: 5, y: 0, dir: "t", kind: "dhw_cold" },
+          { id: "src_in", x: 6, y: 0, dir: "t", tempSlot: "supply_temp", kind: "supply" },
+          { id: "src_out", x: 7, y: 0, dir: "t", tempSlot: "return_temp", kind: "return" },
+        ],
+        pos: { pressure: [0.6, 8.2], aux_level: [6.4, 3.2], pc0_speed: [4.2, 7.4], dhw_temp: [4, 12], dhw_setpoint: [4, 17] },
+        at: { supply_temp: "sup", return_temp: "ret" },
+      },
+      // floor-standing TP70 with 70 l buffer: all connections on top (TP70 manual, fig. 4)
+      tp70: {
+        id: "tp70",
+        w: 9,
+        h: 16,
+        badges: "right",
+        ports: [
+          { id: "sup", x: 1, y: 0, dir: "t", tempSlot: "buffer_temp", kind: "supply" },
+          { id: "ret", x: 2, y: 0, dir: "t", kind: "return" },
+          { id: "sup2", x: 3, y: 0, dir: "t", tempSlot: "buffer_temp", kind: "supply" },
+          { id: "ret2", x: 4, y: 0, dir: "t", kind: "return" },
+          { id: "src_in", x: 5, y: 0, dir: "t", tempSlot: "supply_temp", kind: "supply" },
+          { id: "src_out", x: 6, y: 0, dir: "t", tempSlot: "return_temp", kind: "return" },
+          { id: "dhw_sup", x: 7, y: 0, dir: "t", tempSlot: "supply_temp", kind: "supply" },
+          { id: "dhw_ret", x: 8, y: 0, dir: "t", tempSlot: "return_temp", kind: "return" },
+        ],
+        pos: { pressure: [0.7, 6.6], aux_level: [4.5, 2.6], pc0_speed: [6.5, 6.4], pc1_speed: [2.4, 6.4], buffer_temp: [4.5, 11.5] },
+        at: { supply_temp: "src_in", return_temp: "src_out" },
+      },
+      // brine compact unit (WSW186i): connections on top; layout approximated from the T180 family
+      brine: {
+        id: "brine",
+        w: 8,
+        h: 14,
+        badges: "right",
+        ports: [
+          { id: "src_in", x: 1, y: 0, dir: "t", kind: "supply" },
+          { id: "src_out", x: 2, y: 0, dir: "t", kind: "return" },
+          { id: "dhw_sup", x: 4, y: 0, dir: "t", tempSlot: "supply_temp", kind: "supply" },
+          { id: "dhw_ret", x: 5, y: 0, dir: "t", tempSlot: "return_temp", kind: "return" },
+          { id: "ret", x: 6, y: 0, dir: "t", tempSlot: "return_temp", kind: "return" },
+          { id: "sup", x: 7, y: 0, dir: "t", tempSlot: "supply_temp", kind: "supply" },
+        ],
+        pos: { pressure: [0.7, 9], aux_level: [4, 3], pc0_speed: [5.5, 9] },
+        at: { supply_temp: "sup", return_temp: "ret" },
+      },
+    },
     slots: [
       T("supply_temp", true),
       T("return_temp", true),
@@ -103,6 +193,15 @@ export const TYPES: Record<ComponentType, TypeDef> = {
       { key: "pressure", kind: "pressure", show: true },
       { key: "flow", kind: "flow" },
       { key: "aux_level", kind: "percent", show: true },
+      { key: "pc0_running", kind: "bool" },
+      { key: "pc0_speed", kind: "percent", show: true },
+      { key: "vw1_position", kind: "bool" },
+      { key: "pc1_running", kind: "bool" },
+      { key: "pc1_speed", kind: "percent" },
+      T("dhw_temp", true),
+      T("dhw_setpoint"),
+      { key: "dhw_charging", kind: "bool" },
+      T("buffer_temp", true),
       T("condenser_temp"),
       { key: "aux_status", kind: "enum" },
       { key: "aux_step1", kind: "bool" },
@@ -127,32 +226,35 @@ export const TYPES: Record<ComponentType, TypeDef> = {
       { key: "uptime_total", kind: "duration" },
     ],
   },
+  // P120.5: all four connections on top; the two returns reach the bottom through dip tubes
   buffer: {
     type: "buffer",
-    w: 4,
-    h: 10,
+    w: 5,
+    h: 9,
     group: "storage",
     badges: "tank",
     ports: [
-      { id: "in_sup", x: 0, y: 2, dir: "l", kind: "supply" },
-      { id: "in_ret", x: 0, y: 8, dir: "l", tempSlot: "temp_bottom", kind: "return" },
-      { id: "out_sup", x: 4, y: 2, dir: "r", tempSlot: "temp_top", kind: "supply" },
-      { id: "out_ret", x: 4, y: 8, dir: "r", kind: "return" },
+      { id: "in_sup", x: 1, y: 0, dir: "t", kind: "supply" },
+      { id: "in_ret", x: 2, y: 0, dir: "t", tempSlot: "temp_bottom", kind: "return" },
+      { id: "out_ret", x: 3, y: 0, dir: "t", kind: "return" },
+      { id: "out_sup", x: 4, y: 0, dir: "t", tempSlot: "temp_top", kind: "supply" },
     ],
     slots: [T("temp_top", true), T("temp_mid"), T("temp_bottom", true)],
   },
+  // SH290: connection heights from the datasheet (hot 1226, coil flow 784, circulation 544,
+  // coil return 220, cold 55 of 1294 mm); heating coil on the right, drinking water on the left
   dhw_tank: {
     type: "dhw_tank",
-    w: 5,
+    w: 6,
     h: 11,
     group: "storage",
     badges: "tank",
     ports: [
-      { id: "coil_in", x: 0, y: 5, dir: "l", kind: "supply" },
-      { id: "coil_out", x: 0, y: 9, dir: "l", tempSlot: "temp_bottom", kind: "return" },
-      { id: "hot", x: 3, y: 0, dir: "t", tempSlot: "temp_top", kind: "dhw_hot" },
-      { id: "circ", x: 5, y: 4, dir: "r", kind: "circulation" },
-      { id: "cold", x: 3, y: 11, dir: "b", kind: "dhw_cold" },
+      { id: "coil_in", x: 6, y: 4, dir: "r", kind: "supply" },
+      { id: "coil_out", x: 6, y: 9, dir: "r", tempSlot: "temp_bottom", kind: "return" },
+      { id: "hot", x: 0, y: 1, dir: "l", tempSlot: "temp_top", kind: "dhw_hot" },
+      { id: "circ", x: 0, y: 6, dir: "l", kind: "circulation" },
+      { id: "cold", x: 0, y: 10, dir: "l", kind: "dhw_cold" },
     ],
     slots: [
       T("temp_top", true),
@@ -212,7 +314,7 @@ export const TYPES: Record<ComponentType, TypeDef> = {
       { id: "out", x: 2, y: 1, dir: "r" },
       { id: "ret", x: 1, y: 2, dir: "b" },
     ],
-    slots: [{ key: "position", kind: "percent", show: true }, T("flow_temp", true)],
+    slots: [{ key: "position", kind: "percent", show: true }, { key: "flow_temp", kind: "temp", show: true, at: "out" }],
   },
   radiators: {
     type: "radiators",
@@ -225,10 +327,10 @@ export const TYPES: Record<ComponentType, TypeDef> = {
       { id: "ret", x: 0, y: 5, dir: "l", tempSlot: "return_temp", kind: "return" },
     ],
     slots: [
-      T("flow_temp", true),
-      T("return_temp", true),
+      { key: "flow_temp", kind: "temp", show: true, at: "sup" },
+      { key: "return_temp", kind: "temp", show: true, at: "ret" },
       T("target_flow_temp"),
-      T("room_temp", true),
+      { key: "room_temp", kind: "temp", show: true, pos: [3.5, -0.9] },
       T("room_setpoint"),
       { key: "mode", kind: "enum" },
       { key: "summer_mode", kind: "enum" },
@@ -257,12 +359,12 @@ export const TYPES: Record<ComponentType, TypeDef> = {
     h: 3,
     group: "consumer",
     passive: true,
-    badges: "right",
+    badges: "left",
     ports: [
-      { id: "hot", x: 0, y: 1, dir: "l", kind: "dhw_hot" },
-      { id: "circ", x: 1, y: 3, dir: "b", kind: "circulation" },
+      { id: "hot", x: 3, y: 1, dir: "r", kind: "dhw_hot" },
+      { id: "circ", x: 2, y: 3, dir: "b", kind: "circulation" },
     ],
-    slots: [{ key: "flow", kind: "flow_lmin", show: true }, T("temp")],
+    slots: [{ key: "flow", kind: "flow_lmin", show: true, pos: [1.2, -0.8] }, T("temp")],
   },
   water_inlet: {
     type: "water_inlet",
@@ -292,6 +394,7 @@ export const TYPES: Record<ComponentType, TypeDef> = {
     w: 2,
     h: 3,
     group: "hydraulic",
+    rotatable: true,
     badges: "left",
     ports: [{ id: "conn", x: 1, y: 3, dir: "b" }],
     slots: [{ key: "pressure", kind: "pressure", show: true }],
@@ -344,8 +447,36 @@ export function slotsOf(c: PlantComponent): SlotDef[] {
   return TYPES[c.type].slots;
 }
 
-export function sizeOf(c: PlantComponent): { w: number; h: number } {
+/** Effective variant of a component (indoor units come in several housings). */
+export function variantOf(c: PlantComponent): VariantDef | undefined {
   const def = TYPES[c.type];
+  if (!def.variants) return undefined;
+  const id = (c.props?.variant as string) || indoorModel(c.model)?.variant || "wall_e";
+  return def.variants[id] || Object.values(def.variants)[0];
+}
+
+/** Unrotated base size. */
+export function baseSize(c: PlantComponent): { w: number; h: number } {
+  const v = variantOf(c);
+  return v ? { w: v.w, h: v.h } : { w: TYPES[c.type].w, h: TYPES[c.type].h };
+}
+
+export function portsOf(c: PlantComponent): PortDef[] {
+  return variantOf(c)?.ports ?? TYPES[c.type].ports;
+}
+
+export function badgesOf(c: PlantComponent): TypeDef["badges"] {
+  return variantOf(c)?.badges ?? TYPES[c.type].badges;
+}
+
+/** Slot definitions with the anchors of the component's variant applied. */
+export function anchoredSlots(c: PlantComponent): SlotDef[] {
+  const v = variantOf(c);
+  return slotsOf(c).map((s) => (v ? { ...s, pos: v.pos?.[s.key] ?? s.pos, at: v.at?.[s.key] ?? s.at } : s));
+}
+
+export function sizeOf(c: PlantComponent): { w: number; h: number } {
+  const def = { ...TYPES[c.type], ...baseSize(c) };
   if (c.type === "value_tile") {
     const n = ((c.props.entries as unknown[]) || []).length;
     return { w: def.w, h: 2 + Math.ceil(n * 1.3) };
@@ -363,11 +494,10 @@ function rotateDir(dir: Dir, rot: number): Dir {
 
 /** Absolute port position (cells) and exit direction, honouring rotation. */
 export function portPos(c: PlantComponent, portId: string): { x: number; y: number; dir: Dir; def: PortDef } | null {
-  const def = TYPES[c.type];
-  const port = def.ports.find((p) => p.id === portId);
+  const port = portsOf(c).find((p) => p.id === portId);
   if (!port) return null;
   const rot = c.rot || 0;
-  const { w, h } = def;
+  const { w, h } = baseSize(c);
   let { x, y } = port;
   if (rot === 90) [x, y] = [h - y, x];
   else if (rot === 180) [x, y] = [w - x, h - y];
@@ -387,30 +517,75 @@ export interface HpModel {
   refrigerant?: string;
 }
 
-/** Product families. The nominal output is a component prop (nominal_kw). */
+/**
+ * Heat pump modules (outdoor units, or the heat source part of indoor-installed and brine units).
+ * Current Buderus range as listed on buderus.de (Oct 2026); EMS-based models only.
+ */
 export const OUTDOOR_MODELS: HpModel[] = [
-  { id: "buderus-wlw-mb-ar", label: "Buderus Logatherm WLW-… MB AR (Monoblock)", brand: "buderus", source: "air", nominal: 7, refrigerant: "R290" },
-  { id: "buderus-wlw176i-ar", label: "Buderus Logatherm WLW176i AR", brand: "buderus", source: "air", nominal: 7 },
-  { id: "buderus-wlw196i-ar", label: "Buderus Logatherm WLW196i AR", brand: "buderus", source: "air", nominal: 8 },
-  { id: "buderus-wsw", label: "Buderus Logatherm WSW (Sole/Wasser)", brand: "buderus", source: "brine", nominal: 8 },
+  { id: "buderus-wlw-mb-ar", label: "Buderus Logatherm WLW186i AR – Außeneinheit WLW-… MB AR (4/5/7/10/12 kW)", brand: "buderus", source: "air", nominal: 7, refrigerant: "R290" },
+  { id: "buderus-wlw-mbe-ar", label: "Buderus Logatherm WLW186i MBE+ AR – Außeneinheit (11/13/15 kW)", brand: "buderus", source: "air", nominal: 13, refrigerant: "R290" },
+  { id: "buderus-wlw176i-ar", label: "Buderus Logatherm WLW176i AR – Außeneinheit (4/5/7/10/12 kW)", brand: "buderus", source: "air", nominal: 7, refrigerant: "R290" },
+  { id: "buderus-wlw166i-mbb-ar", label: "Buderus Logatherm WLW166i MBB AR – Außeneinheit (4/6/7/10/13 kW)", brand: "buderus", source: "air", nominal: 7, refrigerant: "R290" },
+  { id: "buderus-wlw196i-ar", label: "Buderus Logatherm WLW196i AR – Außeneinheit (4/6/8/11/14 kW)", brand: "buderus", source: "air", nominal: 8 },
+  { id: "buderus-wlw196i-ar-s", label: "Buderus Logatherm WLW196i AR S+ – Außeneinheit, schalloptimiert", brand: "buderus", source: "air", nominal: 8 },
+  { id: "buderus-wlw196i-ir", label: "Buderus Logatherm WLW196i IR – Innenaufstellung (6/8/11/14 kW)", brand: "buderus", source: "air", nominal: 8 },
+  { id: "buderus-wsw186i", label: "Buderus Logatherm WSW186i – Erdsonde/Kollektor (6/8/12/16 kW)", brand: "buderus", source: "brine", nominal: 8 },
+  { id: "buderus-wsw196i", label: "Buderus Logatherm WSW196i(T) – Erdsonde/Kollektor (2–16 kW)", brand: "buderus", source: "brine", nominal: 8 },
   { id: "bosch-cs5800i-aw", label: "Bosch Compress 5800i AW", brand: "bosch", source: "air", nominal: 7 },
   { id: "bosch-cs6800i-aw", label: "Bosch Compress 6800i AW", brand: "bosch", source: "air", nominal: 7 },
   { id: "bosch-cs7800i-lw", label: "Bosch Compress 7800i LW (Sole/Wasser)", brand: "bosch", source: "brine", nominal: 8 },
   { id: "generic-air", label: "Luft/Wasser (allgemein)", brand: "generic", source: "air", nominal: 8 },
   { id: "generic-brine", label: "Sole/Wasser (allgemein)", brand: "generic", source: "brine", nominal: 8 },
 ];
+// legacy ids of earlier versions
+const LEGACY_OUTDOOR: Record<string, string> = { "buderus-wsw": "buderus-wsw186i" };
 
-export const INDOOR_MODELS: { id: string; label: string; aux?: boolean; tank?: boolean }[] = [
-  { id: "buderus-wlw186i-e", label: "Buderus Logatherm WLW186i E (wandhängend, E-Zuheizer)", aux: true },
-  { id: "buderus-wlw186i-b", label: "Buderus Logatherm WLW186i B (bivalent)" },
-  { id: "buderus-wlw186i-t", label: "Buderus Logatherm WLW186i T (mit WW-Speicher)", aux: true, tank: true },
-  { id: "buderus-wlw176i-e", label: "Buderus Logatherm WLW176i E", aux: true },
-  { id: "bosch-aw-e", label: "Bosch Compress AW Inneneinheit (E-Zuheizer)", aux: true },
-  { id: "bosch-aw-b", label: "Bosch Compress AW Inneneinheit (bivalent)" },
-  { id: "bosch-aw-m", label: "Bosch Compress AW Inneneinheit (mit Speicher)", aux: true, tank: true },
-  { id: "generic", label: "Andere Inneneinheit / Hydraulikmodul" },
+export interface IndoorModel {
+  id: string;
+  label: string;
+  variant: "wall_e" | "t180" | "tp70" | "brine";
+  /** built-in electric backup heater */
+  aux?: boolean;
+  /** built-in DHW cylinder (litres) */
+  dhw?: number;
+  /** built-in buffer (litres) */
+  buffer?: number;
+}
+
+/** Indoor units / hydraulic modules with the housing (variant) that defines their connections. */
+export const INDOOR_MODELS: IndoorModel[] = [
+  { id: "buderus-wlw186i-e", label: "Logatherm WLW186i E – wandhängend, E-Zuheizer", variant: "wall_e", aux: true },
+  { id: "buderus-wlw186i-t180", label: "Logatherm WLW186i T180 – Standgerät mit 180-l-WW-Speicher", variant: "t180", aux: true, dhw: 180 },
+  { id: "buderus-wlw186i-tp70", label: "Logatherm WLW186i TP70 – Standgerät mit 70-l-Puffer", variant: "tp70", aux: true, buffer: 70 },
+  { id: "buderus-wlw186i-mbe-e", label: "Logatherm WLW186i MBE+ E – wandhängend", variant: "wall_e", aux: true },
+  { id: "buderus-wlw186i-mbe-tp70", label: "Logatherm WLW186i MBE+ TP70 – Standgerät mit 70-l-Puffer", variant: "tp70", aux: true, buffer: 70 },
+  { id: "buderus-wlw176i-e", label: "Logatherm WLW176i E – wandhängend", variant: "wall_e", aux: true },
+  { id: "buderus-wlw176i-t180", label: "Logatherm WLW176i T180 – mit 180-l-WW-Speicher", variant: "t180", aux: true, dhw: 180 },
+  { id: "buderus-wlw176i-tp70", label: "Logatherm WLW176i TP70 – mit 70-l-Puffer", variant: "tp70", aux: true, buffer: 70 },
+  { id: "buderus-wlw166i-e", label: "Logatherm WLW166i E – wandhängend", variant: "wall_e", aux: true },
+  { id: "buderus-wlw166i-t180", label: "Logatherm WLW166i T180 – mit 180-l-WW-Speicher", variant: "t180", aux: true, dhw: 180 },
+  { id: "buderus-wlw196i-e", label: "Logatherm WLW196i E – wandhängend", variant: "wall_e", aux: true },
+  { id: "buderus-wlw196i-t180", label: "Logatherm WLW196i T180 – mit WW-Speicher", variant: "t180", aux: true, dhw: 180 },
+  { id: "buderus-wsw186i", label: "Logatherm WSW186i – Sole-Kompaktgerät", variant: "brine", aux: true },
+  { id: "buderus-wsw186i-t180", label: "Logatherm WSW186i T180 – Sole mit 180-l-WW-Speicher", variant: "t180", aux: true, dhw: 180 },
+  { id: "buderus-wsw186i-tp50", label: "Logatherm WSW186i TP50 – Sole mit 50-l-Puffer", variant: "tp70", aux: true, buffer: 50 },
+  { id: "buderus-wsw196i", label: "Logatherm WSW196i(T) – Sole-Kompaktgerät", variant: "brine", aux: true },
+  { id: "bosch-aw-e", label: "Bosch Compress AW Inneneinheit (E-Zuheizer)", variant: "wall_e", aux: true },
+  { id: "bosch-aw-m", label: "Bosch Compress AW Inneneinheit (mit Speicher)", variant: "t180", aux: true, dhw: 180 },
+  { id: "generic", label: "Andere Inneneinheit / Hydraulikmodul", variant: "wall_e" },
 ];
+const LEGACY_INDOOR: Record<string, string> = {
+  "buderus-wlw186i-t": "buderus-wlw186i-t180",
+  "buderus-wlw186i-b": "buderus-wlw186i-e",
+  "bosch-aw-b": "bosch-aw-e",
+};
+
+export function indoorModel(id?: string): IndoorModel | undefined {
+  const real = (id && LEGACY_INDOOR[id]) || id;
+  return INDOOR_MODELS.find((m) => m.id === real);
+}
 
 export function outdoorModel(id?: string): HpModel {
-  return OUTDOOR_MODELS.find((m) => m.id === id) || OUTDOOR_MODELS.find((m) => m.id === "generic-air")!;
+  const real = (id && LEGACY_OUTDOOR[id]) || id;
+  return OUTDOOR_MODELS.find((m) => m.id === real) || OUTDOOR_MODELS.find((m) => m.id === "generic-air")!;
 }

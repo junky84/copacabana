@@ -268,8 +268,9 @@ const de: Record<string, string> = {
   "wz.aux": "Elektrischer Zuheizer",
   "wz.aux_kw": "Zuheizer-Leistung (kW)",
   "wz.extras": "Extras",
-  "wz.separator": "Schlammabscheider im Rücklauf",
-  "wz.expansion": "Ausdehnungsgefäß",
+  "wz.separator": "Partikelfilter SC1 und Schlammabscheider im Rücklauf vor der Inneneinheit",
+  "wz.separator_short": "Abscheider",
+  "wz.expansion": "Ausdehnungsgefäß (im Rücklauf vor der Inneneinheit)",
   "wz.generate": "Schema erzeugen",
   "wz.replace_confirm": "Das erzeugt ein neues Schema und ersetzt die aktuelle Anlage (Zuordnungen gleicher Komponenten bleiben erhalten). Fortfahren?",
   "wz.example": "Beispielanlage laden",
@@ -322,6 +323,17 @@ const de: Record<string, string> = {
   "state.flowing": "zapft",
   "state.charging": "lädt",
   "state.aux": "Zuheizer an",
+  "state.pc1": "PC1 läuft",
+  "slot.pc0_running": "PC0 läuft",
+  "slot.pc0_speed": "PC0 Drehzahl",
+  "slot.vw1_position": "VW1 Stellung (an = Warmwasser)",
+  "slot.pc1_running": "PC1 läuft",
+  "slot.pc1_speed": "PC1 Drehzahl",
+  "slot.dhw_temp": "Warmwasser",
+  "slot.dhw_setpoint": "WW-Soll",
+  "slot.dhw_charging": "WW-Ladung",
+  "slot.buffer_temp": "Puffer",
+  "ed.variant": "Bauform",
 
   // mapping
   "map.title": "Automatische Zuordnung",
@@ -618,7 +630,8 @@ const en: Record<string, string> = {
   "wz.aux": "Electric backup heater",
   "wz.aux_kw": "Backup heater power (kW)",
   "wz.extras": "Extras",
-  "wz.separator": "Dirt separator in return",
+  "wz.separator": "Particle filter SC1 and dirt separator in the return in front of the indoor unit",
+  "wz.separator_short": "Separator",
   "wz.expansion": "Expansion vessel",
   "wz.generate": "Generate schematic",
   "wz.replace_confirm": "This generates a new schematic and replaces the current plant (mappings of matching components are kept). Continue?",
@@ -668,6 +681,17 @@ const en: Record<string, string> = {
   "state.flowing": "flowing",
   "state.charging": "charging",
   "state.aux": "backup heater on",
+  "state.pc1": "PC1 running",
+  "slot.pc0_running": "PC0 running",
+  "slot.pc0_speed": "PC0 speed",
+  "slot.vw1_position": "VW1 position (on = hot water)",
+  "slot.pc1_running": "PC1 running",
+  "slot.pc1_speed": "PC1 speed",
+  "slot.dhw_temp": "Hot water",
+  "slot.dhw_setpoint": "DHW setpoint",
+  "slot.dhw_charging": "DHW charging",
+  "slot.buffer_temp": "Buffer",
+  "ed.variant": "Housing",
   "map.title": "Automatic mapping",
   "map.intro": "Finds EMS-ESP entities in Home Assistant and maps them to components. Existing mappings are only replaced if you tick them.",
   "map.scan": "Scan entities",
@@ -773,6 +797,32 @@ export function fmtDuration(seconds: number): string {
   if (m < 60) return `${m} min`;
   const h = Math.floor(m / 60);
   return `${h} h ${m % 60} min`;
+}
+
+const SHORT: Record<string, string> = {
+  supply_temp: "VL",
+  return_temp: "RL",
+  flow_temp: "VL",
+  target_flow_temp: "Soll",
+  room_temp: "Raum",
+  pressure: "",
+  aux_level: "",
+  pc0_speed: "",
+  pc1_speed: "",
+  speed: "",
+  fan_speed: "",
+  outdoor_temp: "",
+  buffer_temp: "",
+  dhw_temp: "WW",
+  dhw_setpoint: "Soll",
+  flow: "",
+};
+const SHORT_EN: Record<string, string> = { supply_temp: "F", return_temp: "R", flow_temp: "F", target_flow_temp: "Set", room_temp: "Room", dhw_temp: "DHW", dhw_setpoint: "Set" };
+
+/** Very short label for values shown on pipes and at measuring points. */
+export function shortLabel(_type: string, slot: string): string {
+  if (current === "en" && slot in SHORT_EN) return SHORT_EN[slot];
+  return SHORT[slot] ?? "";
 }
 
 /** Label of a component slot; type-specific wording wins over the generic one. */
