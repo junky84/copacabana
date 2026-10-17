@@ -18,7 +18,6 @@ from .const import (
     ICON_MAX_BYTES,
     ICON_MAX_COUNT,
     ICON_MIME_TYPES,
-    LEGACY_DOMAIN,
     STORAGE_KEY_ICONS,
     STORAGE_KEY_PLANT,
     STORAGE_VERSION,
@@ -54,32 +53,8 @@ class CopilotStore:
     async def async_load(self) -> None:
         data = await self._plant_store.async_load()
         icons = await self._icon_store.async_load()
-        if data is None and icons is None:
-            data, icons = await self._async_migrate_legacy()
         self.plant = (data or {}).get("plant")
         self.icons = (icons or {}).get("icons", {})
-
-    async def _async_migrate_legacy(self) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
-        """Take over plant and icons stored under the former project name (COPilot)."""
-        data = await Store(self.hass, STORAGE_VERSION, f"{LEGACY_DOMAIN}.plant").async_load()
-        icons = await Store(self.hass, STORAGE_VERSION, f"{LEGACY_DOMAIN}.icons").async_load()
-        if data is not None:
-            await self._plant_store.async_save(data)
-        if icons is not None:
-            old_dir = Path(self.hass.config.path(f"{LEGACY_DOMAIN}/icons"))
-
-            def _copy() -> None:
-                if not old_dir.is_dir():
-                    return
-                self._icon_dir.mkdir(parents=True, exist_ok=True)
-                for path in old_dir.iterdir():
-                    target = self._icon_dir / path.name
-                    if path.is_file() and not target.exists():
-                        target.write_bytes(path.read_bytes())
-
-            await self.hass.async_add_executor_job(_copy)
-            await self._icon_store.async_save(icons)
-        return data, icons
 
     async def async_save_plant(self, plant: dict[str, Any]) -> None:
         self.plant = plant
