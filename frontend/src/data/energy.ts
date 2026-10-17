@@ -8,6 +8,7 @@ import type { EnergyConfig, Hass, Plant, PlantComponent, SlotValue } from "../ty
 
 export type { EnergyConfig };
 import type { Simulator } from "../sim/simulator";
+import { SimSource } from "../sim/source";
 import { truthy, type ValueSource } from "./values";
 
 export interface EnergyFlow {
@@ -59,7 +60,8 @@ export function readEnergy(plant: Plant, src: ValueSource, sim: Simulator | null
   const iu = first(plant, "indoor_unit");
   const flags = inputs(iu, src);
   const limit14a = cfg.limit_14a ?? 4.2;
-  if (sim) {
+  const real = !!(cfg.enabled && (cfg.pv || cfg.grid || cfg.battery || cfg.house || cfg.wallbox));
+  if (sim && !real) {
     const e = sim.values.energy as Record<string, number>;
     return {
       pv: e.pv_power / 1000,
@@ -74,20 +76,22 @@ export function readEnergy(plant: Plant, src: ValueSource, sim: Simulator | null
       limit14a,
     };
   }
-  const ent = (id?: string) => (id ? kw(src.getEntity(id)) : undefined);
+  const lookup = (id: string) => (src instanceof SimSource ? src.realEntity(id) : src.getEntity(id));
+  const ent = (id?: string) => (id ? kw(lookup(id)) : undefined);
   const pv = ent(cfg.pv);
   let grid = ent(cfg.grid);
   if (grid !== undefined && cfg.grid_invert) grid = -grid;
   let battery = ent(cfg.battery);
   if (battery !== undefined && cfg.battery_invert) battery = -battery;
-  const socV = cfg.battery_soc ? src.getEntity(cfg.battery_soc) : undefined;
+  const socV = cfg.battery_soc ? lookup(cfg.battery_soc) : undefined;
   const soc = socV?.available && socV.num !== null ? socV.num : undefined;
   const wallbox = ent(cfg.wallbox);
+  // demo with real household entities: the simulated heat pump is not part of the real readings
   const hp = ou ? kw(src.get(ou, "el_power")) : undefined;
   let house = ent(cfg.house);
   if (house !== undefined) {
-    if (cfg.house_includes_hp !== false && hp !== undefined) house -= hp;
-  } else if (grid !== undefined) {
+    if (!sim && cfg.house_includes_hp !== false && hp !== undefined) house -= hp;
+  } else if (grid !== undefined && !sim) {
     // balance: what is left after heat pump and wallbox
     house = grid + (pv ?? 0) + (battery ?? 0) - (hp ?? 0) - (wallbox ?? 0);
   }

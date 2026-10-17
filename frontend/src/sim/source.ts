@@ -1,6 +1,6 @@
 import { indoorModel, outdoorModel, variantOf } from "../catalog";
-import type { HistoryPoint, Plant, PlantComponent, SlotValue } from "../types";
-import type { ValueSource } from "../data/values";
+import type { Hass, HistoryPoint, Plant, PlantComponent, SlotValue } from "../types";
+import { parseState, type ValueSource } from "../data/values";
 import { Simulator, type SimGroup, type SimParams } from "./simulator";
 
 /** Which simulator group feeds a plant component. */
@@ -70,7 +70,11 @@ const INNER: Record<string, [SimGroup, string]> = {
 };
 
 export class SimSource implements ValueSource {
-  constructor(public sim: Simulator) {}
+  /** hass is used for raw entity lookups (e.g. real PV/grid values in the energy layer) */
+  constructor(
+    public sim: Simulator,
+    private hass?: Hass,
+  ) {}
 
   entityOf(): string | undefined {
     return undefined;
@@ -78,6 +82,12 @@ export class SimSource implements ValueSource {
 
   getEntity(): SlotValue | undefined {
     return undefined;
+  }
+
+  /** Real entity value despite demo mode (energy layer: household PV, grid, battery …). */
+  realEntity(entityId: string): SlotValue | undefined {
+    const st = this.hass?.states?.[entityId];
+    return st ? parseState(st.state, st.attributes?.unit_of_measurement, entityId) : undefined;
   }
 
   get(c: PlantComponent, slot: string): SlotValue | undefined {

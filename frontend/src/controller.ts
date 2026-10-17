@@ -95,7 +95,7 @@ export class PlantController implements ReactiveController {
   }
 
   get src(): ValueSource {
-    return this.sim ? new SimSource(this.sim) : new HassSource(this.hass!);
+    return this.sim ? new SimSource(this.sim, this.hass) : new HassSource(this.hass!);
   }
 
   /** Re-render on hass updates only when a bound entity actually changed. */
@@ -116,6 +116,8 @@ export class PlantController implements ReactiveController {
       ((c.props.entries as { entity?: string }[]) || []).forEach((e) => e.entity && ids.add(e.entity));
     }
     for (const p of this.plant?.pipes || []) if (p.bindings?.temp) ids.add(p.bindings.temp);
+    const en = this.plant?.settings.energy;
+    if (en?.enabled) for (const k of ["pv", "grid", "battery", "battery_soc", "house", "wallbox"] as const) if (en[k]) ids.add(en[k]!);
     this._boundIds = [...ids];
     this._lastStates = [];
   }
