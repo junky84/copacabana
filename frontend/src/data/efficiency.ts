@@ -109,7 +109,7 @@ function add(a: Energy, b: Partial<Energy>): Energy {
   };
 }
 
-function midnight(d: Date): number {
+export function midnight(d: Date): number {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
 }
 

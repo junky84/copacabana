@@ -4,6 +4,7 @@ import { slotLabel, t } from "../i18n";
 import { icon, ui } from "../styles";
 import type { ComponentType, EnergyConfig, Hass, Plant, UserIcon } from "../types";
 import { suggestEnergy } from "../data/energy";
+import { tariffOf } from "../data/costs";
 import "./editor";
 import { exampleConfig, generatePlant, type WizardConfig } from "../templates";
 import type { Api, Backup, ScanResult } from "../api";
@@ -387,6 +388,7 @@ export class CpSettings extends LitElement {
     _energy: { state: true },
     _note: { state: true },
     _backups: { state: true },
+    _tariff: { state: true },
     _bmsg: { state: true },
   };
   plant!: Plant;
@@ -394,6 +396,38 @@ export class CpSettings extends LitElement {
   hass?: Hass;
   api?: Api;
   private _backups: Backup[] | null = null;
+  private _tariff: Partial<import("../types").TariffConfig> | null = null;
+
+  private _tariffSection() {
+    const tf = { ...tariffOf(this.plant), ...(this._tariff || {}) };
+    const set = (patch: Partial<import("../types").TariffConfig>) => (this._tariff = { ...(this._tariff || {}), ...patch });
+    const num = (key: "price" | "feed_in" | "gas_price" | "gas_eff", label: string, step: string) =>
+      html`<label class="field">${label}<input type="number" step=${step} min="0" .value=${String(tf[key])}
+        @change=${(e: Event) => set({ [key]: Number((e.target as HTMLInputElement).value) })} /></label>`;
+    return html`<div class="card wrap">
+      <h2>${t("st.tariff")}</h2>
+      <p class="muted">${t("st.tariff_hint")}</p>
+      <div class="grid2">
+        <label class="field">${t("st.t_mode")}
+          <select @change=${(e: Event) => set({ mode: (e.target as HTMLSelectElement).value as "fixed" | "entity" })}>
+            <option value="fixed" ?selected=${tf.mode === "fixed"}>${t("st.t_fixed")}</option>
+            <option value="entity" ?selected=${tf.mode === "entity"}>${t("st.t_entity")}</option>
+          </select></label>
+        ${tf.mode === "entity"
+          ? html`<label class="field">${t("st.t_entity_pick")}
+              <cp-entity-picker .hass=${this.hass} .value=${tf.price_entity || ""} @value-changed=${(e: CustomEvent) => set({ price_entity: e.detail || undefined })}></cp-entity-picker></label>`
+          : num("price", t("st.t_price"), "0.01")}
+        ${num("feed_in", t("st.t_feed_in"), "0.001")}
+        ${num("gas_price", t("st.t_gas"), "0.01")}
+        ${num("gas_eff", t("st.t_gas_eff"), "1")}
+      </div>
+      <div class="row"><span class="spacer"></span>
+        <button class="primary" ?disabled=${!this._tariff} @click=${() => {
+          this._patch({ tariff: { ...(this.plant.settings.tariff || {}), ...this._tariff } });
+          this._tariff = null;
+        }}>${icon("save")} ${t("st.save")}</button></div>
+    </div>`;
+  }
   private _bmsg = "";
 
   connectedCallback(): void {
@@ -565,6 +599,7 @@ export class CpSettings extends LitElement {
       </div>
     </div>
     ${this._energySection()}
+    ${this._tariffSection()}
     ${this._backupSection()}`;
   }
 

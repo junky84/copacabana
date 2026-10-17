@@ -84,6 +84,18 @@ export interface EnergyConfig {
   limit_14a?: number;
 }
 
+/** Electricity tariff and comparison for the cost view (prices in €/kWh). */
+export interface TariffConfig {
+  mode?: "fixed" | "entity";
+  price?: number;
+  price_entity?: string;
+  /** feed-in tariff: PV power used by the heat pump is not sold */
+  feed_in?: number;
+  /** comparison heating: gas/oil price per kWh fuel and boiler efficiency in % */
+  gas_price?: number;
+  gas_eff?: number;
+}
+
 export interface PlantSettings {
   style: "flat" | "iso";
   demo: boolean;
@@ -91,6 +103,7 @@ export interface PlantSettings {
   typeIcons?: Partial<Record<ComponentType, string>>;
   /** heat load at design temperature in kW (simulator) */
   heat_load?: number;
+  tariff?: TariffConfig;
   /** energy layer (PV, grid, battery, house, wallbox) */
   energy?: EnergyConfig;
   /** layout changed by hand in the editor: never regenerate it automatically */

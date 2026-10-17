@@ -1,6 +1,7 @@
 import { LitElement, css, html, nothing, svg } from "lit";
 // ECharts is large: loaded on demand as a separate chunk, only when this view is opened
 import type { ChartOption, ChartTheme } from "./echart";
+import { loadCostDays, sumCosts, type CostDay, type CostTotals } from "../data/costs";
 import { fmtNum, getLang, t } from "../i18n";
 import { ui } from "../styles";
 import type { Hass, Plant } from "../types";
@@ -47,7 +48,11 @@ export class CpEfficiency extends LitElement {
     version: { type: Number },
     _data: { state: true },
     _error: { state: true },
+    _costs: { state: true },
   };
+  private _costs: CostDay[] = [];
+  private _costKey = "";
+  private _costOption?: (th: ChartTheme) => ChartOption;
   plant!: Plant;
   src!: ValueSource;
   hass?: Hass;
@@ -73,6 +78,8 @@ export class CpEfficiency extends LitElement {
       this._error = "";
       if (this.sim) this._data = simEfficiency(this.sim);
       else if (this.hass && !this.hass.__standalone) this._data = await hassEfficiency(this.hass, this.plant);
+      const daily = (this._data?.daily || []).slice(-30);
+      this._costs = await loadCostDays(daily, this.plant, this.sim, this.hass && !this.hass.__standalone ? this.hass : undefined);
     } catch (err: any) {
       this._error = err?.message || String(err);
     }
@@ -130,7 +137,7 @@ export class CpEfficiency extends LitElement {
       this._chartOption = (th: ChartTheme): ChartOption => ({
         animationDuration: 400,
         textStyle: { fontFamily: "inherit" },
-        grid: { left: 8, right: 8, top: 34, bottom: 8, containLabel: true },
+        grid: { left: 8, right: 8, top: 46, bottom: 8, containLabel: true },
         legend: {
           top: 0,
           right: 0,
@@ -233,6 +240,73 @@ export class CpEfficiency extends LitElement {
     </div>`;
   }
 
+  // ------------------------------------------------------------ costs
+
+  private _costTile(key: string, c: CostTotals | null) {
+    const eur = (v: number) => `${fmtNum(v, v >= 100 ? 0 : 2)} €`;
+    const share = c && c.el > 0.05 && !c.noShare ? c.self / c.el : undefined;
+    const perKwh = c && c.heat > 0.1 ? (c.cost + c.feedLoss) / c.heat : undefined;
+    const saving = c && c.gas > 0.01 ? 1 - (c.cost + c.feedLoss) / c.gas : undefined;
+    return html`<div class="card tile">
+      <div class="cap">${t(`cost.${key}`)}${c?.estimated ? html` <span class="est">${t("eff.estimate")}</span>` : nothing}</div>
+      <div class="spf">${c ? eur(c.cost) : "–"}<small>${t("cost.grid_cost")}</small></div>
+      <div class="kv"><span>${t("cost.pv_share")}</span><b>${share !== undefined ? fmtNum(share * 100, 0) + " %" : "–"}</b></div>
+      <div class="kv"><span>${t("cost.feed_loss")}</span><b>${c && !c.noShare ? eur(c.feedLoss) : "–"}</b></div>
+      <div class="kv"><span>${t("cost.per_kwh")}</span><b>${perKwh !== undefined ? fmtNum(perKwh * 100, 1) + " ct" : "–"}</b></div>
+      <div class="kv"><span>${t("cost.vs_gas")}</span><b class=${saving !== undefined && saving >= 0 ? "good" : ""}>${c ? eur(c.gas) : "–"}${saving !== undefined ? html` <small>(${saving >= 0 ? "−" : "+"}${fmtNum(Math.abs(saving) * 100, 0)} %)</small>` : nothing}</b></div>
+    </div>`;
+  }
+
+  private _costSection() {
+    const days = this._costs;
+    if (!days.length) return nothing;
+    const today = days[days.length - 1];
+    const yesterday = days.length > 1 ? days[days.length - 2] : null;
+    const key = JSON.stringify(days.map((d) => [d.day, d.grid, d.self, d.cost]));
+    if (key !== this._costKey) {
+      this._costKey = key;
+      const locale = getLang() === "de" ? "de-DE" : "en-GB";
+      const label = (ms: number) => new Date(ms).toLocaleDateString(locale, { day: "2-digit", month: "2-digit" });
+      this._costOption = (th: ChartTheme): ChartOption => ({
+        animationDuration: 400,
+        textStyle: { fontFamily: "inherit" },
+        grid: { left: 8, right: 8, top: 46, bottom: 8, containLabel: true },
+        legend: { top: 0, right: 0, itemWidth: 12, itemHeight: 12, textStyle: { color: th.muted }, inactiveColor: th.border },
+        tooltip: {
+          trigger: "axis",
+          axisPointer: { type: "shadow", shadowStyle: { color: "rgba(127,127,127,0.12)" } },
+          backgroundColor: th.surface,
+          borderColor: th.border,
+          textStyle: { color: th.text, fontSize: 12 },
+          valueFormatter: (v: any) => (typeof v === "number" ? fmtNum(v, 2) : String(v)),
+        },
+        dataZoom: [{ type: "inside", minValueSpan: 5 }],
+        xAxis: { type: "category", data: days.map((d) => label(d.day)), axisLine: { lineStyle: { color: th.border } }, axisTick: { show: false }, axisLabel: { color: th.muted, hideOverlap: true } },
+        yAxis: [
+          { type: "value", name: "kWh", nameTextStyle: { color: th.muted, align: "left" }, axisLabel: { color: th.muted }, splitLine: { lineStyle: { color: th.border, type: "dashed" } } },
+          { type: "value", name: "€", nameTextStyle: { color: th.muted, align: "right" }, axisLabel: { color: th.muted }, splitLine: { show: false } },
+        ],
+        series: [
+          { name: t("cost.grid_kwh"), type: "bar", stack: "el", data: days.map((d) => Math.round(d.grid * 10) / 10), itemStyle: { color: "#4d9fff" }, barCategoryGap: "35%" },
+          { name: t("cost.self_kwh"), type: "bar", stack: "el", data: days.map((d) => Math.round(d.self * 10) / 10), itemStyle: { color: "#ffc93c", borderRadius: [3, 3, 0, 0] } },
+          { name: t("cost.cost_eur"), type: "line", yAxisIndex: 1, smooth: 0.3, symbol: "circle", symbolSize: 6, data: days.map((d) => Math.round(d.cost * 100) / 100), lineStyle: { color: "#3ddc97", width: 2 }, itemStyle: { color: "#3ddc97" } },
+        ],
+      });
+    }
+    return html`
+      <h3 class="sec">${t("cost.title")}</h3>
+      <div class="tiles">
+        ${this._costTile("today", sumCosts([today]))}
+        ${this._costTile("yesterday", yesterday ? sumCosts([yesterday]) : null)}
+        ${this._costTile("days30", sumCosts(days))}
+      </div>
+      <div class="card chart">
+        <div class="cap">${t("cost.daily")}</div>
+        <cp-echart .option=${this._costOption}></cp-echart>
+        <p class="muted small">${days.some((d) => d.noShare) ? t("cost.no_share") : ""} ${t("cost.hint")}</p>
+      </div>`;
+  }
+
   render() {
     const d = this._data;
     return html`
@@ -248,6 +322,7 @@ export class CpEfficiency extends LitElement {
       ${this._error ? html`<div class="card err">${this._error}</div>` : nothing}
       ${d?.missing ? html`<div class="card hint">${t(`eff.missing.${d.missing}`)}</div>` : nothing}
       ${d ? this._chart(d) : nothing}
+      ${this._costSection()}
     `;
   }
 
@@ -282,6 +357,9 @@ export class CpEfficiency extends LitElement {
       .grid line.grid, line.grid { stroke: var(--cp-border); }
       .axis { fill: var(--cp-muted); font-size: 10px; }
       .small { font-size: 12px; margin: 6px 0 0; }
+      .sec { margin: 18px 0 10px; font-size: 15px; }
+      b.good { color: #3ddc97; }
+      .tiles + .chart { margin-top: 12px; }
       .hint { font-size: 13px; color: var(--cp-warn); }
       .err { color: var(--cp-error); }
       @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
