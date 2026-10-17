@@ -71,12 +71,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         webcomponent_name=PANEL_WEBCOMPONENT,
         sidebar_title=entry.options.get("sidebar_title") or NAME,
         sidebar_icon=PANEL_ICON,
-        module_url=f"{FRONTEND_URL_BASE}/{FRONTEND_FILE}?v={VERSION}",
+        module_url=_module_url(),
         require_admin=False,
         config={"version": VERSION},
     )
+    # load the bundle on every page so the Lovelace card works without a manual resource
+    frontend.add_extra_js_url(hass, _module_url())
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
     return True
+
+
+def _module_url() -> str:
+    return f"{FRONTEND_URL_BASE}/{FRONTEND_FILE}?v={VERSION}"
 
 
 async def _async_options_updated(hass: HomeAssistant, entry: ConfigEntry) -> None:
@@ -85,6 +91,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: ConfigEntry) -> Non
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     frontend.async_remove_panel(hass, PANEL_URL_PATH, warn_if_unknown=False)
+    frontend.remove_extra_js_url(hass, _module_url())
     runtime: CopilotRuntime | None = hass.data.pop(DOMAIN, None)
     if runtime:
         runtime.messages.async_shutdown()

@@ -30,6 +30,9 @@ export class CpOverview extends LitElement {
     sim: { attribute: false },
     version: { type: Number },
     narrow: { type: Boolean },
+    showDemo: { type: Boolean },
+    showKpis: { type: Boolean },
+    showSide: { type: Boolean },
     _pop: { state: true },
     _side: { state: true },
   };
@@ -40,6 +43,10 @@ export class CpOverview extends LitElement {
   sim: Simulator | null = null;
   version = 0;
   narrow = false;
+  /** areas that the Lovelace card can switch off */
+  showDemo = true;
+  showKpis = true;
+  showSide = true;
   private _pop: { component: PlantComponent; slot: string; x: number; y: number } | null = null;
   private _side = true;
 
@@ -110,7 +117,7 @@ export class CpOverview extends LitElement {
 
   private _demoBar() {
     const sim = this.sim;
-    if (!sim) return nothing;
+    if (!sim || !this.showDemo) return nothing;
     const scenarios = ["winter", "transition", "shower", "defrost", "dim14a", "pv", "disinfect", "fault", "reset"];
     const toggles: Record<string, boolean> = { dim14a: sim.dim14a, pv: sim.pv, fault: sim.fault, disinfect: sim.disinfect };
     return html`<div class="demo">
@@ -148,7 +155,7 @@ export class CpOverview extends LitElement {
     const activeCount = this.messages.filter((m) => m.active && (m.level === "warning" || m.level === "error")).length;
     return html`
       ${this._demoBar()}
-      <div class="kpis">
+      ${this.showKpis ? html`<div class="kpis">
         ${kpis.map(
           (k) => html`<button class="kpi" ?disabled=${!k.comp} @click=${(e: MouseEvent) => k.comp && (this._pop = { component: k.comp, slot: k.slot!, x: e.clientX, y: e.clientY })}>
             <span class="k-label">${k.label}</span>
@@ -156,8 +163,8 @@ export class CpOverview extends LitElement {
             ${k.sub ? html`<span class="k-sub">${k.sub}</span>` : nothing}
           </button>`,
         )}
-      </div>
-      <div class="main ${this._side ? "with-side" : ""}">
+      </div>` : nothing}
+      <div class="main ${this._side && this.showSide ? "with-side" : ""}">
         <div class="stage card">
           <cp-schematic
             ?auto-height=${this.narrow}
@@ -171,13 +178,13 @@ export class CpOverview extends LitElement {
             <button class="icon" title=${t("zoom_in")} @click=${() => this._sch()?.zoom(0.8)}>${icon("plus")}</button>
             <button class="icon" title=${t("zoom_out")} @click=${() => this._sch()?.zoom(1.25)}>${icon("minus")}</button>
             <button class="icon" title=${t("fit")} @click=${() => this._sch()?.fit()}>${icon("fit")}</button>
-            ${this.narrow
+            ${this.narrow || !this.showSide
               ? nothing
               : html`<button class="icon" title=${t("msg.title")} @click=${() => (this._side = !this._side)}>
                   ${icon("bell")}${activeCount ? html`<span class="badge">${activeCount}</span>` : nothing}</button>`}
           </div>
         </div>
-        ${this._side || this.narrow
+        ${this.showSide && (this._side || this.narrow)
           ? html`<aside class="side card">
               <div class="side-head"><b>${t("msg.title")}</b></div>
               <cp-messages compact .messages=${this.messages}></cp-messages>

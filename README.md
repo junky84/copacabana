@@ -31,6 +31,23 @@ Updates appear in HACS (and under *Settings → Updates*); install them and rest
 
 Manual installation: copy `custom_components/copilot` from the release zip to `/config/custom_components/` and restart.
 
+## Lovelace card
+
+The integration loads the card automatically – no manual resource needed. For a full-screen tab (e.g. on a wall display) add a view of type **Panel (1 card)**:
+
+```yaml
+title: Heizung
+path: heizung
+icon: mdi:heat-pump-outline
+type: panel
+cards:
+  - type: custom:copilot-card
+    show_kpis: true            # key figures above the schematic
+    show_messages: false       # messages column
+    show_demo_controls: false  # demo speed / scenarios
+    # height: 600px            # optional; panel views fill the screen
+```
+
 ## Connecting the EMS-ESP gateway
 
 1. In EMS-ESP: enable **MQTT**, enable **Home Assistant MQTT Discovery**, entity ID format **“Single instance, short names”** (default). The “multiple instances” format works too – set the MQTT base in the integration options.
@@ -43,7 +60,7 @@ EMS-ESP enum values (e.g. compressor activity) are published in the EMS-ESP UI l
 
 ## Roadmap
 
-- **v0.2**: isometric 2.5D style, live COP / SPF with traffic light vs. datasheet, interactive heating curve, plant check (mixing loss buffer ≤ 2 K, cycling, spread), “what is happening” explanation, energy layer (PV, battery, grid, wallbox, §14a), Lovelace card
+- **v0.2**: ~~Lovelace card~~ (done in 0.1.4), live COP / SPF with traffic light vs. datasheet, plant check (mixing loss buffer ≤ 2 K, cycling, spread), interactive heating curve, “what is happening” explanation, energy layer (PV, battery, grid, wallbox, §14a), isometric 2.5D style
 - **v0.3**: time machine (replay the schematic from recorder history), costs & PV share (fixed or entity tariff), maintenance calendar (anode, separator, expansion vessel …), export/import, write access for selected values
 
 ## Development

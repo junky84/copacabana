@@ -39,8 +39,11 @@ async def test_setup_registers_panel_and_unloads(hass: HomeAssistant) -> None:
     entry = await _setup(hass)
     assert entry.state is ConfigEntryState.LOADED
     assert "copilot" in hass.data["frontend_panels"]
+    extra = hass.data["frontend_extra_module_url"]
+    assert any("copilot-panel.js" in url for url in extra.urls)
     assert await hass.config_entries.async_unload(entry.entry_id)
     assert "copilot" not in hass.data["frontend_panels"]
+    assert not any("copilot-panel.js" in url for url in extra.urls)
 
 
 async def test_config_roundtrip(hass: HomeAssistant, hass_ws_client) -> None:

@@ -1,22 +1,19 @@
 import { LitElement, css, html, nothing, type PropertyValues } from "lit";
-import { Api } from "./api";
-import { resolveLang, setLang, t } from "./i18n";
+import { PlantController } from "./controller";
+import { t } from "./i18n";
 import { icon, logo, tokens, ui } from "./styles";
-import type { Hass, Plant, PlantMessage, UserIcon } from "./types";
-import { HassSource, type ValueSource } from "./data/values";
-import { Simulator } from "./sim/simulator";
-import { SimSource, simParamsFor } from "./sim/source";
+import type { Hass, Plant } from "./types";
 import { examplePlant } from "./templates";
 import "./views/overview";
 import "./views/editor";
 import "./views/config";
 import "./views/widgets";
+import "./card";
 
 type View = "overview" | "messages" | "config";
 type Sub = "wizard" | "editor" | "mapping" | "icons" | "settings";
 
 const LS_VIEW = "copilot.view";
-const SIM_FPS = 4;
 
 function lsGet(key: string): string | null {
   try {
@@ -39,17 +36,9 @@ export class CopilotPanel extends LitElement {
     narrow: { type: Boolean },
     route: { attribute: false },
     panel: { attribute: false },
-    _plant: { state: true },
-    _icons: { state: true },
-    _backendMessages: { state: true },
-    _simMessages: { state: true },
     _view: { state: true },
     _sub: { state: true },
-    _version: { state: true },
-    _error: { state: true },
     _toast: { state: true },
-    _admin: { state: true },
-    _backendVersion: { state: true },
   };
 
   hass!: Hass;
@@ -57,29 +46,10 @@ export class CopilotPanel extends LitElement {
   route: unknown;
   panel: unknown;
 
-  private _api?: Api;
-  private _plant: Plant | null = null;
-  private _icons: Map<string, UserIcon> = new Map();
-  /** messages from the integration's rule engine (live plant) */
-  private _backendMessages: PlantMessage[] = [];
-  /** messages of the demo simulator; shown instead while demo mode is on */
-  private _simMessages: PlantMessage[] = [];
+  private _ctl = new PlantController(this);
   private _view: View = "overview";
   private _sub: Sub = "editor";
-  private _version = 0;
-  private _error = "";
   private _toast = "";
-  private _admin = true;
-  private _backendVersion = "";
-  private _sim: Sim | null = null;
-  private _raf = 0;
-  private _lastFrame = 0;
-  private _accum = 0;
-  private _unsubMsg?: () => void;
-  private _unsubSim?: () => void;
-  private _boundIds: string[] = [];
-  private _lastStates: unknown[] = [];
-  private _loading = false;
 
   constructor() {
     super();
@@ -91,99 +61,13 @@ export class CopilotPanel extends LitElement {
     }
   }
 
-  // --------------------------------------------------------------- data
-
   protected willUpdate(changed: PropertyValues): void {
-    if (changed.has("hass") && this.hass) {
-      const dark = this.hass.themes?.darkMode ?? true;
-      this.toggleAttribute("light", !dark);
-      setLang(resolveLang(this._plant?.settings.language, this.hass.language));
-      if (!this._api) {
-        this._api = new Api(this.hass);
-        this._load();
-      } else {
-        this._api.setHass(this.hass);
-      }
-      if (this._plant && !this._plant.settings.demo) this._checkStates();
-    }
-  }
-
-  /** Re-render on hass updates only when a bound entity actually changed. */
-  private _checkStates(): void {
-    const states = this._boundIds.map((id) => this.hass.states[id]);
-    if (states.length !== this._lastStates.length || states.some((s, i) => s !== this._lastStates[i])) {
-      this._lastStates = states;
-      this._version++;
-    }
-  }
-
-  private _collectBound(): void {
-    const ids = new Set<string>();
-    for (const c of this._plant?.components || []) {
-      Object.values(c.bindings || {}).forEach((id) => id && ids.add(id));
-      ((c.props.entries as { entity?: string }[]) || []).forEach((e) => e.entity && ids.add(e.entity));
-    }
-    for (const p of this._plant?.pipes || []) if (p.bindings?.temp) ids.add(p.bindings.temp);
-    this._boundIds = [...ids];
-    this._lastStates = [];
-  }
-
-  private async _load(): Promise<void> {
-    if (this._loading || !this._api) return;
-    this._loading = true;
-    try {
-      const cfg = await this._api.getConfig();
-      this._admin = cfg.is_admin;
-      this._backendVersion = cfg.version;
-      let plant = cfg.plant;
-      if (!plant) {
-        plant = examplePlant();
-        if (cfg.is_admin) await this._api.saveConfig(plant);
-      }
-      this._setPlant(plant);
-      await this._loadIcons();
-      if (!this._api.standalone) {
-        this._backendMessages = await this._api.listMessages();
-        this._unsubMsg = await this._api.subscribeMessages((m) => this._mergeMessage(m));
-      }
-    } catch (err: any) {
-      this._error = err?.message || String(err);
-    } finally {
-      this._loading = false;
-    }
-  }
-
-  private async _loadIcons(): Promise<void> {
-    const list = await this._api!.listIcons();
-    this._icons = new Map(list.map((i) => [i.id, i]));
-  }
-
-  private _mergeMessage(m: PlantMessage): void {
-    const idx = this._backendMessages.findIndex((x) => x.id === m.id);
-    const next = [...this._backendMessages];
-    if (idx >= 0) next[idx] = m;
-    else next.push(m);
-    this._backendMessages = next;
-  }
-
-  private _setPlant(plant: Plant): void {
-    const prevParams = JSON.stringify(simParamsFor(this._plant));
-    this._plant = plant;
-    setLang(resolveLang(plant.settings.language, this.hass?.language));
-    this._collectBound();
-    if (plant.settings.demo) {
-      if (!this._sim || JSON.stringify(simParamsFor(plant)) !== prevParams) this._startSim();
-    } else {
-      this._stopSim();
-      this._checkStates();
-    }
-    this._version++;
+    if (changed.has("hass") && this.hass) this._ctl.setHass(this.hass);
   }
 
   private async _save(plant: Plant): Promise<void> {
     try {
-      await this._api!.saveConfig(plant);
-      this._setPlant(plant);
+      await this._ctl.save(plant);
       this._showToast(t("saved"));
     } catch (err: any) {
       this._showToast(err?.message || String(err));
@@ -193,113 +77,6 @@ export class CopilotPanel extends LitElement {
   private _showToast(text: string): void {
     this._toast = text;
     window.setTimeout(() => (this._toast = ""), 2600);
-  }
-
-  // ---------------------------------------------------------------- sim
-
-  private _startSim(): void {
-    this._stopSim();
-    const dhw = this._plant?.components.find((c) => c.type === "dhw_tank");
-    const sim = new Simulator(simParamsFor(this._plant), undefined, { dhw: dhw?.label || t("type.dhw_tank") });
-    this._sim = sim;
-    this._unsubSim = sim.onMessage(() => (this._simMessages = [...sim.messages]));
-    this._simMessages = [...sim.messages];
-    this._lastFrame = performance.now();
-    const loop = (now: number) => {
-      const dt = (now - this._lastFrame) / 1000;
-      this._lastFrame = now;
-      if (!document.hidden) {
-        sim.advance(dt);
-        this._accum += dt;
-        if (this._accum >= 1 / SIM_FPS) {
-          this._accum = 0;
-          this._version++;
-        }
-      }
-      this._raf = requestAnimationFrame(loop);
-    };
-    this._raf = requestAnimationFrame(loop);
-  }
-
-  private _stopSim(): void {
-    if (this._raf) cancelAnimationFrame(this._raf);
-    this._raf = 0;
-    this._unsubSim?.();
-    this._unsubSim = undefined;
-    if (this._sim) {
-      this._sim = null;
-      this._simMessages = [];
-      if (this._api && !this._api.standalone) this._api.listMessages().then((m) => (this._backendMessages = m), () => undefined);
-    }
-  }
-
-  private _scenario(name: string): void {
-    const sim = this._sim;
-    if (!sim) return;
-    switch (name) {
-      case "winter":
-        sim.outdoorMean = -10;
-        sim.tOut = -10;
-        break;
-      case "transition":
-        sim.outdoorMean = 12;
-        sim.tOut = 12;
-        break;
-      case "shower":
-        sim.startDraw(8, 9);
-        break;
-      case "defrost":
-        sim.ice = 1.01;
-        sim.heatDemand = true;
-        break;
-      case "dim14a":
-        sim.dim14a = !sim.dim14a;
-        break;
-      case "pv":
-        sim.pv = !sim.pv;
-        break;
-      case "disinfect":
-        sim.disinfect = true;
-        break;
-      case "fault":
-        sim.fault = !sim.fault;
-        break;
-      case "reset":
-        this._startSim();
-        return;
-      default:
-        break;
-    }
-    sim.scenarioMessage(t(`scn.${name}`));
-    this._version++;
-  }
-
-  disconnectedCallback(): void {
-    super.disconnectedCallback();
-    this._stopSim();
-    this._unsubMsg?.();
-    this._unsubMsg = undefined;
-    this._api = undefined;
-  }
-
-  connectedCallback(): void {
-    super.connectedCallback();
-    if (this.hass && !this._api) {
-      this._api = new Api(this.hass);
-      this._load();
-    }
-    if (this._plant?.settings.demo && !this._sim) this._startSim();
-  }
-
-  // ------------------------------------------------------------- render
-
-  private get _shownMessages(): PlantMessage[] {
-    return this._sim ? this._simMessages : this._backendMessages;
-  }
-
-  private get _src(): ValueSource {
-    if (this._sim) return new SimSource(this._sim);
-    return new HassSource(this.hass);
   }
 
   private _go(view: View, sub?: Sub): void {
@@ -314,8 +91,8 @@ export class CopilotPanel extends LitElement {
   }
 
   render() {
-    const plant = this._plant;
-    const alerts = this._shownMessages.filter((m) => m.active && (m.level === "warning" || m.level === "error")).length;
+    const plant = this._ctl.plant;
+    const alerts = this._ctl.messages.filter((m) => m.active && (m.level === "warning" || m.level === "error")).length;
     return html`<div class="shell">
       <header>
         ${this.narrow
@@ -336,8 +113,8 @@ export class CopilotPanel extends LitElement {
         <button class="ghost icon" title=${t("fullscreen")} @click=${this._fullscreen}>${icon("expand")}</button>
       </header>
       <main>
-        ${this._error ? html`<div class="card err">${this._error}</div>` : nothing}
-        ${this._api?.standalone ? html`<div class="note muted">${t("standalone_hint")}</div>` : nothing}
+        ${this._ctl.error ? html`<div class="card err">${this._ctl.error}</div>` : nothing}
+        ${this._ctl.api?.standalone ? html`<div class="note muted">${t("standalone_hint")}</div>` : nothing}
         ${!plant ? html`<div class="loading">${logo}</div>` : this._content(plant)}
       </main>
       ${this._toast ? html`<div class="toast">${this._toast}</div>` : nothing}
@@ -345,30 +122,27 @@ export class CopilotPanel extends LitElement {
   }
 
   private _content(plant: Plant) {
-    const src = this._src;
+    const src = this._ctl.src;
     if (this._view === "overview") {
       return html`<cp-overview
         .plant=${plant}
         .src=${src}
-        .icons=${this._icons}
-        .messages=${this._shownMessages}
-        .sim=${this._sim}
-        .version=${this._version}
+        .icons=${this._ctl.icons}
+        .messages=${this._ctl.messages}
+        .sim=${this._ctl.sim}
+        .version=${this._ctl.version}
         ?narrow=${this.narrow || window.innerWidth < 900}
-        @scenario=${(e: CustomEvent) => this._scenario(e.detail)}
+        @scenario=${(e: CustomEvent) => this._ctl.scenario(e.detail)}
       ></cp-overview>`;
     }
     if (this._view === "messages") {
       return html`<div class="card pad"><cp-messages
-        .messages=${this._shownMessages}
-        ?canClear=${this._admin && !this._sim}
-        @clear=${async () => {
-          await this._api!.clearMessages();
-          this._backendMessages = await this._api!.listMessages();
-        }}
+        .messages=${this._ctl.messages}
+        ?canClear=${this._ctl.admin && !this._ctl.sim}
+        @clear=${() => this._ctl.clearMessages()}
       ></cp-messages></div>`;
     }
-    if (!this._admin) return html`<div class="card">${t("readonly_hint")}</div>`;
+    if (!this._ctl.admin) return html`<div class="card">${t("readonly_hint")}</div>`;
     const subs: Sub[] = ["wizard", "editor", "mapping", "icons", "settings"];
     const onSave = (e: CustomEvent) => this._save(e.detail);
     return html`
@@ -384,14 +158,14 @@ export class CopilotPanel extends LitElement {
             }}></cp-wizard>`
           : nothing}
         ${this._sub === "editor"
-          ? html`<cp-editor .plant=${plant} .hass=${this.hass} .src=${src} .icons=${this._icons} .version=${this._version} @save=${onSave}></cp-editor>`
+          ? html`<cp-editor .plant=${plant} .hass=${this.hass} .src=${src} .icons=${this._ctl.icons} .version=${this._ctl.version} @save=${onSave}></cp-editor>`
           : nothing}
-        ${this._sub === "mapping" ? html`<cp-mapping .plant=${plant} .hass=${this.hass} .api=${this._api} @save=${onSave}></cp-mapping>` : nothing}
+        ${this._sub === "mapping" ? html`<cp-mapping .plant=${plant} .hass=${this.hass} .api=${this._ctl.api} @save=${onSave}></cp-mapping>` : nothing}
         ${this._sub === "icons"
-          ? html`<cp-icons .plant=${plant} .api=${this._api} .icons=${this._icons} @save=${onSave} @icons-changed=${() => this._loadIcons()}></cp-icons>`
+          ? html`<cp-icons .plant=${plant} .api=${this._ctl.api} .icons=${this._ctl.icons} @save=${onSave} @icons-changed=${() => this._ctl.loadIcons()}></cp-icons>`
           : nothing}
         ${this._sub === "settings"
-          ? html`<cp-settings .plant=${plant} .version=${this._backendVersion} @save=${onSave}
+          ? html`<cp-settings .plant=${plant} .version=${this._ctl.backendVersion} @save=${onSave}
               @reset-plant=${() => this._save({ ...examplePlant(), settings: { ...examplePlant().settings, demo: true } })}></cp-settings>`
           : nothing}
       </div>
@@ -463,7 +237,5 @@ export class CopilotPanel extends LitElement {
     `,
   ];
 }
-
-type Sim = Simulator;
 
 if (!customElements.get("copilot-panel")) customElements.define("copilot-panel", CopilotPanel);
