@@ -7,7 +7,7 @@
  * parts, pipe length) and returns the best.
  */
 
-import { TYPES, sizeOf } from "../catalog";
+import { TYPES, indoorModel, sizeOf } from "../catalog";
 import { routePipe, type Pt } from "../render/routing";
 import { generatePlant } from "../templates";
 import type { ComponentType, Plant, PlantComponent } from "../types";
@@ -203,6 +203,9 @@ function layered(plant: Plant, gap: number, sweeps: number, mirrorRows: boolean)
 }
 
 /** The curated wizard layout, applied to the components that still exist. */
+/** Ids the wizard templates use (anything else was added by hand in the editor). */
+const TEMPLATE_IDS = /^(ou|iu|dhw|buf|tap|inlet|jww|circ|sep|sc1|jmag|mag|pc1|vw1|pc0|hc\d+(_[a-z]+)?)$/;
+
 function fromTemplate(plant: Plant): Plant | null {
   const wiz = plant.settings?.wizard;
   if (!wiz) return null;
@@ -213,11 +216,28 @@ function fromTemplate(plant: Plant): Plant | null {
     ...wiz,
     indoorModel: iu?.model || wiz.indoorModel,
     dhw: has("dhw_tank") ? ("tank" as const) : wiz.dhw,
-    buffer: has("buffer") ? (wiz.buffer === "none" ? ("parallel" as const) : wiz.buffer) : ("none" as const),
+    // a unit with a built-in buffer (TP70) has no external one: keep the wish for when the unit changes back
+    buffer: has("buffer") ? (wiz.buffer === "none" ? ("parallel" as const) : wiz.buffer) : indoorModel(wiz.indoorModel)?.buffer ? wiz.buffer : ("none" as const),
     circulation: has("tap") ? plant.components.some((c) => c.id === "circ") : wiz.circulation,
   };
   const gen = generatePlant(cfg, plant);
   const genById = new Map(gen.components.map((c) => [c.id, c]));
+  // the indoor unit was changed in the editor: rebuild along the new unit's template. Bindings, labels and
+  // icons stay (generatePlant keeps them by id); parts the new unit has built in (e.g. the external buffer of
+  // a TP70) are left out; parts added by hand stay, with their pipes.
+  if (iu?.model && wiz.indoorModel && iu.model !== wiz.indoorModel) {
+    const own = plant.components.filter((c) => !genById.has(c.id) && !TEMPLATE_IDS.test(c.id));
+    const ids = new Set([...gen.components.map((c) => c.id), ...own.map((c) => c.id)]);
+    const old = new Map(plant.pipes.map((pp) => [[pp.from.c, pp.to.c].sort().join("|"), pp]));
+    const pipes = [
+      ...gen.pipes.map((gp) => {
+        const o = old.get([gp.from.c, gp.to.c].sort().join("|"));
+        return o?.bindings ? { ...gp, bindings: o.bindings } : gp;
+      }),
+      ...plant.pipes.filter((pp) => own.some((c) => c.id === pp.from.c || c.id === pp.to.c) && ids.has(pp.from.c) && ids.has(pp.to.c)),
+    ];
+    return { ...gen, components: [...gen.components, ...clone(own)], pipes, settings: { ...plant.settings, ...gen.settings } };
+  }
   const p = clone(plant);
   const placed: PlantComponent[] = [];
   const extras: PlantComponent[] = [];

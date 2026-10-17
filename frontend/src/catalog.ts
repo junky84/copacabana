@@ -232,6 +232,7 @@ export const TYPES: Record<ComponentType, TypeDef> = {
   // P120.5: all four connections on top; the two returns reach the bottom through dip tubes
   buffer: {
     type: "buffer",
+    mirrorable: true,
     w: 5,
     h: 9,
     group: "storage",

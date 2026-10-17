@@ -105,7 +105,7 @@ export function generatePlant(cfg: WizardConfig, previous?: Plant | null): Plant
   // TP70 with one direct circuit: dedicated layout (outdoor unit top left, circuit left, DHW right)
   // floor-standing units with one direct radiator circuit: building section as well
   const oneRad = cfg.circuits.length === 1 && !cfg.circuits[0]?.mixed && cfg.circuits[0]?.emitter === "radiators";
-  const bldTop = top && oneRad && (variant === "tp70" || variant === "brine" || (variant === "t180" && !extBuffer));
+  const bldTop = top && oneRad && (variant === "tp70" || variant === "brine" || variant === "t180");
   const tp70 = !bldTop && variant === "tp70" && cfg.circuits.length <= 1 && !cfg.circuits[0]?.mixed;
   // wall-hung unit with parallel buffer and one direct radiator circuit: building section layout
   // (outdoor unit outside on the ground, cylinder and buffer on the floor, radiator upstairs)
@@ -118,7 +118,7 @@ export function generatePlant(cfg: WizardConfig, previous?: Plant | null): Plant
   const SLAB = 16;
   // T180: heat pump connections are the rightmost ones, so the outside is on the right
   const outRight = bldTop && variant === "t180";
-  const WALL = outRight ? 32 : 16;
+  const WALL = outRight ? (extBuffer ? 48 : 32) : 16;
   // brine: the "outdoor unit" is the ground collector, below ground level
   const probe = bldTop && outdoorModel(cfg.outdoorModel).source === "brine";
   const ox = outRight ? WALL + 2 : 1;
@@ -129,7 +129,7 @@ export function generatePlant(cfg: WizardConfig, previous?: Plant | null): Plant
     props: { nominal_kw: cfg.nominalKw },
   });
   // generous gap between outdoor unit (x 1..10) and indoor unit
-  const ix = bldTop ? (variant === "t180" ? 20 : 24) : bld ? 30 : tp70 ? 22 : top ? 14 : 16;
+  const ix = bldTop ? (variant === "t180" ? (extBuffer ? 36 : 20) : 24) : bld ? 30 : tp70 ? 22 : top ? 14 : 16;
   // wall-hung: bottom connections 14 rows above the floor, the cylinder fits below the pipe runs
   const iy = bldTop ? FLOOR - (variant === "t180" ? 22 : variant === "tp70" ? 16 : 14) : bld ? FLOOR - 29 : tp70 ? 27 : top ? 12 : 2;
   b.add("iu", "indoor_unit", cfg.indoorLabel || t("type.indoor_unit"), ix, iy, { model: cfg.indoorModel, props: indoorProps });
@@ -257,20 +257,56 @@ export function generatePlant(cfg: WizardConfig, previous?: Plant | null): Plant
       // built-in cylinder: radiator on the left, shower above the unit (mirrored, fed from the left)
       const draw: FlowCond = { c: "tap", s: "flowing" };
       const circOn: FlowCond = { c: "circ", s: "running" };
-      // built-in PC1; the radiator risers step three columns left so the circulation pump fits
-      radiatorUp(P("iu", "ret"), P("iu", "sup"), px("ret") - 3, yTop, [{ c: "iu", s: "pc1" }], false, true, {
-        supSrcX: px("sup"),
-        jogY: yTop - 2,
-        retSrcX: px("ret"),
-        retJogY: yTop - 1,
-      });
+      const IPC1: FlowCond = { c: "iu", s: "pc1" };
+      if (extBuffer) {
+        // buffer left of the unit, mirrored: its inlets face the unit, the risers to the radiator stay outside
+        const bx = ix - 16;
+        const by = FLOOR - 9;
+        const rowS = yTop - 6;
+        const rowR = yTop - 4;
+        const flowR = [IU, ...A];
+        b.add("buf", "buffer", cfg.bufferLabel || t("type.buffer"), bx, by, { flip: true, props: { volume: cfg.bufferVolume } });
+        b.pipe(P("iu", "sup"), P("buf", "in_sup"), "supply", flowR, { via: [[px("sup"), rowS], [bx + 4, rowS]] });
+        // return with separator, SC1 and the expansion vessel (flow towards the unit)
+        let from: PortRef = P("buf", "in_ret");
+        let via: [number, number][] = [[bx + 3, rowR]];
+        let x = bx + 5;
+        if (cfg.separator) {
+          b.add("sep", "separator", t("wz.separator_short"), x, rowR - 1);
+          b.add("sc1", "separator", "SC1", x + 3, rowR - 1, { props: { filter: true } });
+          b.pipe(from, P("sep", "in"), "return", flowR, { via });
+          b.pipe(P("sep", "out"), P("sc1", "in"), "return", flowR);
+          from = P("sc1", "out");
+          via = [];
+          x += 7;
+        }
+        if (cfg.expansion) {
+          b.add("jmag", "junction", "", x + 1, rowR);
+          b.add("mag", "expansion_vessel", "MAG", x, rowR, { rot: 180 as Rotation });
+          b.pipe(P("mag", "conn"), P("jmag", "b"), "return", []);
+          b.pipe(from, P("jmag", "l"), "return", flowR, { via });
+          from = P("jmag", "r");
+          via = [];
+        }
+        b.pipe(from, P("iu", "ret"), "return", flowR, { via: [...via, [px("ret"), rowR]] });
+        // flipped buffer: out_sup at bx+1, out_ret at bx+2; radiator to the right of the risers
+        radiatorUp(P("buf", "out_ret"), P("buf", "out_sup"), bx + 2, by, [PC1], true, false, { supSrcX: bx + 1 });
+      } else {
+        // built-in PC1; the radiator risers step three columns left so the circulation pump fits
+        radiatorUp(P("iu", "ret"), P("iu", "sup"), px("ret") - 3, yTop, [IPC1], false, true, {
+          supSrcX: px("sup"),
+          jogY: yTop - 2,
+          retSrcX: px("ret"),
+          retJogY: yTop - 1,
+        });
+      }
       const hotX = px("dhw_hot");
       b.add("tap", "tap", t("wz.shower"), hotX + 2, SLAB - 9, { flip: true, props: { variant: "shower" } });
       if (cfg.circulation) {
         b.add("jww", "junction", "", hotX, SLAB - 5);
         b.pipe(P("iu", "dhw_hot"), P("jww", "b"), "dhw_hot", [], { flowAny: [draw, circOn] });
         b.pipe(P("jww", "t"), P("tap", "hot"), "dhw_hot", [draw], { via: [[hotX, SLAB - 8]] });
-        b.add("circ", "pump", "PW2", px("circ") - 1, yTop - 8, { rot: 90 as Rotation, props: { role: "circulation" } });
+        b.add("circ", "pump", "PW2", px("circ") - 1, extBuffer ? SLAB + 1 : yTop - 8, { rot: 90 as Rotation, props: { role: "circulation" } });
         b.pipe(P("jww", "l"), P("circ", "in"), "circulation", [circOn], { via: [[px("circ"), SLAB - 5]] });
         b.pipe(P("circ", "out"), P("iu", "circ"), "circulation", [circOn]);
       } else {
@@ -537,7 +573,7 @@ export function generatePlant(cfg: WizardConfig, previous?: Plant | null): Plant
   const plant: Plant = {
     version: 5,
     name: cfg.name,
-    grid: bldTop ? { w: outRight ? 48 : variant === "tp70" ? 52 : extBuffer ? 62 : 54, h: FLOOR + 2 } : bld ? { w: 68, h: FLOOR + 2 } : tp70 ? { w: 58, h: 49 } : { w: n > 1 ? 76 : 66, h: Math.max(38, (top ? 46 : 38) + (n - 1) * 10) },
+    grid: bldTop ? { w: outRight ? (extBuffer ? 64 : 48) : variant === "tp70" ? 52 : extBuffer ? 62 : 54, h: FLOOR + 2 } : bld ? { w: 68, h: FLOOR + 2 } : tp70 ? { w: 58, h: 49 } : { w: n > 1 ? 76 : 66, h: Math.max(38, (top ? 46 : 38) + (n - 1) * 10) },
     components: b.components,
     pipes: b.pipes,
     settings: previous?.settings ?? { style: "flat", demo: true },
