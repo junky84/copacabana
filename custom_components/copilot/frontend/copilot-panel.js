@@ -1507,7 +1507,7 @@ const z = 20, j = (o, t = !1) => ({ key: o, kind: "temp", show: t }), Z = {
       { id: "out", x: 9, y: 6, dir: "r", kind: "supply" }
     ],
     slots: [
-      { key: "outdoor_temp", kind: "temp", show: !0, pos: [7.6, 1.2] },
+      { key: "outdoor_temp", kind: "temp", show: !0, pos: [9.5, 7.9] },
       { key: "activity", kind: "enum" },
       { key: "heat_power", kind: "power_kw", show: !0 },
       { key: "el_power", kind: "power_w", show: !0 },
@@ -1548,7 +1548,7 @@ const z = 20, j = (o, t = !1) => ({ key: o, kind: "temp", show: t }), Z = {
           { id: "ret", x: 8, y: 14, dir: "b", tempSlot: "return_temp", kind: "return" },
           { id: "sup", x: 9, y: 14, dir: "b", tempSlot: "supply_temp", kind: "supply" }
         ],
-        pos: { pressure: [1.3, 7.6], aux_level: [5.9, 4.2], pc0_speed: [4.3, 11.4] },
+        pos: { pressure: [1.9, 7.6], aux_level: [5.9, 4.2], pc0_speed: [4.3, 11.4] },
         at: { supply_temp: "sup", return_temp: "ret" }
       },
       // floor-standing T180 with 180 l DHW cylinder: all connections on top (T180 manual, fig. 4/6),
@@ -1567,7 +1567,7 @@ const z = 20, j = (o, t = !1) => ({ key: o, kind: "temp", show: t }), Z = {
           { id: "src_in", x: 6, y: 0, dir: "t", tempSlot: "supply_temp", kind: "supply" },
           { id: "src_out", x: 7, y: 0, dir: "t", tempSlot: "return_temp", kind: "return" }
         ],
-        pos: { pressure: [0.6, 8.2], aux_level: [6.4, 3.2], pc0_speed: [4.2, 7.4], dhw_temp: [4, 12], dhw_setpoint: [4, 17] },
+        pos: { pressure: [3.2, 8.8], aux_level: [6.4, 3.2], pc0_speed: [4.2, 7.4], dhw_temp: [4, 12], dhw_setpoint: [4, 17] },
         at: { supply_temp: "sup", return_temp: "ret" }
       },
       // floor-standing TP70 with 70 l buffer: all connections on top (TP70 manual, fig. 4)
@@ -1603,7 +1603,7 @@ const z = 20, j = (o, t = !1) => ({ key: o, kind: "temp", show: t }), Z = {
           { id: "ret", x: 6, y: 0, dir: "t", tempSlot: "return_temp", kind: "return" },
           { id: "sup", x: 7, y: 0, dir: "t", tempSlot: "supply_temp", kind: "supply" }
         ],
-        pos: { pressure: [0.7, 9], aux_level: [4, 3], pc0_speed: [5.5, 9] },
+        pos: { pressure: [2.2, 12.8], aux_level: [4, 3], pc0_speed: [5.5, 9] },
         at: { supply_temp: "sup", return_temp: "ret" }
       }
     },
