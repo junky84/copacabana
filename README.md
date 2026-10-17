@@ -1,3 +1,5 @@
+<img src="https://raw.githubusercontent.com/junky84/copilot/main/brand/icon.png" alt="COPilot icon" width="96" align="right">
+
 # COPilot
 
 SCADA-style heat pump dashboard for Home Assistant – modern, animated, configurable.

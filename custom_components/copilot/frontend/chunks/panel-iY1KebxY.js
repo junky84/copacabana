@@ -3,16 +3,16 @@
  * Copyright 2019 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const vt = globalThis, Os = vt.ShadowRoot && (vt.ShadyCSS === void 0 || vt.ShadyCSS.nativeShadow) && "adoptedStyleSheets" in Document.prototype && "replace" in CSSStyleSheet.prototype, Hs = Symbol(), Gs = /* @__PURE__ */ new WeakMap();
+const vt = globalThis, Hs = vt.ShadowRoot && (vt.ShadyCSS === void 0 || vt.ShadyCSS.nativeShadow) && "adoptedStyleSheets" in Document.prototype && "replace" in CSSStyleSheet.prototype, Os = Symbol(), Gs = /* @__PURE__ */ new WeakMap();
 let Fi = class {
   constructor(e, t, s) {
-    if (this._$cssResult$ = !0, s !== Hs) throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");
+    if (this._$cssResult$ = !0, s !== Os) throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");
     this.cssText = e, this.t = t;
   }
   get styleSheet() {
     let e = this.o;
     const t = this.t;
-    if (Os && e === void 0) {
+    if (Hs && e === void 0) {
       const s = t !== void 0 && t.length === 1;
       s && (e = Gs.get(t)), e === void 0 && ((this.o = e = new CSSStyleSheet()).replaceSync(this.cssText), s && Gs.set(t, e));
     }
@@ -22,20 +22,20 @@ let Fi = class {
     return this.cssText;
   }
 };
-const fn = (o) => new Fi(typeof o == "string" ? o : o + "", void 0, Hs), ae = (o, ...e) => {
+const fn = (o) => new Fi(typeof o == "string" ? o : o + "", void 0, Os), ae = (o, ...e) => {
   const t = o.length === 1 ? o[0] : e.reduce((s, i, n) => s + ((r) => {
     if (r._$cssResult$ === !0) return r.cssText;
     if (typeof r == "number") return r;
     throw Error("Value passed to 'css' function must be a 'css' function result: " + r + ". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.");
   })(i) + o[n + 1], o[0]);
-  return new Fi(t, o, Hs);
+  return new Fi(t, o, Os);
 }, gn = (o, e) => {
-  if (Os) o.adoptedStyleSheets = e.map((t) => t instanceof CSSStyleSheet ? t : t.styleSheet);
+  if (Hs) o.adoptedStyleSheets = e.map((t) => t instanceof CSSStyleSheet ? t : t.styleSheet);
   else for (const t of e) {
     const s = document.createElement("style"), i = vt.litNonce;
     i !== void 0 && s.setAttribute("nonce", i), s.textContent = t.cssText, o.appendChild(s);
   }
-}, Ys = Os ? (o) => o : (o) => o instanceof CSSStyleSheet ? ((e) => {
+}, Ys = Hs ? (o) => o : (o) => o instanceof CSSStyleSheet ? ((e) => {
   let t = "";
   for (const s of e.cssRules) t += s.cssText;
   return fn(t);
@@ -534,7 +534,7 @@ function Xt(o, e) {
   } catch {
   }
 }
-class On {
+class Hn {
   constructor(e) {
     this.hass = e;
   }
@@ -590,7 +590,7 @@ class On {
     this.standalone || await this.hass.callWS({ type: "copilot/messages/clear" });
   }
 }
-const Hn = {
+const On = {
   // navigation
   "nav.overview": "Übersicht",
   "nav.messages": "Meldungen",
@@ -1874,7 +1874,7 @@ const Hn = {
   "st.version": "Version",
   "st.reset": "Reset plant",
   "st.reset_confirm": "Delete the whole plant and start over with the example plant?"
-}, ri = { de: Hn, en: Bn };
+}, ri = { de: On, en: Bn };
 let Ve = "de";
 function ai(o) {
   Ve = o;
@@ -2350,7 +2350,7 @@ function We(o) {
   const t = o.props?.variant || Ye(o.model)?.variant || "wall_e";
   return e.variants[t] || Object.values(e.variants)[0];
 }
-function He(o) {
+function Oe(o) {
   const e = We(o);
   return e ? { w: e.w, h: e.h } : { w: ie[o.type].w, h: ie[o.type].h };
 }
@@ -2365,7 +2365,7 @@ function ui(o) {
   return ye(o).map((t) => e ? { ...t, pos: e.pos?.[t.key] ?? t.pos, at: e.at?.[t.key] ?? t.at } : t);
 }
 function be(o) {
-  const e = { ...ie[o.type], ...He(o) };
+  const e = { ...ie[o.type], ...Oe(o) };
   if (o.type === "value_tile") {
     const s = (o.props.entries || []).length;
     return { w: e.w, h: 2 + Math.ceil(s * 1.3) };
@@ -2381,7 +2381,7 @@ function In(o, e) {
 function ve(o, e) {
   const t = it(o).find((d) => d.id === e);
   if (!t) return null;
-  const s = o.rot || 0, { w: i, h: n } = He(o);
+  const s = o.rot || 0, { w: i, h: n } = Oe(o);
   let { x: r, y: a } = t, c = t.dir;
   return o.flip && ie[o.type].mirrorable && (r = i - r, c = c === "l" ? "r" : c === "r" ? "l" : c), s === 90 ? [r, a] = [n - a, r] : s === 180 ? [r, a] = [i - r, n - a] : s === 270 && ([r, a] = [a, i - r]), { x: o.x + r, y: o.y + a, dir: In(c, s), def: t };
 }
@@ -2761,8 +2761,8 @@ class so {
     const m = i.heatLoad / (Qt - i.designTemp);
     this.tRoom += (u - m * (this.tRoom - this.tOut) + 0.35) * s / 9;
     const w = Math.floor(this.time / 86400);
-    eo.forEach(([C, P, O], D) => {
-      t >= C && t < C + 0.1 && this.lastDrawDay.get(D) !== w && (this.lastDrawDay.set(D, w), this.startDraw(P, O));
+    eo.forEach(([C, P, H], D) => {
+      t >= C && t < C + 0.1 && this.lastDrawDay.get(D) !== w && (this.lastDrawDay.set(D, w), this.startDraw(P, H));
     }), this.tapLeft > 0 && (this.tapLeft -= e, this.tapLeft <= 0 && (this.tapFlow = 0));
     const _ = to.some(([C, P]) => t >= C && t < P), y = i.dhwL / 2 * Ne, b = this.tapFlow * 60 * Ne * (40 - Qn), x = 1.38 / 24 / 2 + (_ ? 0.12 : 0) / 2;
     this.dhwTop -= (b * 0.35 + x) * s / y, this.dhwBot -= (b * 0.65 + x) * s / y;
@@ -3131,29 +3131,29 @@ function Yt(o, e) {
   });
   const j = b ? i === "t180" ? d ? 36 : 20 : 24 : A ? 30 : x ? 22 : _ ? 14 : 16, te = b ? T - (i === "t180" ? 22 : i === "tp70" ? 16 : 14) : A ? T - 29 : x ? 27 : _ ? 12 : 2;
   t.add("iu", "indoor_unit", o.indoorLabel || l("type.indoor_unit"), j, te, { model: o.indoorModel, props: w });
-  const R = t.components.find((S) => S.id === "iu"), V = (S) => ve(R, S), q = { y: ee + 5 }, N = (S, k, L, C, P, O, D = !0, H = {}) => {
-    const le = D ? 1 : -1, K = L + 2 * le, Z = H.supSrcX ?? L + le, se = H.jogY ?? C - 2, fe = D ? L - 8 : L + 1, pe = W - 8, me = o.circuits[0];
+  const R = t.components.find((S) => S.id === "iu"), V = (S) => ve(R, S), q = { y: ee + 5 }, N = (S, k, L, C, P, H, D = !0, O = {}) => {
+    const le = D ? 1 : -1, K = L + 2 * le, Z = O.supSrcX ?? L + le, se = O.jogY ?? C - 2, fe = D ? L - 8 : L + 1, pe = W - 8, me = o.circuits[0];
     t.add("hc1", me.emitter, me.label || l("wz.circuit", { n: 1 }), fe, pe, { flip: D, props: { circuit: 1 } });
     let Pe = P;
     const Us = Z === K ? [] : [[Z, se], [K, se]];
-    O ? (Pe = [{ c: "pc1", s: "running" }], t.add("pc1", "pump", "PC1", K - 1, H.pumpY ?? C - 10, { rot: 270, props: { role: "secondary", circuit: 1 } }), t.pipe(k, f("pc1", "in"), "supply", Pe, { via: Us }), t.pipe(f("pc1", "out"), f("hc1", "sup"), "supply", Pe, { via: [[K, pe + 1]] })) : t.pipe(k, f("hc1", "sup"), "supply", Pe, { via: [...Us, [K, pe + 1]] });
+    H ? (Pe = [{ c: "pc1", s: "running" }], t.add("pc1", "pump", "PC1", K - 1, O.pumpY ?? C - 10, { rot: 270, props: { role: "secondary", circuit: 1 } }), t.pipe(k, f("pc1", "in"), "supply", Pe, { via: Us }), t.pipe(f("pc1", "out"), f("hc1", "sup"), "supply", Pe, { via: [[K, pe + 1]] })) : t.pipe(k, f("hc1", "sup"), "supply", Pe, { via: [...Us, [K, pe + 1]] });
     let Je = f("hc1", "ret"), Ce = [[L, pe + 5]];
-    if (H.chainY !== void 0) {
-      let ut = H.chainY;
+    if (O.chainY !== void 0) {
+      let ut = O.chainY;
       const Zs = [];
       o.separator && Zs.push(["sep", l("wz.separator_short"), {}], ["sc1", "SC1", { filter: !0 }]);
       for (const [qt, un, mn] of Zs)
         t.add(qt, "separator", un, L - 1, ut, { rot: 90, props: mn }), t.pipe(Je, f(qt, "in"), "return", Pe, { via: Ce }), Je = f(qt, "out"), Ce = [], ut += 3;
-      o.expansion && H.mag !== !1 && (t.add("jmag", "junction", "", L, ut + 1), t.add("mag", "expansion_vessel", "MAG", D ? L - 4 : L + 1, ut, { rot: D ? 270 : 90 }), t.pipe(f("mag", "conn"), f("jmag", D ? "l" : "r"), "return", []), t.pipe(Je, f("jmag", "t"), "return", Pe, { via: Ce }), Je = f("jmag", "b"), Ce = []);
+      o.expansion && O.mag !== !1 && (t.add("jmag", "junction", "", L, ut + 1), t.add("mag", "expansion_vessel", "MAG", D ? L - 4 : L + 1, ut, { rot: D ? 270 : 90 }), t.pipe(f("mag", "conn"), f("jmag", D ? "l" : "r"), "return", []), t.pipe(Je, f("jmag", "t"), "return", Pe, { via: Ce }), Je = f("jmag", "b"), Ce = []);
     }
-    H.retSrcX !== void 0 && H.retSrcX !== L && (Ce = [...Ce, [L, H.retJogY ?? C - 1], [H.retSrcX, H.retJogY ?? C - 1]]), t.pipe(Je, S, "return", Pe, { via: Ce });
+    O.retSrcX !== void 0 && O.retSrcX !== L && (Ce = [...Ce, [L, O.retJogY ?? C - 1], [O.retSrcX, O.retJogY ?? C - 1]]), t.pipe(Je, S, "return", Pe, { via: Ce });
   }, J = (S, k, L, C, P) => {
-    const O = { c: "tap", s: "flowing" }, D = { c: "circ", s: "running" }, H = C + L;
-    if (t.add("tap", "tap", l("wz.shower"), C - 6, W - 9, { props: { variant: "shower" } }), t.add("inlet", "water_inlet", l("type.water_inlet"), P, k + 9, { flip: !0 }), t.pipe(f("inlet", "out"), f("dhw", "cold"), "dhw_cold", [O]), !o.circulation) {
-      t.pipe(f("dhw", "hot"), f("tap", "hot"), "dhw_hot", [O], { via: [[C, k + 1], [C, W - 8]] });
+    const H = { c: "tap", s: "flowing" }, D = { c: "circ", s: "running" }, O = C + L;
+    if (t.add("tap", "tap", l("wz.shower"), C - 6, W - 9, { props: { variant: "shower" } }), t.add("inlet", "water_inlet", l("type.water_inlet"), P, k + 9, { flip: !0 }), t.pipe(f("inlet", "out"), f("dhw", "cold"), "dhw_cold", [H]), !o.circulation) {
+      t.pipe(f("dhw", "hot"), f("tap", "hot"), "dhw_hot", [H], { via: [[C, k + 1], [C, W - 8]] });
       return;
     }
-    t.add("jww", "junction", "", C, W - 7), t.pipe(f("dhw", "hot"), f("jww", "b"), "dhw_hot", [], { via: [[C, k + 1]], flowAny: [O, D] }), t.pipe(f("jww", "t"), f("tap", "hot"), "dhw_hot", [O], { via: [[C, W - 8]] }), t.add("circ", "pump", "PW2", H - 1, k + 2, { rot: 90, props: { role: "circulation" } }), t.pipe(f("jww", "r"), f("circ", "in"), "circulation", [D], { via: [[H, W - 7]] }), t.pipe(f("circ", "out"), f("dhw", "circ"), "circulation", [D], { via: [[H, k + 6]] });
+    t.add("jww", "junction", "", C, W - 7), t.pipe(f("dhw", "hot"), f("jww", "b"), "dhw_hot", [], { via: [[C, k + 1]], flowAny: [H, D] }), t.pipe(f("jww", "t"), f("tap", "hot"), "dhw_hot", [H], { via: [[C, W - 8]] }), t.add("circ", "pump", "PW2", O - 1, k + 2, { rot: 90, props: { role: "circulation" } }), t.pipe(f("jww", "r"), f("circ", "in"), "circulation", [D], { via: [[O, W - 7]] }), t.pipe(f("circ", "out"), f("dhw", "circ"), "circulation", [D], { via: [[O, k + 6]] });
   };
   if (b) {
     const S = te, k = (C) => V(C).x;
@@ -3162,17 +3162,17 @@ function Yt(o, e) {
     if (i === "tp70") {
       const C = { c: "iu", s: "pc1" };
       N(f("iu", "ret"), f("iu", "sup"), k("ret"), S, [C], !1, !1, { supSrcX: k("sup"), chainY: L, mag: !1 });
-      const P = j + 12, O = T - 11;
-      t.add("dhw", "dhw_tank", o.dhwLabel || l("type.dhw_tank"), P, O, { flip: !0, props: { volume: o.dhwVolume } }), t.pipe(f("iu", "dhw_sup"), f("dhw", "coil_in"), "supply", [p, u], { via: [[k("dhw_sup"), S - 2], [P - 1, S - 2], [P - 1, O + 4]] }), t.pipe(f("dhw", "coil_out"), f("iu", "dhw_ret"), "return", [p, u], { via: [[P - 2, O + 9], [P - 2, S - 1], [k("dhw_ret"), S - 1]] }), J(P, O, 1, P + 8, P + 10);
+      const P = j + 12, H = T - 11;
+      t.add("dhw", "dhw_tank", o.dhwLabel || l("type.dhw_tank"), P, H, { flip: !0, props: { volume: o.dhwVolume } }), t.pipe(f("iu", "dhw_sup"), f("dhw", "coil_in"), "supply", [p, u], { via: [[k("dhw_sup"), S - 2], [P - 1, S - 2], [P - 1, H + 4]] }), t.pipe(f("dhw", "coil_out"), f("iu", "dhw_ret"), "return", [p, u], { via: [[P - 2, H + 9], [P - 2, S - 1], [k("dhw_ret"), S - 1]] }), J(P, H, 1, P + 8, P + 10);
     } else if (i === "t180") {
-      const C = { c: "tap", s: "flowing" }, P = { c: "circ", s: "running" }, O = { c: "iu", s: "pc1" };
+      const C = { c: "tap", s: "flowing" }, P = { c: "circ", s: "running" }, H = { c: "iu", s: "pc1" };
       if (d) {
-        const H = j - 16, le = T - 9, K = S - 6, Z = S - 4, se = [p, ...h];
-        t.add("buf", "buffer", o.bufferLabel || l("type.buffer"), H, le, { flip: !0, props: { volume: o.bufferVolume } }), t.pipe(f("iu", "sup"), f("buf", "in_sup"), "supply", se, { via: [[k("sup"), K], [H + 4, K]] });
-        let fe = f("buf", "in_ret"), pe = [[H + 3, Z]], me = H + 5;
-        o.separator && (t.add("sep", "separator", l("wz.separator_short"), me, Z - 1), t.add("sc1", "separator", "SC1", me + 3, Z - 1, { props: { filter: !0 } }), t.pipe(fe, f("sep", "in"), "return", se, { via: pe }), t.pipe(f("sep", "out"), f("sc1", "in"), "return", se), fe = f("sc1", "out"), pe = [], me += 7), o.expansion && (t.add("jmag", "junction", "", me + 1, Z), t.add("mag", "expansion_vessel", "MAG", me, Z, { rot: 180 }), t.pipe(f("mag", "conn"), f("jmag", "b"), "return", []), t.pipe(fe, f("jmag", "l"), "return", se, { via: pe }), fe = f("jmag", "r"), pe = []), t.pipe(fe, f("iu", "ret"), "return", se, { via: [...pe, [k("ret"), Z]] }), N(f("buf", "out_ret"), f("buf", "out_sup"), H + 2, le, [m], !0, !1, { supSrcX: H + 1 });
+        const O = j - 16, le = T - 9, K = S - 6, Z = S - 4, se = [p, ...h];
+        t.add("buf", "buffer", o.bufferLabel || l("type.buffer"), O, le, { flip: !0, props: { volume: o.bufferVolume } }), t.pipe(f("iu", "sup"), f("buf", "in_sup"), "supply", se, { via: [[k("sup"), K], [O + 4, K]] });
+        let fe = f("buf", "in_ret"), pe = [[O + 3, Z]], me = O + 5;
+        o.separator && (t.add("sep", "separator", l("wz.separator_short"), me, Z - 1), t.add("sc1", "separator", "SC1", me + 3, Z - 1, { props: { filter: !0 } }), t.pipe(fe, f("sep", "in"), "return", se, { via: pe }), t.pipe(f("sep", "out"), f("sc1", "in"), "return", se), fe = f("sc1", "out"), pe = [], me += 7), o.expansion && (t.add("jmag", "junction", "", me + 1, Z), t.add("mag", "expansion_vessel", "MAG", me, Z, { rot: 180 }), t.pipe(f("mag", "conn"), f("jmag", "b"), "return", []), t.pipe(fe, f("jmag", "l"), "return", se, { via: pe }), fe = f("jmag", "r"), pe = []), t.pipe(fe, f("iu", "ret"), "return", se, { via: [...pe, [k("ret"), Z]] }), N(f("buf", "out_ret"), f("buf", "out_sup"), O + 2, le, [m], !0, !1, { supSrcX: O + 1 });
       } else
-        N(f("iu", "ret"), f("iu", "sup"), k("ret") - 3, S, [O], !1, !0, {
+        N(f("iu", "ret"), f("iu", "sup"), k("ret") - 3, S, [H], !1, !0, {
           supSrcX: k("sup"),
           jogY: S - 2,
           retSrcX: k("ret"),
@@ -3184,57 +3184,57 @@ function Yt(o, e) {
       const C = [p, ...h];
       let P = j + 12;
       if (d) {
-        const O = j + 12, D = T - 9;
-        t.add("buf", "buffer", o.bufferLabel || l("type.buffer"), O, D, { props: { volume: o.bufferVolume } }), t.pipe(f("iu", "sup"), f("buf", "in_sup"), "supply", C, { via: [[k("sup"), S - 1], [O + 1, S - 1]] }), t.pipe(f("buf", "in_ret"), f("iu", "ret"), "return", C, { via: [[O + 2, S - 2], [k("ret"), S - 2]] }), N(f("buf", "out_ret"), f("buf", "out_sup"), O + 3, D, [m], !0, !0, { chainY: L, pumpY: W + 12 }), P = O + 10;
+        const H = j + 12, D = T - 9;
+        t.add("buf", "buffer", o.bufferLabel || l("type.buffer"), H, D, { props: { volume: o.bufferVolume } }), t.pipe(f("iu", "sup"), f("buf", "in_sup"), "supply", C, { via: [[k("sup"), S - 1], [H + 1, S - 1]] }), t.pipe(f("buf", "in_ret"), f("iu", "ret"), "return", C, { via: [[H + 2, S - 2], [k("ret"), S - 2]] }), N(f("buf", "out_ret"), f("buf", "out_sup"), H + 3, D, [m], !0, !0, { chainY: L, pumpY: W + 12 }), P = H + 10;
       } else
         N(f("iu", "ret"), f("iu", "sup"), k("ret"), S + 1, C, !1, !0, { supSrcX: k("sup"), chainY: L, mag: !1 }), P = j + 14;
       if (a) {
-        const O = P, D = T - 11;
-        t.add("dhw", "dhw_tank", o.dhwLabel || l("type.dhw_tank"), O, D, { flip: !0, props: { volume: o.dhwVolume } }), t.pipe(f("iu", "dhw_sup"), f("dhw", "coil_in"), "supply", [p, u], { via: [[k("dhw_sup"), S - 4], [O - 1, S - 4], [O - 1, D + 4]] }), t.pipe(f("dhw", "coil_out"), f("iu", "dhw_ret"), "return", [p, u], { via: [[O - 2, D + 9], [O - 2, S - 3], [k("dhw_ret"), S - 3]] }), J(O, D, 1, O + 8, O + 10);
+        const H = P, D = T - 11;
+        t.add("dhw", "dhw_tank", o.dhwLabel || l("type.dhw_tank"), H, D, { flip: !0, props: { volume: o.dhwVolume } }), t.pipe(f("iu", "dhw_sup"), f("dhw", "coil_in"), "supply", [p, u], { via: [[k("dhw_sup"), S - 4], [H - 1, S - 4], [H - 1, D + 4]] }), t.pipe(f("dhw", "coil_out"), f("iu", "dhw_ret"), "return", [p, u], { via: [[H - 2, D + 9], [H - 2, S - 3], [k("dhw_ret"), S - 3]] }), J(H, D, 1, H + 8, H + 10);
       }
     }
   } else if (A) {
-    const S = te + 14, k = (H) => V(H).x;
+    const S = te + 14, k = (O) => V(O).x;
     if (t.pipe(f("iu", "src_out"), f("ou", "in"), "return", [p], {
       via: [[k("src_out"), S + 1], [j - 1, S + 1], [j - 1, W + 1], [U - 2, W + 1], [U - 2, ee + 5]]
     }), t.pipe(f("ou", "out"), f("iu", "src_in"), "supply", [p], {
       via: [[U - 3, ee + 6], [U - 3, W + 2], [j - 2, W + 2], [j - 2, S + 2], [k("src_in"), S + 2]]
     }), a) {
-      const H = j - 4, le = T - 11;
-      t.add("dhw", "dhw_tank", o.dhwLabel || l("type.dhw_tank"), H, le, { props: { volume: o.dhwVolume } }), t.pipe(f("iu", "dhw_sup"), f("dhw", "coil_in"), "supply", [p, u], { via: [[k("dhw_sup"), le + 4]] }), t.pipe(f("dhw", "coil_out"), f("iu", "dhw_ret"), "return", [p, u], { via: [[k("dhw_ret"), le + 9]] });
-      const K = { c: "tap", s: "flowing" }, Z = { c: "circ", s: "running" }, se = H - 2;
+      const O = j - 4, le = T - 11;
+      t.add("dhw", "dhw_tank", o.dhwLabel || l("type.dhw_tank"), O, le, { props: { volume: o.dhwVolume } }), t.pipe(f("iu", "dhw_sup"), f("dhw", "coil_in"), "supply", [p, u], { via: [[k("dhw_sup"), le + 4]] }), t.pipe(f("dhw", "coil_out"), f("iu", "dhw_ret"), "return", [p, u], { via: [[k("dhw_ret"), le + 9]] });
+      const K = { c: "tap", s: "flowing" }, Z = { c: "circ", s: "running" }, se = O - 2;
       t.add("tap", "tap", l("wz.shower"), U + 2, W - 9, { props: { variant: "shower" } }), t.add("inlet", "water_inlet", l("type.water_inlet"), U + 1, le + 9), t.pipe(f("inlet", "out"), f("dhw", "cold"), "dhw_cold", [K]), o.circulation ? (t.add("jww", "junction", "", se, W - 7), t.pipe(f("dhw", "hot"), f("jww", "b"), "dhw_hot", [], { via: [[se, le + 1]], flowAny: [K, Z] }), t.pipe(f("jww", "t"), f("tap", "hot"), "dhw_hot", [K], { via: [[se, W - 8]] }), t.add("circ", "pump", "PW2", se - 2, le + 2, { rot: 90, props: { role: "circulation" } }), t.pipe(f("jww", "l"), f("circ", "in"), "circulation", [Z], { via: [[se - 1, W - 7]] }), t.pipe(f("circ", "out"), f("dhw", "circ"), "circulation", [Z], { via: [[se - 1, le + 6]] })) : t.pipe(f("dhw", "hot"), f("tap", "hot"), "dhw_hot", [K], { via: [[se, le + 1], [se, W - 8]] });
     }
-    const L = j + 22, C = T - 9, P = C - 1, O = [p, ...h];
-    t.add("buf", "buffer", o.bufferLabel || l("type.buffer"), L, C, { props: { volume: o.bufferVolume } }), t.pipe(f("iu", "sup"), f("buf", "in_sup"), "supply", O, { via: [[k("sup"), S + 1], [L + 1, S + 1]] });
+    const L = j + 22, C = T - 9, P = C - 1, H = [p, ...h];
+    t.add("buf", "buffer", o.bufferLabel || l("type.buffer"), L, C, { props: { volume: o.bufferVolume } }), t.pipe(f("iu", "sup"), f("buf", "in_sup"), "supply", H, { via: [[k("sup"), S + 1], [L + 1, S + 1]] });
     const D = [];
     o.separator && (t.add("sep", "separator", l("wz.separator_short"), k("sup") + 9, P - 1, { rot: 180 }), D.push({ inP: f("sep", "in"), outP: f("sep", "out") })), o.expansion && (t.add("jmag", "junction", "", k("sup") + 6, P), t.add("mag", "expansion_vessel", "MAG", k("sup") + 5, P + 1, { rot: 180 }), t.pipe(f("mag", "conn"), f("jmag", "b"), "return", []), D.push({ inP: f("jmag", "r"), outP: f("jmag", "l") })), o.separator && (t.add("sc1", "separator", "SC1", k("sup") + 1, P - 1, { rot: 180, props: { filter: !0 } }), D.push({ inP: f("sc1", "in"), outP: f("sc1", "out") }));
-    for (let H = 0; H < D.length - 1; H++) t.pipe(D[H].outP, D[H + 1].inP, "return", O);
-    D.length ? (t.pipe(D[D.length - 1].outP, f("iu", "ret"), "return", O, { via: [[k("ret"), P]] }), t.pipe(f("buf", "in_ret"), D[0].inP, "return", O, { via: [[L + 2, P]] })) : t.pipe(f("buf", "in_ret"), f("iu", "ret"), "return", O, { via: [[L + 2, P], [k("ret"), P]] }), N(f("buf", "out_ret"), f("buf", "out_sup"), L + 3, C, [m], !0);
+    for (let O = 0; O < D.length - 1; O++) t.pipe(D[O].outP, D[O + 1].inP, "return", H);
+    D.length ? (t.pipe(D[D.length - 1].outP, f("iu", "ret"), "return", H, { via: [[k("ret"), P]] }), t.pipe(f("buf", "in_ret"), D[0].inP, "return", H, { via: [[L + 2, P]] })) : t.pipe(f("buf", "in_ret"), f("iu", "ret"), "return", H, { via: [[L + 2, P], [k("ret"), P]] }), N(f("buf", "out_ret"), f("buf", "out_sup"), L + 3, C, [m], !0);
   } else if (x) {
     const S = te, k = (Z) => V(Z).x, L = { c: "iu", s: "pc1" };
     t.pipe(f("iu", "src_out"), f("ou", "in"), "return", [p], { via: [[k("src_out"), ee + 5]] }), t.pipe(f("ou", "out"), f("iu", "src_in"), "supply", [p], { via: [[k("src_in"), ee + 6]] });
-    const C = o.circuits[0] ?? { emitter: "radiators", label: "" }, P = 2, O = S - 8, D = S - 4;
-    t.add("hc1", C.emitter, C.label || l("wz.circuit", { n: 1 }), P, O - 1, { flip: !0, props: { circuit: 1 } }), t.pipe(f("iu", "sup"), f("hc1", "sup"), "supply", [L], { via: [[k("sup"), O]] });
-    let H = f("hc1", "ret"), le = [], K = P + 9;
-    if (o.separator && (t.add("sep", "separator", l("wz.separator_short"), K, D - 1), t.add("sc1", "separator", "SC1", K + 3, D - 1, { props: { filter: !0 } }), t.pipe(H, f("sep", "in"), "return", [L]), t.pipe(f("sep", "out"), f("sc1", "in"), "return", [L]), H = f("sc1", "out"), K += 7), o.expansion && (t.add("jmag", "junction", "", K + 1, D), t.add("mag", "expansion_vessel", "MAG", K, D, { rot: 180 }), t.pipe(f("mag", "conn"), f("jmag", "b"), "return", []), t.pipe(H, f("jmag", "l"), "return", [L]), H = f("jmag", "r")), t.pipe(H, f("iu", "ret"), "return", [L], { via: [...le, [k("ret"), D]] }), a) {
+    const C = o.circuits[0] ?? { emitter: "radiators", label: "" }, P = 2, H = S - 8, D = S - 4;
+    t.add("hc1", C.emitter, C.label || l("wz.circuit", { n: 1 }), P, H - 1, { flip: !0, props: { circuit: 1 } }), t.pipe(f("iu", "sup"), f("hc1", "sup"), "supply", [L], { via: [[k("sup"), H]] });
+    let O = f("hc1", "ret"), le = [], K = P + 9;
+    if (o.separator && (t.add("sep", "separator", l("wz.separator_short"), K, D - 1), t.add("sc1", "separator", "SC1", K + 3, D - 1, { props: { filter: !0 } }), t.pipe(O, f("sep", "in"), "return", [L]), t.pipe(f("sep", "out"), f("sc1", "in"), "return", [L]), O = f("sc1", "out"), K += 7), o.expansion && (t.add("jmag", "junction", "", K + 1, D), t.add("mag", "expansion_vessel", "MAG", K, D, { rot: 180 }), t.pipe(f("mag", "conn"), f("jmag", "b"), "return", []), t.pipe(O, f("jmag", "l"), "return", [L]), O = f("jmag", "r")), t.pipe(O, f("iu", "ret"), "return", [L], { via: [...le, [k("ret"), D]] }), a) {
       const Z = j + 22, se = S + 2;
       t.add("dhw", "dhw_tank", o.dhwLabel || l("type.dhw_tank"), Z, se, { props: { volume: o.dhwVolume } }), t.pipe(f("iu", "dhw_sup"), f("dhw", "coil_in"), "supply", [p, u], { via: [[k("dhw_sup"), S - 3], [Z + 9, S - 3], [Z + 9, se + 4]] }), t.pipe(f("dhw", "coil_out"), f("iu", "dhw_ret"), "return", [p, u], { via: [[Z + 8, se + 9], [Z + 8, S - 2], [k("dhw_ret"), S - 2]] }), ft(t, o, f("dhw", "hot"), f("dhw", "circ"), f("dhw", "cold"), Z, se);
     }
   } else if (_) {
     const S = te, k = (K) => V(K).x, L = Math.max(...["src_in", "src_out", "sup", "ret", "dhw_sup", "dhw_ret", "dhw_hot", "dhw_cold", "circ"].filter((K) => ve(R, K)).map(k));
     t.pipe(f("ou", "out"), f("iu", "src_in"), "supply", [p], { via: [[12, q.y], [12, S - 9], [k("src_in"), S - 9]] }), t.pipe(f("iu", "src_out"), f("ou", "in"), "return", [p], { via: [[k("src_out"), S - 10], [11, S - 10]] });
-    let C = f("iu", "sup"), P = f("iu", "ret"), O = r ? [m] : [p, ...h], D = [[k("sup"), S - 2]];
-    const H = S - 4;
+    let C = f("iu", "sup"), P = f("iu", "ret"), H = r ? [m] : [p, ...h], D = [[k("sup"), S - 2]];
+    const O = S - 4;
     let le = L + 14;
     if (d) {
       const K = L + 2, Z = K + 10, se = S + 4;
       t.add("buf", "buffer", o.bufferLabel || l("type.buffer"), Z, se, { props: { volume: o.bufferVolume } }), t.pipe(f("iu", "sup"), f("buf", "in_sup"), "supply", [p, ...h], { via: [[k("sup"), S - 2], [Z + 1, S - 2]] });
       const fe = [p, ...h];
-      let pe = f("buf", "in_ret"), me = [[Z + 2, H]];
-      o.separator && (t.add("sep", "separator", l("wz.separator_short"), K + 6, H - 1, { rot: 180 }), t.add("sc1", "separator", "SC1", K + 3, H - 1, { rot: 180, props: { filter: !0 } }), t.pipe(pe, f("sep", "in"), "return", fe, { via: me }), t.pipe(f("sep", "out"), f("sc1", "in"), "return", fe), pe = f("sc1", "out"), me = []), o.expansion && (t.add("jmag", "junction", "", K, H), t.add("mag", "expansion_vessel", "MAG", K - 1, H - 5), t.pipe(f("mag", "conn"), f("jmag", "t"), "return", []), t.pipe(pe, f("jmag", "r"), "return", fe, { via: me }), pe = f("jmag", "l"), me = []), t.pipe(pe, f("iu", "ret"), "return", fe, { via: [...me, [k("ret"), H]] }), C = f("buf", "out_sup"), P = f("buf", "out_ret"), O = [m], D = [], le = Z + 7;
+      let pe = f("buf", "in_ret"), me = [[Z + 2, O]];
+      o.separator && (t.add("sep", "separator", l("wz.separator_short"), K + 6, O - 1, { rot: 180 }), t.add("sc1", "separator", "SC1", K + 3, O - 1, { rot: 180, props: { filter: !0 } }), t.pipe(pe, f("sep", "in"), "return", fe, { via: me }), t.pipe(f("sep", "out"), f("sc1", "in"), "return", fe), pe = f("sc1", "out"), me = []), o.expansion && (t.add("jmag", "junction", "", K, O), t.add("mag", "expansion_vessel", "MAG", K - 1, O - 5), t.pipe(f("mag", "conn"), f("jmag", "t"), "return", []), t.pipe(pe, f("jmag", "r"), "return", fe, { via: me }), pe = f("jmag", "l"), me = []), t.pipe(pe, f("iu", "ret"), "return", fe, { via: [...me, [k("ret"), O]] }), C = f("buf", "out_sup"), P = f("buf", "out_ret"), H = [m], D = [], le = Z + 7;
     }
-    if (ts(t, o, C, P, O, D, d || r, le, S + 4), n)
+    if (ts(t, o, C, P, H, D, d || r, le, S + 4), n)
       ft(t, o, f("iu", "dhw_hot"), f("iu", "circ"), f("iu", "dhw_cold"), j - 1, S + 18);
     else if (a) {
       const K = j - 9, Z = S + 8;
@@ -3246,17 +3246,17 @@ function Yt(o, e) {
     const L = S + 6, C = [p, ...h], P = [];
     o.separator && (t.add("sep", "separator", l("wz.separator_short"), k("sup") + 9, L - 1, { rot: 180 }), P.push({ inP: f("sep", "in"), outP: f("sep", "out") })), o.expansion && (t.add("jmag", "junction", "", k("sup") + 6, L), t.add("mag", "expansion_vessel", "MAG", k("sup") + 5, L + 1, { rot: 180 }), t.pipe(f("mag", "conn"), f("jmag", "b"), "return", []), P.push({ inP: f("jmag", "r"), outP: f("jmag", "l") })), o.separator && (t.add("sc1", "separator", "SC1", k("sup") + 1, L - 1, { rot: 180, props: { filter: !0 } }), P.push({ inP: f("sc1", "in"), outP: f("sc1", "out") }));
     for (let D = 0; D < P.length - 1; D++) t.pipe(P[D].outP, P[D + 1].inP, "return", C);
-    let O = f("iu", "ret");
-    if (P.length && (t.pipe(P[P.length - 1].outP, f("iu", "ret"), "return", C, { via: [[k("ret"), L]] }), O = P[0].inP), d) {
-      const D = j + 22, H = S + 8;
-      t.add("buf", "buffer", o.bufferLabel || l("type.buffer"), D, H, { props: { volume: o.bufferVolume } }), t.pipe(f("iu", "sup"), f("buf", "in_sup"), "supply", [p, ...h], { via: [[k("sup"), S + 2], [D + 1, S + 2]] }), t.pipe(f("buf", "in_ret"), O, "return", [p, ...h], { via: [[D + 2, L]] }), ts(t, o, f("buf", "out_sup"), f("buf", "out_ret"), [m], [], !0, D + 8, H + 1);
+    let H = f("iu", "ret");
+    if (P.length && (t.pipe(P[P.length - 1].outP, f("iu", "ret"), "return", C, { via: [[k("ret"), L]] }), H = P[0].inP), d) {
+      const D = j + 22, O = S + 8;
+      t.add("buf", "buffer", o.bufferLabel || l("type.buffer"), D, O, { props: { volume: o.bufferVolume } }), t.pipe(f("iu", "sup"), f("buf", "in_sup"), "supply", [p, ...h], { via: [[k("sup"), S + 2], [D + 1, S + 2]] }), t.pipe(f("buf", "in_ret"), H, "return", [p, ...h], { via: [[D + 2, L]] }), ts(t, o, f("buf", "out_sup"), f("buf", "out_ret"), [m], [], !0, D + 8, O + 1);
     } else {
       const D = j + 25;
-      ts(t, o, f("iu", "sup"), O, [p, ...h], [[k("sup"), S + 2], [D - 2, S + 2]], !1, D, S + 8, L);
+      ts(t, o, f("iu", "sup"), H, [p, ...h], [[k("sup"), S + 2], [D - 2, S + 2]], !1, D, S + 8, L);
     }
     if (a) {
-      const D = k("dhw_sup") - 8, H = S + 6;
-      t.add("dhw", "dhw_tank", o.dhwLabel || l("type.dhw_tank"), D, H, { props: { volume: o.dhwVolume } }), t.pipe(f("iu", "dhw_sup"), f("dhw", "coil_in"), "supply", [p, u], { via: [[k("dhw_sup"), H + 4]] }), t.pipe(f("dhw", "coil_out"), f("iu", "dhw_ret"), "return", [p, u], { via: [[k("dhw_ret"), H + 9]] }), ft(t, o, f("dhw", "hot"), f("dhw", "circ"), f("dhw", "cold"), D, H);
+      const D = k("dhw_sup") - 8, O = S + 6;
+      t.add("dhw", "dhw_tank", o.dhwLabel || l("type.dhw_tank"), D, O, { props: { volume: o.dhwVolume } }), t.pipe(f("iu", "dhw_sup"), f("dhw", "coil_in"), "supply", [p, u], { via: [[k("dhw_sup"), O + 4]] }), t.pipe(f("dhw", "coil_out"), f("iu", "dhw_ret"), "return", [p, u], { via: [[k("dhw_ret"), O + 9]] }), ft(t, o, f("dhw", "hot"), f("dhw", "circ"), f("dhw", "cold"), D, O);
     }
   }
   const re = Math.max(1, o.circuits.length), I = {
@@ -3270,8 +3270,8 @@ function Yt(o, e) {
   if (I.settings = { ...I.settings, wizard: o, layout_edited: !1, building: A || b ? { show: !0, floor: T, wall: U, slab: W, ground: W, outside: G ? "right" : "left" } : void 0 }, e) {
     const S = new Map(e.components.map((P) => [P.id, P]));
     for (const P of I.components) {
-      const O = S.get(P.id);
-      O && O.type === P.type && (P.bindings = { ...O.bindings }, O.icon && (P.icon = O.icon), O.show && (P.show = O.show));
+      const H = S.get(P.id);
+      H && H.type === P.type && (P.bindings = { ...H.bindings }, H.icon && (P.icon = H.icon), H.show && (P.show = H.show));
     }
     const k = I.components.find((P) => P.id === "iu"), L = S.get("pc0"), C = S.get("vw1");
     k && L?.bindings.running && (k.bindings.pc0_running ??= L.bindings.running), k && L?.bindings.speed && (k.bindings.pc0_speed ??= L.bindings.speed), k && C?.bindings.position && (k.bindings.vw1_position ??= C.bindings.position);
@@ -3330,7 +3330,7 @@ class on {
     this.host.toggleAttribute("light", !t), ai(ci(this.plant?.settings.language, e.language)), this.api ? this.api.setHass(e) : this._connected && this._init(), this.plant && !this.plant.settings.demo && this._checkStates();
   }
   _init() {
-    this.api = new On(this.hass), this._load();
+    this.api = new Hn(this.hass), this._load();
   }
   // ----------------------------------------------------------------- data
   get messages() {
@@ -3716,8 +3716,12 @@ const fs = M`<svg viewBox="0 0 32 32" class="logo" aria-hidden="true">
   <defs><linearGradient id="cp-logo" x1="0" y1="1" x2="1" y2="0">
     <stop offset="0" stop-color="#38d0ff" /><stop offset="0.55" stop-color="#3ddc97" /><stop offset="1" stop-color="#ffb35c" />
   </linearGradient></defs>
-  <path d="M24 7.5A11 11 0 1 0 24 24.5" fill="none" stroke="url(#cp-logo)" stroke-width="4" stroke-linecap="round" />
-  <path d="M16 9c3 4 5 6.5 5 9a5 5 0 0 1-10 0c0-2.5 2-5 5-9z" fill="url(#cp-logo)" />
+  <rect x="2" y="6.2" width="28" height="19.6" rx="3.6" fill="none" stroke="url(#cp-logo)" stroke-width="2.4" />
+  <path d="M16.6 11.2A6.4 6.4 0 1 0 16.6 20.8" fill="none" stroke="url(#cp-logo)" stroke-width="2.4" stroke-linecap="round" />
+  <g transform="translate(12 16) scale(0.8)" fill="url(#cp-logo)">
+    <path d="M0 0C-0.55-2.2 0.35-5.1 2.9-5.6C4.2-3.8 2.7-1.3 0 0Z" /><path d="M0 0C-0.55-2.2 0.35-5.1 2.9-5.6C4.2-3.8 2.7-1.3 0 0Z" transform="rotate(120)" /><path d="M0 0C-0.55-2.2 0.35-5.1 2.9-5.6C4.2-3.8 2.7-1.3 0 0Z" transform="rotate(240)" /><circle r="1.3" />
+  </g>
+  <path d="M21.6 11.6H26.4M21.6 14.5H26.4M21.6 17.5H26.4M21.6 20.4H26.4" stroke="url(#cp-logo)" stroke-width="1.7" stroke-linecap="round" />
 </svg>`, bi = 86400, ss = 30.44;
 function ao(o) {
   const e = (d, p = () => !0) => o.components.find((h) => h.type === d && p(h.props || {})), t = [], s = (d, p, h) => t.push({ id: d, key: d, interval_days: p, component: h });
@@ -3975,7 +3979,7 @@ function at(o, e) {
     aux: o.aux + (e.aux || 0)
   };
 }
-function Oe(o) {
+function He(o) {
   return new Date(o.getFullYear(), o.getMonth(), o.getDate()).getTime();
 }
 const go = {
@@ -4002,16 +4006,16 @@ async function _o(o, e) {
     types: ["change"],
     units: { energy: "kWh" }
   }), [c, d] = await Promise.all([
-    a(new Date(Oe(n) - 30 * 864e5), "day"),
+    a(new Date(He(n) - 30 * 864e5), "day"),
     a(new Date(n.getFullYear(), 0, 1), "month")
   ]), p = /* @__PURE__ */ new Map();
   for (const [y, b] of Object.entries(s))
     for (const x of c[b] || []) {
-      const $ = Oe(new Date(x.start));
+      const $ = He(new Date(x.start));
       p.set($, at(p.get($) || xt, { [y]: x.change || 0 }));
     }
   if (!p.size) return { ...i, missing: "no_statistics" };
-  const h = [...p.entries()].sort((y, b) => y[0] - b[0]).map(([y, b]) => ({ day: y, ...b })), u = p.get(Oe(n)) || null, m = p.get(Oe(n) - 864e5) || null;
+  const h = [...p.entries()].sort((y, b) => y[0] - b[0]).map(([y, b]) => ({ day: y, ...b })), u = p.get(He(n)) || null, m = p.get(He(n) - 864e5) || null;
   let w = xt, _ = null;
   for (const [y, b] of Object.entries(s))
     for (const x of d[b] || [])
@@ -4032,7 +4036,7 @@ function is(o, e, t, s) {
   return { heat: a + d, el: c + p, heatDhw: d, elDhw: p, aux: 0 };
 }
 function wo(o) {
-  const e = new Date(o.time * 1e3), t = Oe(e), s = o.dailyEnergy(), i = s.find((d) => d.day === t) || null, n = s.find((d) => d.day === t - 864e5) || null, r = is(o, e.getMonth(), e.getDate() - 1 + e.getHours() / 24, o.outdoorMean);
+  const e = new Date(o.time * 1e3), t = He(e), s = o.dailyEnergy(), i = s.find((d) => d.day === t) || null, n = s.find((d) => d.day === t - 864e5) || null, r = is(o, e.getMonth(), e.getDate() - 1 + e.getHours() / 24, o.outdoorMean);
   let a = xt;
   for (let d = 0; d < e.getMonth(); d++) a = at(a, is(o, d, new Date(e.getFullYear(), d + 1, 0).getDate()));
   a = at(a, r);
@@ -4575,7 +4579,7 @@ function Lo(o) {
   }
   return `${c} H ${e}`;
 }
-function Oo(o) {
+function Ho(o) {
   const { w: e, h: t, flags: s } = o, i = s.has("running"), n = Math.min(e, t) / 2 - 2, r = e / 2, a = t / 2;
   return M`
     ${i ? M`<circle class="pump-glow pulse" cx=${r} cy=${a} r=${n + 5} />` : ""}
@@ -4597,7 +4601,7 @@ function Ai(o, e = !1) {
     ${e ? "" : M`<text class="valve-tag" x=${n + a * 0.5} y=${r - a * 0.75}>${c ? "B" : "A"}</text>`}
   `;
 }
-function Ho(o) {
+function Oo(o) {
   const { w: e, h: t } = o, s = o.num("flow_temp"), i = o.num("return_temp"), n = o.num("room_temp"), r = s !== void 0 && n !== void 0 ? s - n > 6 : !1, a = 9, c = 0.45 * z, d = t - 0.45 * z, p = (e - 20) / a, h = `rg-${o.c.id}`;
   return M`
     <defs><linearGradient id=${h} x1="0" y1="0" x2="0" y2="1">
@@ -4682,13 +4686,13 @@ function Ko(o) {
     case "dhw_tank":
       return Ei(o, "dhw");
     case "pump":
-      return Oo(o);
+      return Ho(o);
     case "valve_3way":
       return Ai(o);
     case "mixer":
       return Ai(o, !0);
     case "radiators":
-      return Ho(o);
+      return Oo(o);
     case "floor_heating":
       return Bo(o);
     case "tap":
@@ -4982,7 +4986,7 @@ const Pt = class Pt extends ne {
   }
   /** Body outline of a component in schematic px, honouring rotation and mirroring. */
   _isoBox(e) {
-    const t = { ...ie[e.type], ...He(e) }, { w: s, h: i } = be(e), n = (e.type === "value_tile" ? s : t.w) * E, r = (e.type === "value_tile" ? i : t.h) * E, a = Yo(e, n, r);
+    const t = { ...ie[e.type], ...Oe(e) }, { w: s, h: i } = be(e), n = (e.type === "value_tile" ? s : t.w) * E, r = (e.type === "value_tile" ? i : t.h) * E, a = Yo(e, n, r);
     if (!a) return null;
     let { x: c, y: d, w: p, h } = a;
     e.flip && t.mirrorable && (c = n - (c + p));
@@ -5036,12 +5040,12 @@ const Pt = class Pt extends ne {
       <rect x=${e.x - e.w} y=${e.y - e.h} width=${e.w * 3} height=${e.h * 3} fill="url(#cp-iso-floor)" class="iso-floor" />`;
   }
   _transform(e) {
-    const t = { ...ie[e.type], ...He(e) }, s = e.rot || 0;
+    const t = { ...ie[e.type], ...Oe(e) }, s = e.rot || 0;
     let i = `translate(${e.x * E} ${e.y * E})`;
     return e.flip && t.mirrorable && (i += ` translate(${t.w * E} 0) scale(-1 1)`), !t.rotatable || s === 0 ? i : s === 90 ? `${i} translate(${t.h * E} 0) rotate(90)` : s === 180 ? `${i} translate(${t.w * E} ${t.h * E}) rotate(180)` : `${i} translate(0 ${t.w * E}) rotate(270)`;
   }
   _component(e, t) {
-    const s = { ...ie[e.type], ...He(e), ports: it(e), badges: hi(e) }, { w: i, h: n } = be(e), r = (e.type === "value_tile" ? i : s.w) * E, a = (e.type === "value_tile" ? n : s.h) * E, c = ($) => {
+    const s = { ...ie[e.type], ...Oe(e), ports: it(e), badges: hi(e) }, { w: i, h: n } = be(e), r = (e.type === "value_tile" ? i : s.w) * E, a = (e.type === "value_tile" ? n : s.h) * E, c = ($) => {
       const A = this.src.get(e, $);
       return A?.available && A.num !== null ? A.num : void 0;
     }, d = ($) => {
@@ -6157,7 +6161,7 @@ function zt(o) {
   const p = i * 10 + n * 15 + r * 12 + d * 40 + s * 0.05;
   return { crossings: i + n, overlaps: d, through: r, length: s, total: p };
 }
-const Oi = {
+const Hi = {
   outdoor_unit: 0,
   indoor_unit: 1,
   pump: 2,
@@ -6191,7 +6195,7 @@ function er(o, e, t, s) {
   }
   for (const _ of n) c.has(_.id) || c.set(_.id, 0);
   const p = [...new Set([...c.values()].map((_) => Math.round(_ * 2)))].sort((_, y) => _ - y).map((_) => n.filter((y) => Math.round(c.get(y.id) * 2) === _)), h = s ? -1 : 1;
-  for (const _ of p) _.sort((y, b) => h * ((Oi[y.type] ?? 5) - (Oi[b.type] ?? 5)));
+  for (const _ of p) _.sort((y, b) => h * ((Hi[y.type] ?? 5) - (Hi[b.type] ?? 5)));
   const u = /* @__PURE__ */ new Map(), m = () => p.forEach((_) => _.forEach((y, b) => u.set(y.id, b / Math.max(1, _.length - 1))));
   m();
   for (let _ = 0; _ < t; _++)
@@ -6361,7 +6365,7 @@ const Ue = class Ue extends ne {
 Ue.properties = { hass: { attribute: !1 }, value: {}, placeholder: {} }, Ue._uid = 0, Ue.styles = [he, ae`:host { display: block; min-width: 0; } input { font-size: 12px; padding: 6px 8px; }`];
 let $s = Ue;
 customElements.get("cp-entity-picker") || customElements.define("cp-entity-picker", $s);
-const Ot = class Ot extends ne {
+const Ht = class Ht extends ne {
   constructor() {
     super(...arguments), this.icons = /* @__PURE__ */ new Map(), this.version = 0, this._sel = null, this._hint = "", this._dirty = !1, this._undo = [], this._redo = [], this._onKey = (e) => {
       const t = e.composedPath()[0]?.tagName;
@@ -6408,7 +6412,7 @@ const Ot = class Ot extends ne {
       id: s,
       type: e,
       label: e === "junction" ? "" : l(`type.${e}`),
-      ...this._freeSpot(t.variants ? He({ type: e, props: {} }).w : t.w, t.variants ? He({ type: e, props: {} }).h : t.h),
+      ...this._freeSpot(t.variants ? Oe({ type: e, props: {} }).w : t.w, t.variants ? Oe({ type: e, props: {} }).h : t.h),
       bindings: {},
       props: e === "value_tile" ? { entries: [] } : e === "label" ? { text: l("type.label"), size: 18 } : {}
     };
@@ -6700,7 +6704,7 @@ const Ot = class Ot extends ne {
     `;
   }
 };
-Ot.properties = {
+Ht.properties = {
   plant: { attribute: !1 },
   hass: { attribute: !1 },
   src: { attribute: !1 },
@@ -6710,7 +6714,7 @@ Ot.properties = {
   _sel: { state: !0 },
   _hint: { state: !0 },
   _dirty: { state: !0 }
-}, Ot.styles = [
+}, Ht.styles = [
   he,
   ae`
       :host { display: flex; flex-direction: column; gap: 10px; height: 100%; min-height: 0; }
@@ -6751,7 +6755,7 @@ Ot.properties = {
       }
     `
 ];
-let ks = Ot;
+let ks = Ht;
 customElements.get("cp-editor") || customElements.define("cp-editor", ks);
 const ar = {
   mode: "fixed",
@@ -6777,7 +6781,7 @@ async function cr(o, e, t) {
   if (!i) return { hours: a, share: !1 };
   const c = [i, n?.grid, n?.house, n?.wallbox, r.mode === "entity" ? r.price_entity : void 0].filter((x) => !!x), d = await o.callWS({
     type: "recorder/statistics_during_period",
-    start_time: new Date(Oe(/* @__PURE__ */ new Date()) - t * 864e5).toISOString(),
+    start_time: new Date(He(/* @__PURE__ */ new Date()) - t * 864e5).toISOString(),
     end_time: (/* @__PURE__ */ new Date()).toISOString(),
     statistic_ids: c,
     period: "hour",
@@ -6808,7 +6812,7 @@ function pr(o) {
 function ls(o, e, t, s, i) {
   const n = Fs(s), r = /* @__PURE__ */ new Map();
   for (const [a, c] of e) {
-    const d = Oe(new Date(a)), p = r.get(d) || { hp: 0, grid: 0, priced: 0, gridForPrice: 0 };
+    const d = He(new Date(a)), p = r.get(d) || { hp: 0, grid: 0, priced: 0, gridForPrice: 0 };
     p.hp += c.hp, p.grid += c.grid, c.price !== void 0 && (p.priced += c.grid * c.price, p.gridForPrice += c.grid), r.set(d, p);
   }
   return o.map((a) => {
@@ -6847,7 +6851,7 @@ function cs(o) {
 function $e(o, e, t) {
   o.dispatchEvent(new CustomEvent(e, { detail: t, bubbles: !0, composed: !0 }));
 }
-const Ht = class Ht extends ne {
+const Ot = class Ot extends ne {
   constructor() {
     super(...arguments), this.plant = null;
   }
@@ -6949,7 +6953,7 @@ const Ht = class Ht extends ne {
     this._upd({ circuits: s });
   }
 };
-Ht.properties = { plant: { attribute: !1 }, _cfg: { state: !0 } }, Ht.styles = [
+Ot.properties = { plant: { attribute: !1 }, _cfg: { state: !0 } }, Ot.styles = [
   he,
   ae`
       .wrap { max-width: 920px; }
@@ -6962,7 +6966,7 @@ Ht.properties = { plant: { attribute: !1 }, _cfg: { state: !0 } }, Ht.styles = [
       @media (max-width: 700px) { .circuit { grid-template-columns: 1fr 1fr; } }
     `
 ];
-let Ss = Ht;
+let Ss = Ot;
 const Bt = class Bt extends ne {
   constructor() {
     super(...arguments), this._res = null, this._sel = /* @__PURE__ */ new Set(), this._busy = !1, this._msg = "";
@@ -7340,7 +7344,7 @@ for (const [o, e] of [
 ])
   customElements.get(o) || customElements.define(o, e);
 const ur = 10 * 6e4, mr = 5e3;
-function Hi(o) {
+function Oi(o) {
   return o === void 0 ? "#8b949e" : o >= 3.5 ? Ae.green : o >= 3 ? Ae.yellow : Ae.red;
 }
 let Bi = null;
@@ -7349,7 +7353,7 @@ const Nt = class Nt extends ne {
     super(...arguments), this._chartKey = "", this._costs = [], this._costKey = "", this.sim = null, this.version = 0, this._data = null, this._error = "", this._loadedAt = 0, this._loadedFor = null;
   }
   connectedCallback() {
-    super.connectedCallback(), Bi ??= import("./echart-CRnBSqBp.js").catch((e) => {
+    super.connectedCallback(), Bi ??= import("./echart-Bsl08e0S.js").catch((e) => {
       Bi = null, console.error("COPilot: chart module failed to load", e);
     });
   }
@@ -7389,7 +7393,7 @@ const Nt = class Nt extends ne {
     const i = xi(t), n = t && t.heat > 0 ? t.heatDhw / t.heat : void 0, r = t && t.el > 0 ? t.aux / t.el : void 0;
     return g`<div class="card tile">
       <div class="cap">${l(`eff.${e}`)} ${s ? g`<span class="est">${l("eff.estimate")}</span>` : v}</div>
-      <div class="spf" style="color:${Hi(i)}">${i !== void 0 ? F(i, 2) : "–"}<small>${e === "today" || e === "yesterday" ? "AZ" : "JAZ"}</small></div>
+      <div class="spf" style="color:${Oi(i)}">${i !== void 0 ? F(i, 2) : "–"}<small>${e === "today" || e === "yesterday" ? "AZ" : "JAZ"}</small></div>
       <div class="kv"><span>${l("eff.heat")}</span><b>${t ? F(t.heat, t.heat >= 100 ? 0 : 1) : "–"} kWh</b></div>
       <div class="kv"><span>${l("eff.el")}</span><b>${t ? F(t.el, t.el >= 100 ? 0 : 1) : "–"} kWh</b></div>
       <div class="kv"><span>${l("eff.dhw_share")}</span><b>${n !== void 0 ? F(n * 100, 0) + " %" : "–"}</b></div>
@@ -7482,7 +7486,7 @@ const Nt = class Nt extends ne {
           lineStyle: { color: a.text, width: 1.5, type: "dashed", opacity: 0.7 },
           data: t.map((c) => {
             const d = xi(c);
-            return d === void 0 ? null : { value: Math.round(d * 100) / 100, itemStyle: { color: Hi(d) } };
+            return d === void 0 ? null : { value: Math.round(d * 100) / 100, itemStyle: { color: Oi(d) } };
           }),
           markLine: {
             silent: !0,
@@ -8053,7 +8057,7 @@ const jt = class jt extends ne {
     })}></cp-echart>`;
   }
   connectedCallback() {
-    super.connectedCallback(), ji ??= import("./echart-CRnBSqBp.js").catch((e) => {
+    super.connectedCallback(), ji ??= import("./echart-Bsl08e0S.js").catch((e) => {
       ji = null, console.error("COPilot: chart module failed to load", e);
     });
   }

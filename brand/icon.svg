@@ -1,11 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="1 2 28 28" width="512" height="512">
-  <defs>
-    <linearGradient id="g" x1="0" y1="1" x2="1" y2="0">
-      <stop offset="0" stop-color="#38d0ff"/>
-      <stop offset="0.55" stop-color="#3ddc97"/>
-      <stop offset="1" stop-color="#ffb35c"/>
-    </linearGradient>
-  </defs>
-  <path d="M24 7.5A11 11 0 1 0 24 24.5" fill="none" stroke="url(#g)" stroke-width="4" stroke-linecap="round"/>
-  <path d="M16 9c3 4 5 6.5 5 9a5 5 0 0 1-10 0c0-2.5 2-5 5-9z" fill="url(#g)"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="512" height="512"><defs><linearGradient id="g" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#38d0ff"/><stop offset="0.55" stop-color="#3ddc97"/><stop offset="1" stop-color="#ffb35c"/></linearGradient></defs>
+  <rect x="2" y="6.2" width="28" height="19.6" rx="3.6" fill="none" stroke="url(#g)" stroke-width="2.4"/>
+  <path d="M16.6 11.2A6.4 6.4 0 1 0 16.6 20.8" fill="none" stroke="url(#g)" stroke-width="2.4" stroke-linecap="round"/>
+  <g transform="translate(12 16) scale(0.8)" fill="url(#g)"><path d="M0 0C-0.55-2.2 0.35-5.1 2.9-5.6C4.2-3.8 2.7-1.3 0 0Z"/><path d="M0 0C-0.55-2.2 0.35-5.1 2.9-5.6C4.2-3.8 2.7-1.3 0 0Z" transform="rotate(120)"/><path d="M0 0C-0.55-2.2 0.35-5.1 2.9-5.6C4.2-3.8 2.7-1.3 0 0Z" transform="rotate(240)"/><circle r="1.3"/></g>
+  <g stroke="url(#g)" stroke-width="1.7" stroke-linecap="round"><path d="M21.6 11.6H26.4M21.6 14.5H26.4M21.6 17.5H26.4M21.6 20.4H26.4"/></g>
 </svg>
