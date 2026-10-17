@@ -114,8 +114,12 @@ export interface BuildingConfig {
   show?: boolean;
   /** floor / ground level (y) */
   floor: number;
-  /** outer wall (x); outside is to the left */
+  /** outer wall (x) */
   wall?: number;
+  /** side of the outer wall that is outside (default left) */
+  outside?: "left" | "right";
+  /** ground level outside (y); above the floor for a basement plant room */
+  ground?: number;
   /** ceiling of the plant room = floor of the living space above (y) */
   slab?: number;
 }

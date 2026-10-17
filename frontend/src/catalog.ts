@@ -248,6 +248,7 @@ export const TYPES: Record<ComponentType, TypeDef> = {
   // coil return 220, cold 55 of 1294 mm); heating coil on the right, drinking water on the left
   dhw_tank: {
     type: "dhw_tank",
+    mirrorable: true,
     w: 6,
     h: 11,
     group: "storage",
@@ -341,13 +342,13 @@ export const TYPES: Record<ComponentType, TypeDef> = {
           { id: "ret", x: 0, y: 5, dir: "l", tempSlot: "return_temp", kind: "return" },
         ],
       },
-      // connections from below (valve radiator), return left, flow right
+      // valve radiator: both connections from below at the right end, return left of flow
       bottom: {
         id: "bottom",
         w: 7,
         h: 6,
         ports: [
-          { id: "ret", x: 1, y: 6, dir: "b", tempSlot: "return_temp", kind: "return" },
+          { id: "ret", x: 4, y: 6, dir: "b", tempSlot: "return_temp", kind: "return" },
           { id: "sup", x: 6, y: 6, dir: "b", kind: "supply" },
         ],
       },
@@ -384,6 +385,7 @@ export const TYPES: Record<ComponentType, TypeDef> = {
   },
   tap: {
     type: "tap",
+    mirrorable: true,
     w: 3,
     h: 3,
     group: "consumer",
@@ -399,6 +401,7 @@ export const TYPES: Record<ComponentType, TypeDef> = {
   },
   water_inlet: {
     type: "water_inlet",
+    mirrorable: true,
     w: 3,
     h: 2,
     group: "consumer",

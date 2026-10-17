@@ -231,7 +231,11 @@ function fromTemplate(plant: Plant): Plant | null {
       if (g.flip) c.flip = true;
       else delete c.flip;
       // shape follows the template (radiator connected from below, shower instead of tap)
-      if (g.props?.variant && (c.type === "radiators" || c.type === "tap")) c.props = { ...c.props, variant: g.props.variant };
+      if (c.type === "radiators" || c.type === "tap") {
+        c.props = { ...c.props };
+        if (g.props?.variant) c.props.variant = g.props.variant;
+        else delete c.props.variant;
+      }
       placed.push(c);
     } else extras.push(c);
   }

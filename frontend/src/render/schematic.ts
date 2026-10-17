@@ -273,6 +273,10 @@ export class CpSchematic extends LitElement {
       const { w, h } = sizeOf(c);
       add(c.x * CELL - 6, c.y * CELL - 6);
       add((c.x + w) * CELL + 6, (c.y + h) * CELL + 22);
+      // parts connected from below get their name beside them: keep it in view
+      if (c.label && portsOf(c).some((pt) => portPos(c, pt.id)?.dir === "b")) {
+        add((c.x + w) * CELL + 12 + Math.min(28, c.label.length) * 7.5, (c.y + h) * CELL);
+      }
       for (const b of this._badgeLayout(c)) {
         add(b.x, b.y);
         add(b.x + CHIP_W, b.y + CHIP_H);
@@ -409,24 +413,32 @@ export class CpSchematic extends LitElement {
     if (!b || b.show === false) return svg``;
     const { w } = this.plant.grid;
     const F = b.floor * CELL;
-    const W = (b.wall ?? -1) * CELL;
+    const G = (b.ground ?? b.floor) * CELL;
     const S = b.slab !== undefined ? b.slab * CELL : undefined;
     const left = Math.min(0, view.x) - CELL * 4;
     const right = Math.max(w * CELL, view.x + view.w) + CELL * 4;
-    const top = Math.min(0, view.y);
-    const bottom = Math.max(F + CELL * 3, view.y + view.h);
+    const top = Math.min(0, view.y) - CELL * 4;
+    const bottom = Math.max(F, G) + CELL * 30;
+    const hasWall = b.wall !== undefined;
+    const W = hasWall ? b.wall! * CELL : left;
+    const outRight = b.outside === "right";
+    // inside / outside spans along x
+    const [inX0, inX1] = !hasWall ? [left, right] : outRight ? [left, W] : [W, right];
+    const [outX0, outX1] = outRight ? [W, right] : [left, W];
     return svg`<g class="building">
-      ${b.wall !== undefined ? svg`<rect class="outside" x=${left} y=${top} width=${W - left} height=${F - top} />` : nothing}
-      <rect class="ground" x=${left} y=${F} width=${right - left} height=${bottom - F} />
-      <line class="floor-line" x1=${left} x2=${right} y1=${F} y2=${F} />
-      ${b.wall !== undefined
-        ? svg`<rect class="wall" x=${W - 7} y=${top} width="14" height=${F - top} />
-            <text class="room" x=${W - 12} y=${F - 8} text-anchor="end">${t("bld.outside")}</text>`
+      ${hasWall
+        ? svg`<rect class="outside" x=${outX0} y=${top} width=${outX1 - outX0} height=${G - top} />
+            <rect class="ground" x=${outX0} y=${G} width=${outX1 - outX0} height=${bottom - G} />
+            <line class="floor-line" x1=${outX0} x2=${outX1} y1=${G} y2=${G} />
+            <text class="room" x=${outRight ? W + 14 : W - 14} y=${G - CELL * 13} text-anchor=${outRight ? "start" : "end"}>${t("bld.outside")}</text>`
         : nothing}
+      <rect class="ground" x=${inX0} y=${F} width=${inX1 - inX0} height=${bottom - F} />
+      <line class="floor-line" x1=${inX0} x2=${inX1} y1=${F} y2=${F} />
+      ${hasWall ? svg`<rect class="wall" x=${W - 7} y=${top} width="14" height=${F + CELL - top} />` : nothing}
       ${S !== undefined
-        ? svg`<rect class="slab" x=${b.wall !== undefined ? W : left} y=${S} width=${right - (b.wall !== undefined ? W : left)} height="10" />
-            <text class="room" x=${(b.wall !== undefined ? W : left) + CELL * 10} y=${S - 8}>${t("bld.living")}</text>
-            <text class="room" x=${(b.wall !== undefined ? W : left) + CELL * 10} y=${S + 28}>${t("bld.plant_room")}</text>`
+        ? svg`<rect class="slab" x=${inX0} y=${S} width=${inX1 - inX0} height="10" />
+            <text class="room" x=${outRight ? W - 14 : W + 14} y=${S - 8} text-anchor=${outRight ? "end" : "start"}>${t("bld.living")}</text>
+            <text class="room" x=${outRight ? W - 14 : W + 14} y=${S + CELL * 3.6} text-anchor=${outRight ? "end" : "start"}>${t(G < F ? "bld.basement" : "bld.plant_room")}</text>`
         : nothing}
     </g>`;
   }
@@ -505,7 +517,7 @@ export class CpSchematic extends LitElement {
     return svg`
       <g class="comp ${sel ? "selected" : ""}" data-id=${c.id}
          @pointerdown=${(e: PointerEvent) => this._onCompDown(e, c)}>
-        <g transform=${this._transform(c)}>
+        <g class=${c.flip && TYPES[c.type].mirrorable ? "flipped" : ""} transform=${this._transform(c)}>
           ${body}
         </g>
         <rect class="comp-hit" x=${c.x * CELL - (c.type === "junction" ? 8 : 0)} y=${c.y * CELL - (c.type === "junction" ? 8 : 0)}
@@ -947,6 +959,8 @@ export class CpSchematic extends LitElement {
     .rad-frame { fill: var(--cp-casing); stroke: var(--cp-casing-stroke); }
     .shower-jet { stroke: #6cc4ff; stroke-width: 1.6; stroke-linecap: round; stroke-dasharray: 3 5; animation: cp-flow 0.5s linear infinite; opacity: 0.85; }
     .shower-hole { fill: var(--cp-muted); }
+    /* mirrored parts keep their texts readable */
+    .flipped text { transform-box: fill-box; transform-origin: center; transform: scaleX(-1); }
     .rad-stub { stroke: var(--cp-casing-stroke); stroke-width: 4; stroke-linecap: round; }
     .building { pointer-events: none; }
     .building .outside { fill: var(--cp-bld-outside); }

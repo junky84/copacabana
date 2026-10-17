@@ -357,7 +357,7 @@ function radiators(ctx: IconCtx): SVGTemplateResult {
         )
       : ""}
     ${ctx.c.props?.variant === "bottom"
-      ? svg`<line class="rad-stub" x1=${C} x2=${C} y1=${bottom - 2} y2=${h} /><line class="rad-stub" x1=${6 * C} x2=${6 * C} y1=${bottom - 2} y2=${h} />`
+      ? svg`<line class="rad-stub" x1=${4 * C} x2=${4 * C} y1=${bottom - 2} y2=${h} /><line class="rad-stub" x1=${6 * C} x2=${6 * C} y1=${bottom - 2} y2=${h} />`
       : ""}
     <rect class="rad-frame" x="0" y=${top} width=${w - 4} height=${bottom - top} rx="6" />
     <rect class="rad-header" x="0" y=${C - 4} width=${w - 4} height="8" rx="4" />
