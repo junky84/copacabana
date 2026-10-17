@@ -1,6 +1,4 @@
-<img src="https://raw.githubusercontent.com/junky84/copilot/main/brand/icon.png" alt="COPilot icon" width="96" align="right">
-
-# COPilot
+# <img src="https://raw.githubusercontent.com/junky84/copilot/main/brand/icon.png" alt="" height="40" align="absmiddle"> COPilot
 
 SCADA-style heat pump dashboard for Home Assistant – modern, animated, configurable.
 The name: **COP** = *Coefficient of Performance* – your heat pump's co-pilot for efficiency.
