@@ -6379,7 +6379,7 @@ const St = class St extends G {
   _autoArrange() {
     const e = No(this._draft);
     this._commit((t) => {
-      t.components = e.plant.components, t.pipes = e.plant.pipes, t.grid = e.plant.grid;
+      t.components = e.plant.components, t.pipes = e.plant.pipes, t.grid = e.plant.grid, t.settings = { ...t.settings, building: e.plant.settings.building };
     }), this._sel = null, this._hint = c(e.kind === "template" ? "ed.auto_done_tpl" : "ed.auto_done", { crossings: e.score.crossings }), window.setTimeout(() => this._hint = "", 6e3);
   }
   _save() {
@@ -7258,7 +7258,7 @@ const Wt = class Wt extends G {
     super(...arguments), this._chartKey = "", this._costs = [], this._costKey = "", this.sim = null, this.version = 0, this._data = null, this._error = "", this._loadedAt = 0, this._loadedFor = null;
   }
   connectedCallback() {
-    super.connectedCallback(), ki ??= import("./echart-Dzees_-S.js").catch((e) => {
+    super.connectedCallback(), ki ??= import("./echart-JH_8fkTL.js").catch((e) => {
       ki = null, console.error("COPilot: chart module failed to load", e);
     });
   }
@@ -7962,7 +7962,7 @@ const Ct = class Ct extends G {
     })}></cp-echart>`;
   }
   connectedCallback() {
-    super.connectedCallback(), Ai ??= import("./echart-Dzees_-S.js").catch((e) => {
+    super.connectedCallback(), Ai ??= import("./echart-JH_8fkTL.js").catch((e) => {
       Ai = null, console.error("COPilot: chart module failed to load", e);
     });
   }

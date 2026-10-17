@@ -287,6 +287,7 @@ export class CpEditor extends LitElement {
       p.components = r.plant.components;
       p.pipes = r.plant.pipes;
       p.grid = r.plant.grid;
+      p.settings = { ...p.settings, building: r.plant.settings.building };
     });
     this._sel = null;
     this._hint = t(r.kind === "template" ? "ed.auto_done_tpl" : "ed.auto_done", { crossings: r.score.crossings });
