@@ -29,6 +29,7 @@ export class CopilotCard extends LitElement {
     hass: { attribute: false },
     isPanel: { type: Boolean },
     _config: { state: true },
+    _narrow: { state: true },
   };
 
   hass?: Hass;
@@ -36,6 +37,27 @@ export class CopilotCard extends LitElement {
   isPanel = false;
   private _config: CardConfig = { type: "custom:copilot-card" };
   private _ctl = new PlantController(this, false);
+  /**
+   * Narrow layout from the card's own width. Measured continuously and only while the card is
+   * laid out: a render while the dashboard is hidden (screen off, other view) reports width 0 and
+   * would otherwise stick in the narrow layout with a tiny schematic until the page is reloaded.
+   */
+  private _narrow = false;
+  private _resizeObs?: ResizeObserver;
+
+  connectedCallback(): void {
+    super.connectedCallback();
+    this._resizeObs = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width ?? 0;
+      if (w > 0) this._narrow = w < 700;
+    });
+    this._resizeObs.observe(this);
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this._resizeObs?.disconnect();
+  }
 
   setConfig(config: CardConfig): void {
     if (!config) throw new Error("Invalid configuration");
@@ -60,6 +82,9 @@ export class CopilotCard extends LitElement {
 
   protected willUpdate(changed: PropertyValues): void {
     if (changed.has("hass") && this.hass) this._ctl.setHass(this.hass);
+    // also measured on every update (Home Assistant pushes state changes all the time)
+    const w = this.clientWidth;
+    if (w > 0) this._narrow = w < 700;
   }
 
   render() {
@@ -83,7 +108,7 @@ export class CopilotCard extends LitElement {
             .showKpis=${c.show_kpis !== false}
             .showSide=${!!c.show_messages}
             .showDemo=${!!c.show_demo_controls}
-            ?narrow=${this.clientWidth < 700}
+            ?narrow=${this._narrow}
             @scenario=${(e: CustomEvent) => this._ctl.scenario(e.detail)}
           ></cp-overview>`}
     </ha-card>`;

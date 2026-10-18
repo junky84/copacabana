@@ -174,9 +174,16 @@ export class CpSchematic extends LitElement {
   }
 
   protected updated(): void {
-    if (!this.autoHeight || !this.plant) return;
+    if (!this.autoHeight) {
+      // back from the narrow layout: let the stage size the schematic again
+      if (this.style.height) this.style.height = "";
+      return;
+    }
+    if (!this.plant) return;
     const box = this._contentBox();
     const width = this.getBoundingClientRect().width;
+    // not laid out (hidden): keep the last height instead of collapsing to the minimum
+    if (width <= 0) return;
     const h = Math.round(Math.max(240, Math.min(window.innerHeight * 0.75, (width * box.h) / box.w)));
     if (this.style.height !== `${h}px`) this.style.height = `${h}px`;
   }
