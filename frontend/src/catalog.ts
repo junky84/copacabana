@@ -185,7 +185,7 @@ export const TYPES: Record<ComponentType, TypeDef> = {
           { id: "ret", x: 6, y: 0, dir: "t", tempSlot: "return_temp", kind: "return" },
           { id: "sup", x: 7, y: 0, dir: "t", tempSlot: "supply_temp", kind: "supply" },
         ],
-        pos: { pressure: [2.2, 12.8], aux_level: [4, 3], pc0_speed: [5.5, 9] },
+        pos: { pressure: [2.2, 12.8], aux_level: [4, 3], pc0_speed: [5.5, 13.2] },
         at: { supply_temp: "sup", return_temp: "ret" },
       },
     },

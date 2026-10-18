@@ -117,12 +117,28 @@ function ipump([x, y]: P, running: boolean, dir: "l" | "r" | "u" | "d" = "l", la
   </g>`;
 }
 
-function ivalve([x, y]: P, b: boolean, label = "VW1", left = false): SVGTemplateResult {
+type Dir = "l" | "r" | "u" | "d";
+
+/**
+ * Diverter valve inside a unit: one triangle per connection, pointing along its pipe (inlet AB,
+ * outlets A and B). Filled = open. dirs: side of the inlet, of A and of B.
+ */
+function ivalve([x, y]: P, b: boolean, dirs: [Dir, Dir, Dir], label = "VW1", left = false): SVGTemplateResult {
   const s = 0.5 * C;
+  const tri = (d: Dir) => {
+    const [px, py] = { l: [-1, 0], r: [1, 0], u: [0, -1], d: [0, 1] }[d];
+    // base corners: s along the pipe, ±0.6 s across it
+    const ax = px * s - py * s * 0.6;
+    const ay = py * s + px * s * 0.6;
+    const bx = px * s + py * s * 0.6;
+    const by = py * s - px * s * 0.6;
+    return `M ${ax} ${ay} L 0 0 L ${bx} ${by} Z`;
+  };
+  const [inD, aD, bD] = dirs;
   return svg`<g transform="translate(${x * C} ${y * C})">
-    <path class="valve-tri on" d="M ${-s} ${-s * 0.6} L 0 0 L ${-s} ${s * 0.6} Z" transform="rotate(-90)" />
-    <path class=${b ? "valve-tri" : "valve-tri on"} d="M ${s} ${-s * 0.6} L 0 0 L ${s} ${s * 0.6} Z" />
-    <path class=${b ? "valve-tri on" : "valve-tri"} d="M ${-s} ${-s * 0.6} L 0 0 L ${-s} ${s * 0.6} Z" />
+    <path class="valve-tri on" d=${tri(inD)} />
+    <path class=${b ? "valve-tri" : "valve-tri on"} d=${tri(aD)} />
+    <path class=${b ? "valve-tri on" : "valve-tri"} d=${tri(bD)} />
     ${left
       ? svg`<text class="itag" x=${-s - 3} y=${-s * 0.4} text-anchor="end">${label} ${b ? "B" : "A"}</text>`
       : svg`<text class="itag" x=${s + 3} y=${-s} >${label} ${b ? "B" : "A"}</text>`}
@@ -177,7 +193,7 @@ function indoor(ctx: IconCtx, variant: string): SVGTemplateResult {
       ${ipipe([[4, 10.2], [4, 0]], dhwC, flags.has("flowing"))}
       ${ipipe([[5, 0], [5, 3], [5.6, 3], [5.6, 20.6]], "#38d0ff", flags.has("flowing"))}
       ${iheater([6, 1.4], 4, aux)}
-      ${ivalve([4.6, 6.2], b)}
+      ${ivalve([4.6, 6.2], b, ["r", "l", "d"])}
       ${ipump([4.2, 7.6], run, "r")}
       ${pc1 || true ? svg`<g transform="translate(${3 * C} ${3.4 * C})"><circle class=${pc1 ? "pump-body on" : "pump-body"} r="8" /><text class="itag" x="12" y="4">PC1</text></g>` : nothing}`;
   } else if (variant === "tp70") {
@@ -198,7 +214,7 @@ function indoor(ctx: IconCtx, variant: string): SVGTemplateResult {
       ${ipipe([[5, 6.4], [5, 9.4]], sup, run && !b)}
       ${ipipe([[5, 6.4], [7, 6.4], [7, 0]], sup, run && b)}
       ${iheater([5, 1.6], 2.8, aux)}
-      ${ivalve([5, 6.4], b, "VW1", true)}
+      ${ivalve([5, 6.4], b, ["u", "d", "r"], "VW1", true)}
       ${ipump([6, 3.4], run, "u")}
       ${ipump([1, 5], pc1, "u", "PC1")}`;
   } else if (variant === "brine") {
@@ -214,7 +230,7 @@ function indoor(ctx: IconCtx, variant: string): SVGTemplateResult {
       ${ipipe([[6, 0], [6, 11.6], [4, 11.6], [4, 9]], ret, run && !b)}
       ${ipipe([[5, 0], [5, 3.4]], ret, run && b)}
       ${iheater([4, 3], 3, aux)}
-      ${ivalve([5.5, 9], b)}
+      ${ivalve([5.5, 9], b, ["u", "r", "d"])}
       ${ipump([5.5, 11.6], run, "l")}`;
   } else {
     // wall_e: everything enters and leaves at the bottom (ports at x 2,3 | 5,6 | 8,9)
@@ -227,7 +243,7 @@ function indoor(ctx: IconCtx, variant: string): SVGTemplateResult {
       ${ipipe([[6, 14], [6, 12.8]], ret, run && b)}
       ${ipipe([[6, 12.8], [2, 12.8], [2, 14]], ret, run)}
       ${iheater([4.3, 3.4], 5.4, aux)}
-      ${ivalve([7.6, 10.6], b)}
+      ${ivalve([7.6, 10.6], b, ["u", "r", "d"])}
       ${ipump([4.3, 12.8], run, "l")}`;
   }
   return svg`

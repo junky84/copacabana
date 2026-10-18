@@ -295,7 +295,7 @@ class ut {
       if (i.nodeType === 1) {
         if (i.hasAttributes()) for (const h of i.getAttributeNames()) if (h.endsWith(Ji)) {
           const u = d[o++], m = i.getAttribute(h).split(Pe), _ = /([.?@])?(.*)/.exec(u);
-          l.push({ type: 1, index: n, name: _[2], strings: m, ctor: _[1] === "." ? Dn : _[1] === "?" ? Ln : _[1] === "@" ? Tn : Jt }), i.removeAttribute(h);
+          l.push({ type: 1, index: n, name: _[2], strings: m, ctor: _[1] === "." ? Dn : _[1] === "?" ? Tn : _[1] === "@" ? Ln : Jt }), i.removeAttribute(h);
         } else h.startsWith(Pe) && (l.push({ type: 6, index: n }), i.removeAttribute(h));
         if (Qi.test(i.tagName)) {
           const h = i.textContent.split(Pe), u = h.length - 1;
@@ -444,7 +444,7 @@ class Dn extends Jt {
     this.element[this.name] = e === y ? void 0 : e;
   }
 }
-class Ln extends Jt {
+class Tn extends Jt {
   constructor() {
     super(...arguments), this.type = 4;
   }
@@ -452,7 +452,7 @@ class Ln extends Jt {
     this.element.toggleAttribute(this.name, !!e && e !== y);
   }
 }
-class Tn extends Jt {
+class Ln extends Jt {
   constructor(e, t, s, i, n) {
     super(e, t, s, i, n), this.type = 5;
   }
@@ -2069,7 +2069,7 @@ const $ = 20, J = (r, e = !1) => ({ key: r, kind: "temp", show: e }), te = {
           { id: "ret", x: 6, y: 0, dir: "t", tempSlot: "return_temp", kind: "return" },
           { id: "sup", x: 7, y: 0, dir: "t", tempSlot: "supply_temp", kind: "supply" }
         ],
-        pos: { pressure: [2.2, 12.8], aux_level: [4, 3], pc0_speed: [5.5, 9] },
+        pos: { pressure: [2.2, 12.8], aux_level: [4, 3], pc0_speed: [5.5, 13.2] },
         at: { supply_temp: "sup", return_temp: "ret" }
       }
     },
@@ -2801,14 +2801,14 @@ class ro {
     this.dim14a || (this.fault && o ? pe = i.auxKw : this.mode === "heating" && this.bufTop < a - 5 && this.pTh >= N * 0.95 ? (this.auxTimer += e, this.auxTimer > 1200 && (pe = Math.min(i.auxKw, 3))) : this.auxTimer = 0, this.tOut < i.designTemp + 2 && this.mode === "heating" && (pe = Math.max(pe, Math.min(i.auxKw, 3))), this.disinfect && this.mode === "hot_water" && this.dhwBot > 52 && (pe = Math.min(i.auxKw, 3))), this.fault && o && pe > 0 && (this.heatDemand = !0), this.aux = pe;
     const q = this.running || this.pc0Overrun > 0 || this.fault && this.aux > 0;
     !this.running && this.pc0Overrun > 0 && (this.pc0Overrun -= e);
-    const oe = q ? 1100 * Ue : 0, ee = this.mode === "hot_water", T = (this.running ? this.pTh : 0) + this.aux;
-    ee ? this.tRl = this.dhwBot + 2 : this.tRl = q ? this.bufBot : this.tRl + (22 - this.tRl) * Math.min(1, e / 3600), this.tVl = oe > 0 ? this.tRl + T / oe : this.tVl + (this.tRl - this.tVl) * Math.min(1, e / 600);
-    const L = (i.bufferL + 60) / 2 * Ue, U = ee ? 0 : oe, j = 0.05 / 2, Z = U * (this.tVl - this.bufTop) + (l > U ? (l - U) * (this.bufBot - this.bufTop) : 0) - j, ae = l * (this.tRlHc - this.bufBot) + (U > l ? (U - l) * (this.bufTop - this.bufBot) : 0) - j;
-    if (this.bufTop += Z * s / L, this.bufBot += ae * s / L, this.bufBot > this.bufTop) {
+    const oe = q ? 1100 * Ue : 0, ee = this.mode === "hot_water", L = (this.running ? this.pTh : 0) + this.aux;
+    ee ? this.tRl = this.dhwBot + 2 : this.tRl = q ? this.bufBot : this.tRl + (22 - this.tRl) * Math.min(1, e / 3600), this.tVl = oe > 0 ? this.tRl + L / oe : this.tVl + (this.tRl - this.tVl) * Math.min(1, e / 600);
+    const T = (i.bufferL + 60) / 2 * Ue, U = ee ? 0 : oe, j = 0.05 / 2, Z = U * (this.tVl - this.bufTop) + (l > U ? (l - U) * (this.bufBot - this.bufTop) : 0) - j, ae = l * (this.tRlHc - this.bufBot) + (U > l ? (U - l) * (this.bufTop - this.bufBot) : 0) - j;
+    if (this.bufTop += Z * s / T, this.bufBot += ae * s / T, this.bufBot > this.bufTop) {
       const S = (this.bufBot + this.bufTop) / 2;
       this.bufBot = this.bufTop = S;
     }
-    if (ee && (this.dhwBot += T * s / b, this.dhwBot > this.dhwTop)) {
+    if (ee && (this.dhwBot += L * s / b, this.dhwBot > this.dhwTop)) {
       const S = (this.dhwBot + this.dhwTop) / 2;
       this.dhwBot = this.dhwTop = S;
     }
@@ -3140,29 +3140,29 @@ function Xt(r, e) {
     pressure_min: 1,
     pressure_max: 2.7,
     buffer_l: s?.buffer
-  }, w = i !== "wall_e", b = r.circuits.length === 1 && !r.circuits[0]?.mixed && r.circuits[0]?.emitter === "radiators", v = w && b && (i === "tp70" || i === "brine" || i === "t180"), x = !v && i === "tp70" && r.circuits.length <= 1 && !r.circuits[0]?.mixed, k = r.circuits[0], A = i === "wall_e" && r.buffer === "parallel" && !o && r.circuits.length === 1 && !k?.mixed && k?.emitter === "radiators", W = 50, P = 16, N = P + 3, ce = 2, ne = v && i === "t180", pe = i === "t180" ? p ? 42 : 26 : i === "tp70" ? 34 : 32, q = ne ? pe + 18 : A || v ? 19 : 16, oe = v && Fe(r.outdoorModel).source === "brine", ee = ne ? q + 5 : A || v ? 4 : 1, T = v ? oe ? P + 3 : P - 7 : A ? P - 7 : x ? 5 : 12;
-  t.add("ou", "outdoor_unit", r.outdoorLabel || c("type.outdoor_unit"), ee, T, {
+  }, w = i !== "wall_e", b = r.circuits.length === 1 && !r.circuits[0]?.mixed && r.circuits[0]?.emitter === "radiators", v = w && b && (i === "tp70" || i === "brine" || i === "t180"), x = !v && i === "tp70" && r.circuits.length <= 1 && !r.circuits[0]?.mixed, k = r.circuits[0], A = i === "wall_e" && r.buffer === "parallel" && !o && r.circuits.length === 1 && !k?.mixed && k?.emitter === "radiators", W = 50, P = 16, N = P + 3, ce = 2, ne = v && i === "t180", pe = i === "t180" ? p ? 42 : 26 : i === "tp70" ? 34 : 32, q = ne ? pe + 18 : A || v ? 19 : 16, oe = v && Fe(r.outdoorModel).source === "brine", ee = ne ? q + 5 : A || v ? 4 : 1, L = v ? oe ? P + 3 : P - 7 : A ? P - 7 : x ? 5 : 12;
+  t.add("ou", "outdoor_unit", r.outdoorLabel || c("type.outdoor_unit"), ee, L, {
     model: r.outdoorModel,
     props: { nominal_kw: r.nominalKw }
   });
-  const L = v ? pe : A ? 44 : x ? 22 : w ? 14 : 16, U = v ? W - (i === "t180" ? 22 : i === "tp70" ? 16 : 14) : A ? W - 32 : x ? 27 : w ? 12 : 2;
-  t.add("iu", "indoor_unit", r.indoorLabel || c("type.indoor_unit"), L, U, { model: r.indoorModel, props: _ });
-  const j = t.components.find((S) => S.id === "iu"), Z = (S) => ye(j, S), ae = { y: T + 5 }, I = (S, z, V, R, D, H, C = !0, O = {}) => {
+  const T = v ? pe : A ? 44 : x ? 22 : w ? 14 : 16, U = v ? W - (i === "t180" ? 22 : i === "tp70" ? 16 : 14) : A ? W - 32 : x ? 27 : w ? 12 : 2;
+  t.add("iu", "indoor_unit", r.indoorLabel || c("type.indoor_unit"), T, U, { model: r.indoorModel, props: _ });
+  const j = t.components.find((S) => S.id === "iu"), Z = (S) => ye(j, S), ae = { y: L + 5 }, I = (S, z, V, R, D, H, C = !0, O = {}) => {
     const le = C ? 1 : -1, K = V + 2 * le, G = O.supSrcX ?? V + le, Q = O.jogY ?? R - 2, xe = C ? V - 8 : V + 1, fe = P - 8, ve = r.circuits[0];
     t.add("hc1", ve.emitter, ve.label || c("wz.circuit", { n: 1 }), xe, fe, { flip: C, props: { circuit: 1 } });
-    let Le = D;
+    let Te = D;
     const qs = G === K ? [] : [[G, Q], [K, Q]];
-    H ? (Le = [{ c: "pc1", s: "running" }], t.add("pc1", "pump", "PC1", K - 1, O.pumpY ?? R - 10, { rot: 270, props: { role: "secondary", circuit: 1 } }), t.pipe(z, f("pc1", "in"), "supply", Le, { via: qs }), t.pipe(f("pc1", "out"), f("hc1", "sup"), "supply", Le, { via: [[K, fe + 1]] })) : t.pipe(z, f("hc1", "sup"), "supply", Le, { via: [...qs, [K, fe + 1]] });
-    let tt = f("hc1", "ret"), Te = [[V, fe + 5]];
+    H ? (Te = [{ c: "pc1", s: "running" }], t.add("pc1", "pump", "PC1", K - 1, O.pumpY ?? R - 10, { rot: 270, props: { role: "secondary", circuit: 1 } }), t.pipe(z, f("pc1", "in"), "supply", Te, { via: qs }), t.pipe(f("pc1", "out"), f("hc1", "sup"), "supply", Te, { via: [[K, fe + 1]] })) : t.pipe(z, f("hc1", "sup"), "supply", Te, { via: [...qs, [K, fe + 1]] });
+    let tt = f("hc1", "ret"), Le = [[V, fe + 5]];
     if (O.chainY !== void 0) {
       let gt = O.chainY;
       const Js = [];
       r.separator && Js.push(["sep", c("wz.separator_short"), {}], ["sc1", "SC1", { filter: !0 }]);
       for (const [Qt, _n, wn] of Js)
-        t.add(Qt, "separator", _n, V - 1, gt, { rot: 90, props: wn }), t.pipe(tt, f(Qt, "in"), "return", Le, { via: Te }), tt = f(Qt, "out"), Te = [], gt += 3;
-      r.expansion && O.mag !== !1 && (t.add("jmag", "junction", "", V, gt + 1), t.add("mag", "expansion_vessel", "MAG", C ? V - 4 : V + 1, gt, { rot: C ? 270 : 90 }), t.pipe(f("mag", "conn"), f("jmag", C ? "l" : "r"), "return", []), t.pipe(tt, f("jmag", "t"), "return", Le, { via: Te }), tt = f("jmag", "b"), Te = []);
+        t.add(Qt, "separator", _n, V - 1, gt, { rot: 90, props: wn }), t.pipe(tt, f(Qt, "in"), "return", Te, { via: Le }), tt = f(Qt, "out"), Le = [], gt += 3;
+      r.expansion && O.mag !== !1 && (t.add("jmag", "junction", "", V, gt + 1), t.add("mag", "expansion_vessel", "MAG", C ? V - 4 : V + 1, gt, { rot: C ? 270 : 90 }), t.pipe(f("mag", "conn"), f("jmag", C ? "l" : "r"), "return", []), t.pipe(tt, f("jmag", "t"), "return", Te, { via: Le }), tt = f("jmag", "b"), Le = []);
     }
-    O.retSrcX !== void 0 && O.retSrcX !== V && (Te = [...Te, [V, O.retJogY ?? R - 1], [O.retSrcX, O.retJogY ?? R - 1]]), t.pipe(tt, S, "return", Le, { via: Te });
+    O.retSrcX !== void 0 && O.retSrcX !== V && (Le = [...Le, [V, O.retJogY ?? R - 1], [O.retSrcX, O.retJogY ?? R - 1]]), t.pipe(tt, S, "return", Te, { via: Le });
   }, ie = (S, z, V, R, D) => {
     const H = { c: "tap", s: "flowing" }, C = { c: "circ", s: "running" }, O = R + V;
     if (t.add("tap", "tap", c("wz.shower"), R - 6, P - 9, { props: { variant: "shower" } }), t.add("inlet", "water_inlet", c("type.water_inlet"), D, z + 9, { flip: !0 }), t.pipe(f("inlet", "out"), f("dhw", "cold"), "dhw_cold", [H]), !r.circulation) {
@@ -3173,17 +3173,17 @@ function Xt(r, e) {
   };
   if (v) {
     const S = U, z = (R) => Z(R).x;
-    ne ? (t.pipe(f("ou", "out"), f("iu", "src_in"), "supply", [d], { via: [[ee + 10, T + 6], [ee + 10, N], [z("src_in"), N]] }), t.pipe(f("iu", "src_out"), f("ou", "in"), "return", [d], { via: [[z("src_out"), N + 1], [ee + 11, N + 1], [ee + 11, T + 5]] })) : oe ? (t.pipe(f("iu", "src_out"), f("ou", "in"), "return", [d], { via: [[z("src_out"), N], [q - 3, N], [q - 3, T + 5]] }), t.pipe(f("ou", "out"), f("iu", "src_in"), "supply", [d], { via: [[q - 2, T + 6], [q - 2, N + 1], [z("src_in"), N + 1]] })) : (t.pipe(f("iu", "src_out"), f("ou", "in"), "return", [d], { via: [[z("src_out"), N], [q - 2, N], [q - 2, T + 5]] }), t.pipe(f("ou", "out"), f("iu", "src_in"), "supply", [d], { via: [[q - 3, T + 6], [q - 3, N + 1], [z("src_in"), N + 1]] }));
+    ne ? (t.pipe(f("ou", "out"), f("iu", "src_in"), "supply", [d], { via: [[ee + 10, L + 6], [ee + 10, N], [z("src_in"), N]] }), t.pipe(f("iu", "src_out"), f("ou", "in"), "return", [d], { via: [[z("src_out"), N + 1], [ee + 11, N + 1], [ee + 11, L + 5]] })) : oe ? (t.pipe(f("iu", "src_out"), f("ou", "in"), "return", [d], { via: [[z("src_out"), N], [q - 3, N], [q - 3, L + 5]] }), t.pipe(f("ou", "out"), f("iu", "src_in"), "supply", [d], { via: [[q - 2, L + 6], [q - 2, N + 1], [z("src_in"), N + 1]] })) : (t.pipe(f("iu", "src_out"), f("ou", "in"), "return", [d], { via: [[z("src_out"), N], [q - 2, N], [q - 2, L + 5]] }), t.pipe(f("ou", "out"), f("iu", "src_in"), "supply", [d], { via: [[q - 3, L + 6], [q - 3, N + 1], [z("src_in"), N + 1]] }));
     const V = P + 6;
     if (i === "tp70") {
       const R = { c: "iu", s: "pc1" };
       I(f("iu", "ret"), f("iu", "sup"), z("ret"), S, [R], !1, !1, { supSrcX: z("sup"), chainY: V, mag: !1 });
-      const D = L + 20, H = W - 11;
+      const D = T + 20, H = W - 11;
       t.add("dhw", "dhw_tank", r.dhwLabel || c("type.dhw_tank"), D, H, { flip: !0, props: { volume: r.dhwVolume } }), t.pipe(f("iu", "dhw_sup"), f("dhw", "coil_in"), "supply", [d, u], { via: [[z("dhw_sup"), S - 2], [D - 1, S - 2], [D - 1, H + 4]] }), t.pipe(f("dhw", "coil_out"), f("iu", "dhw_ret"), "return", [d, u], { via: [[D - 2, H + 9], [D - 2, S - 1], [z("dhw_ret"), S - 1]] }), ie(D, H, 1, D + 8, D + 10);
     } else if (i === "t180") {
       const R = { c: "tap", s: "flowing" }, D = { c: "circ", s: "running" }, H = { c: "iu", s: "pc1" };
       if (p) {
-        const O = L - 20, le = W - 9, K = S - 6, G = S - 4, Q = [d, ...h];
+        const O = T - 20, le = W - 9, K = S - 6, G = S - 4, Q = [d, ...h];
         t.add("buf", "buffer", r.bufferLabel || c("type.buffer"), O, le, { flip: !0, props: { volume: r.bufferVolume } }), t.pipe(f("iu", "sup"), f("buf", "in_sup"), "supply", Q, { via: [[z("sup"), K], [O + 4, K]] });
         let xe = f("buf", "in_ret"), fe = [[O + 3, G]], ve = O + 5;
         r.separator && (t.add("sep", "separator", c("wz.separator_short"), ve, G - 1), t.add("sc1", "separator", "SC1", ve + 3, G - 1, { props: { filter: !0 } }), t.pipe(xe, f("sep", "in"), "return", Q, { via: fe }), t.pipe(f("sep", "out"), f("sc1", "in"), "return", Q), xe = f("sc1", "out"), fe = [], ve += 7), r.expansion && (t.add("jmag", "junction", "", ve + 1, G), t.add("mag", "expansion_vessel", "MAG", ve, G, { rot: 180 }), t.pipe(f("mag", "conn"), f("jmag", "b"), "return", []), t.pipe(xe, f("jmag", "l"), "return", Q, { via: fe }), xe = f("jmag", "r"), fe = []), t.pipe(xe, f("iu", "ret"), "return", Q, { via: [...fe, [z("ret"), G]] }), I(f("buf", "out_ret"), f("buf", "out_sup"), O + 2, le, [m], !0, !1, { supSrcX: O + 1 });
@@ -3198,12 +3198,12 @@ function Xt(r, e) {
       t.add("tap", "tap", c("wz.shower"), C + 2, P - 9, { flip: !0, props: { variant: "shower" } }), r.circulation ? (t.add("jww", "junction", "", C, P - 5), t.pipe(f("iu", "dhw_hot"), f("jww", "b"), "dhw_hot", [], { flowAny: [R, D] }), t.pipe(f("jww", "t"), f("tap", "hot"), "dhw_hot", [R], { via: [[C, P - 8]] }), t.add("circ", "pump", "PW2", z("circ") - 1, p ? P + 1 : S - 8, { rot: 90, props: { role: "circulation" } }), t.pipe(f("jww", "l"), f("circ", "in"), "circulation", [D], { via: [[z("circ"), P - 5]] }), t.pipe(f("circ", "out"), f("iu", "circ"), "circulation", [D])) : t.pipe(f("iu", "dhw_hot"), f("tap", "hot"), "dhw_hot", [R], { via: [[C, P - 8]] }), t.add("inlet", "water_inlet", c("type.water_inlet"), q - 4, S - 5, { flip: !0 }), t.pipe(f("inlet", "out"), f("iu", "dhw_cold"), "dhw_cold", [R], { via: [[z("dhw_cold"), S - 4]] });
     } else {
       const R = [d, ...h];
-      let D = L + 14;
+      let D = T + 14;
       if (p) {
-        const H = L + 17, C = W - 9;
+        const H = T + 17, C = W - 9;
         t.add("buf", "buffer", r.bufferLabel || c("type.buffer"), H, C, { props: { volume: r.bufferVolume } }), t.pipe(f("iu", "sup"), f("buf", "in_sup"), "supply", R, { via: [[z("sup"), S - 1], [H + 1, S - 1]] }), t.pipe(f("buf", "in_ret"), f("iu", "ret"), "return", R, { via: [[H + 2, S - 2], [z("ret"), S - 2]] }), I(f("buf", "out_ret"), f("buf", "out_sup"), H + 3, C, [m], !0, !0, { chainY: V, pumpY: P + 2 }), D = H + 16;
       } else
-        I(f("iu", "ret"), f("iu", "sup"), z("ret"), S + 1, R, !1, !0, { supSrcX: z("sup"), chainY: V, mag: !1 }), D = L + 20;
+        I(f("iu", "ret"), f("iu", "sup"), z("ret"), S + 1, R, !1, !0, { supSrcX: z("sup"), chainY: V, mag: !1 }), D = T + 20;
       if (a) {
         const H = D, C = W - 11;
         t.add("dhw", "dhw_tank", r.dhwLabel || c("type.dhw_tank"), H, C, { flip: !0, props: { volume: r.dhwVolume } }), t.pipe(f("iu", "dhw_sup"), f("dhw", "coil_in"), "supply", [d, u], { via: [[z("dhw_sup"), S - 4], [H - 1, S - 4], [H - 1, C + 4]] }), t.pipe(f("dhw", "coil_out"), f("iu", "dhw_ret"), "return", [d, u], { via: [[H - 2, C + 9], [H - 2, S - 3], [z("dhw_ret"), S - 3]] }), ie(H, C, 1, H + 8, H + 10);
@@ -3212,16 +3212,16 @@ function Xt(r, e) {
   } else if (A) {
     const S = U + 14, z = (O) => Z(O).x;
     if (t.pipe(f("iu", "src_out"), f("ou", "in"), "return", [d], {
-      via: [[z("src_out"), S + 4], [L - 2, S + 4], [L - 2, N], [q - 2, N], [q - 2, T + 5]]
+      via: [[z("src_out"), S + 4], [T - 2, S + 4], [T - 2, N], [q - 2, N], [q - 2, L + 5]]
     }), t.pipe(f("ou", "out"), f("iu", "src_in"), "supply", [d], {
-      via: [[q - 3, T + 6], [q - 3, N + 1], [L - 3, N + 1], [L - 3, S + 5], [z("src_in"), S + 5]]
+      via: [[q - 3, L + 6], [q - 3, N + 1], [T - 3, N + 1], [T - 3, S + 5], [z("src_in"), S + 5]]
     }), a) {
-      const O = L - 14, le = W - 11;
+      const O = T - 14, le = W - 11;
       t.add("dhw", "dhw_tank", r.dhwLabel || c("type.dhw_tank"), O, le, { props: { volume: r.dhwVolume } }), t.pipe(f("iu", "dhw_sup"), f("dhw", "coil_in"), "supply", [d, u], { via: [[z("dhw_sup"), le + 4]] }), t.pipe(f("dhw", "coil_out"), f("iu", "dhw_ret"), "return", [d, u], { via: [[z("dhw_ret"), le + 9]] });
       const K = { c: "tap", s: "flowing" }, G = { c: "circ", s: "running" }, Q = O - 2;
       t.add("tap", "tap", c("wz.shower"), Q - 6, P - 9, { props: { variant: "shower" } }), t.add("inlet", "water_inlet", c("type.water_inlet"), q + 1, le + 9), t.pipe(f("inlet", "out"), f("dhw", "cold"), "dhw_cold", [K]), r.circulation ? (t.add("jww", "junction", "", Q, P - 7), t.pipe(f("dhw", "hot"), f("jww", "b"), "dhw_hot", [], { via: [[Q, le + 1]], flowAny: [K, G] }), t.pipe(f("jww", "t"), f("tap", "hot"), "dhw_hot", [K], { via: [[Q, P - 8]] }), t.add("circ", "pump", "PW2", Q - 2, le + 2, { rot: 90, props: { role: "circulation" } }), t.pipe(f("jww", "l"), f("circ", "in"), "circulation", [G], { via: [[Q - 1, P - 7]] }), t.pipe(f("circ", "out"), f("dhw", "circ"), "circulation", [G], { via: [[Q - 1, le + 6]] })) : t.pipe(f("dhw", "hot"), f("tap", "hot"), "dhw_hot", [K], { via: [[Q, le + 1], [Q, P - 8]] });
     }
-    const V = L + 27, R = W - 9, D = S + 5, H = [d, ...h];
+    const V = T + 27, R = W - 9, D = S + 5, H = [d, ...h];
     t.add("buf", "buffer", r.bufferLabel || c("type.buffer"), V, R, { props: { volume: r.bufferVolume } }), t.pipe(f("iu", "sup"), f("buf", "in_sup"), "supply", H, { via: [[z("sup"), S + 3], [V + 1, S + 3]] });
     const C = [];
     r.separator && (t.add("sep", "separator", c("wz.separator_short"), z("sup") + 10, D - 1, { rot: 180 }), C.push({ inP: f("sep", "in"), outP: f("sep", "out") })), r.expansion && (t.add("jmag", "junction", "", z("sup") + 6, D), t.add("mag", "expansion_vessel", "MAG", z("sup") + 5, D + 1, { rot: 180 }), t.pipe(f("mag", "conn"), f("jmag", "b"), "return", []), C.push({ inP: f("jmag", "r"), outP: f("jmag", "l") })), r.separator && (t.add("sc1", "separator", "SC1", z("sup") + 2, D - 1, { rot: 180, props: { filter: !0 } }), C.push({ inP: f("sc1", "in"), outP: f("sc1", "out") }));
@@ -3229,12 +3229,12 @@ function Xt(r, e) {
     C.length ? (t.pipe(C[C.length - 1].outP, f("iu", "ret"), "return", H, { via: [[z("ret"), D]] }), t.pipe(f("buf", "in_ret"), C[0].inP, "return", H, { via: [[V + 2, D]] })) : t.pipe(f("buf", "in_ret"), f("iu", "ret"), "return", H, { via: [[V + 2, D], [z("ret"), D]] }), I(f("buf", "out_ret"), f("buf", "out_sup"), V + 3, R, [m], !0);
   } else if (x) {
     const S = U, z = (G) => Z(G).x, V = { c: "iu", s: "pc1" };
-    t.pipe(f("iu", "src_out"), f("ou", "in"), "return", [d], { via: [[z("src_out"), T + 5]] }), t.pipe(f("ou", "out"), f("iu", "src_in"), "supply", [d], { via: [[z("src_in"), T + 6]] });
+    t.pipe(f("iu", "src_out"), f("ou", "in"), "return", [d], { via: [[z("src_out"), L + 5]] }), t.pipe(f("ou", "out"), f("iu", "src_in"), "supply", [d], { via: [[z("src_in"), L + 6]] });
     const R = r.circuits[0] ?? { emitter: "radiators", label: "" }, D = 2, H = S - 8, C = S - 4;
     t.add("hc1", R.emitter, R.label || c("wz.circuit", { n: 1 }), D, H - 1, { flip: !0, props: { circuit: 1 } }), t.pipe(f("iu", "sup"), f("hc1", "sup"), "supply", [V], { via: [[z("sup"), H]] });
     let O = f("hc1", "ret"), le = [], K = D + 9;
     if (r.separator && (t.add("sep", "separator", c("wz.separator_short"), K, C - 1), t.add("sc1", "separator", "SC1", K + 3, C - 1, { props: { filter: !0 } }), t.pipe(O, f("sep", "in"), "return", [V]), t.pipe(f("sep", "out"), f("sc1", "in"), "return", [V]), O = f("sc1", "out"), K += 7), r.expansion && (t.add("jmag", "junction", "", K + 1, C), t.add("mag", "expansion_vessel", "MAG", K, C, { rot: 180 }), t.pipe(f("mag", "conn"), f("jmag", "b"), "return", []), t.pipe(O, f("jmag", "l"), "return", [V]), O = f("jmag", "r")), t.pipe(O, f("iu", "ret"), "return", [V], { via: [...le, [z("ret"), C]] }), a) {
-      const G = L + 22, Q = S + 2;
+      const G = T + 22, Q = S + 2;
       t.add("dhw", "dhw_tank", r.dhwLabel || c("type.dhw_tank"), G, Q, { props: { volume: r.dhwVolume } }), t.pipe(f("iu", "dhw_sup"), f("dhw", "coil_in"), "supply", [d, u], { via: [[z("dhw_sup"), S - 3], [G + 9, S - 3], [G + 9, Q + 4]] }), t.pipe(f("dhw", "coil_out"), f("iu", "dhw_ret"), "return", [d, u], { via: [[G + 8, Q + 9], [G + 8, S - 2], [z("dhw_ret"), S - 2]] }), wt(t, r, f("dhw", "hot"), f("dhw", "circ"), f("dhw", "cold"), G, Q);
     }
   } else if (w) {
@@ -3251,9 +3251,9 @@ function Xt(r, e) {
       r.separator && (t.add("sep", "separator", c("wz.separator_short"), K + 6, O - 1, { rot: 180 }), t.add("sc1", "separator", "SC1", K + 3, O - 1, { rot: 180, props: { filter: !0 } }), t.pipe(fe, f("sep", "in"), "return", xe, { via: ve }), t.pipe(f("sep", "out"), f("sc1", "in"), "return", xe), fe = f("sc1", "out"), ve = []), r.expansion && (t.add("jmag", "junction", "", K, O), t.add("mag", "expansion_vessel", "MAG", K - 1, O - 5), t.pipe(f("mag", "conn"), f("jmag", "t"), "return", []), t.pipe(fe, f("jmag", "r"), "return", xe, { via: ve }), fe = f("jmag", "l"), ve = []), t.pipe(fe, f("iu", "ret"), "return", xe, { via: [...ve, [z("ret"), O]] }), R = f("buf", "out_sup"), D = f("buf", "out_ret"), H = [m], C = [], le = G + 7;
     }
     if (ns(t, r, R, D, H, C, p || o, le, S + 4), n)
-      wt(t, r, f("iu", "dhw_hot"), f("iu", "circ"), f("iu", "dhw_cold"), L - 1, S + 18);
+      wt(t, r, f("iu", "dhw_hot"), f("iu", "circ"), f("iu", "dhw_cold"), T - 1, S + 18);
     else if (a) {
-      const K = L - 9, G = S + 8;
+      const K = T - 9, G = S + 8;
       t.add("dhw", "dhw_tank", r.dhwLabel || c("type.dhw_tank"), K, G, { props: { volume: r.dhwVolume } }), t.pipe(f("iu", "dhw_sup"), f("dhw", "coil_in"), "supply", [d, u], { via: [[z("dhw_sup"), S - 1], [K + 8, S - 1], [K + 8, G + 4]] }), t.pipe(f("dhw", "coil_out"), f("iu", "dhw_ret"), "return", [d, u], { via: [[K + 7, G + 9], [K + 7, S - 3], [z("dhw_ret"), S - 3]] }), wt(t, r, f("dhw", "hot"), f("dhw", "circ"), f("dhw", "cold"), K, G);
     }
   } else {
@@ -3264,10 +3264,10 @@ function Xt(r, e) {
     for (let C = 0; C < D.length - 1; C++) t.pipe(D[C].outP, D[C + 1].inP, "return", R);
     let H = f("iu", "ret");
     if (D.length && (t.pipe(D[D.length - 1].outP, f("iu", "ret"), "return", R, { via: [[z("ret"), V]] }), H = D[0].inP), p) {
-      const C = L + 22, O = S + 8;
+      const C = T + 22, O = S + 8;
       t.add("buf", "buffer", r.bufferLabel || c("type.buffer"), C, O, { props: { volume: r.bufferVolume } }), t.pipe(f("iu", "sup"), f("buf", "in_sup"), "supply", [d, ...h], { via: [[z("sup"), S + 2], [C + 1, S + 2]] }), t.pipe(f("buf", "in_ret"), H, "return", [d, ...h], { via: [[C + 2, V]] }), ns(t, r, f("buf", "out_sup"), f("buf", "out_ret"), [m], [], !0, C + 8, O + 1);
     } else {
-      const C = L + 25;
+      const C = T + 25;
       ns(t, r, f("iu", "sup"), H, [d, ...h], [[z("sup"), S + 2], [C - 2, S + 2]], !1, C, S + 8, V);
     }
     if (a) {
@@ -4099,8 +4099,8 @@ function ko(r, e) {
   const _ = Fe(i?.model).source === "brine", w = t(i, "outdoor_temp"), b = t(i, "heat_power");
   let v = t(i, "el_power");
   v !== void 0 && i && e.get(i, "el_power")?.unit !== "kW" && (v /= 1e3);
-  const x = b !== void 0 && v !== void 0 && v > 0.05 && b > 0.2 ? b / v : void 0, k = t(i, "compressor_speed"), A = t(n, "supply_temp"), W = t(n, "return_temp"), P = t(n, "target_flow_temp") ?? t(l, "target_flow_temp"), N = t(o, "temp_top") ?? t(n, "buffer_temp"), ce = t(a, "temp_top") ?? t(n, "dhw_temp"), ne = t(a, "setpoint") ?? t(n, "dhw_setpoint"), pe = t(n, "aux_level"), q = t(l, "heating_limit") ?? 16, oe = i ? et(e.get(i, "activity")) : void 0, ee = h.has("running"), T = oe === "hot_water" || ee && u.has("b"), L = T || s(a, "charging") || u.has("charging"), U = _ ? "ground" : "air", j = h.has("defrost");
-  if (h.has("alarm") ? m.push({ id: "alarm", tone: "error", key: "ex.alarm", params: {}, comp: i?.id }) : h.has("defrost") ? m.push({ id: "defrost", tone: "cold", key: "ex.defrost", params: { out: w }, hint: "ex.defrost_hint", comp: i?.id }) : ee && T ? m.push({
+  const x = b !== void 0 && v !== void 0 && v > 0.05 && b > 0.2 ? b / v : void 0, k = t(i, "compressor_speed"), A = t(n, "supply_temp"), W = t(n, "return_temp"), P = t(n, "target_flow_temp") ?? t(l, "target_flow_temp"), N = t(o, "temp_top") ?? t(n, "buffer_temp"), ce = t(a, "temp_top") ?? t(n, "dhw_temp"), ne = t(a, "setpoint") ?? t(n, "dhw_setpoint"), pe = t(n, "aux_level"), q = t(l, "heating_limit") ?? 16, oe = i ? et(e.get(i, "activity")) : void 0, ee = h.has("running"), L = oe === "hot_water" || ee && u.has("b"), T = L || s(a, "charging") || u.has("charging"), U = _ ? "ground" : "air", j = h.has("defrost");
+  if (h.has("alarm") ? m.push({ id: "alarm", tone: "error", key: "ex.alarm", params: {}, comp: i?.id }) : h.has("defrost") ? m.push({ id: "defrost", tone: "cold", key: "ex.defrost", params: { out: w }, hint: "ex.defrost_hint", comp: i?.id }) : ee && L ? m.push({
     id: "dhw",
     tone: "dhw",
     key: ce !== void 0 && ne !== void 0 ? "ex.dhw_charge" : "ex.dhw_charge_short",
@@ -4120,14 +4120,14 @@ function ko(r, e) {
     params: { cop: nt(x), speed: k },
     hint: k !== void 0 ? "ex.cop_modulating" : void 0,
     comp: i?.id
-  }), !T && !j && P !== void 0 && w !== void 0 && w < q && m.push({
+  }), !L && !j && P !== void 0 && w !== void 0 && w < q && m.push({
     id: "curve",
     tone: "heat",
     key: A !== void 0 ? "ex.curve" : "ex.curve_short",
     params: { out: w, target: P, sup: A },
     hint: "ex.curve_hint",
     comp: n?.id
-  }), ee && !T && !j && A !== void 0 && W !== void 0) {
+  }), ee && !L && !j && A !== void 0 && W !== void 0) {
     const I = A - W;
     m.push({
       id: "spread",
@@ -4138,7 +4138,7 @@ function ko(r, e) {
     });
   }
   if (N !== void 0 && (o || De(n)?.id === "tp70")) {
-    const I = u.has("pc1") || r.components.some((de) => de.type === "pump" && de.props.circuit === 1 && Me(de, e).has("running")), ie = ee && !T && !j && A !== void 0 && A - N > 2;
+    const I = u.has("pc1") || r.components.some((de) => de.type === "pump" && de.props.circuit === 1 && Me(de, e).has("running")), ie = ee && !L && !j && A !== void 0 && A - N > 2;
     m.push({
       id: "buffer",
       tone: ie ? "warn" : "info",
@@ -4158,7 +4158,7 @@ function ko(r, e) {
       comp: l.id
     });
   }
-  s(a, "disinfecting") ? m.push({ id: "disinfect", tone: "dhw", key: "ex.disinfect", params: {}, comp: a?.id }) : ce !== void 0 && !L && m.push({ id: "dhw_idle", tone: "info", key: ne !== void 0 ? "ex.dhw_idle" : "ex.dhw_idle_short", params: { dhw: ce, set: ne }, comp: a?.id ?? n?.id }), p && s(p, "flow") && m.push({ id: "tap", tone: "dhw", key: "ex.tap", params: { flow: t(p, "flow") }, comp: p.id }), d && Me(d, e).has("running") && m.push({ id: "circ", tone: "info", key: "ex.circ", params: {}, hint: "ex.circ_hint", comp: d.id }), u.has("aux") && m.push({ id: "aux", tone: "warn", key: pe !== void 0 ? "ex.aux" : "ex.aux_short", params: { aux: pe }, hint: "ex.aux_hint", comp: n?.id });
+  s(a, "disinfecting") ? m.push({ id: "disinfect", tone: "dhw", key: "ex.disinfect", params: {}, comp: a?.id }) : ce !== void 0 && !T && m.push({ id: "dhw_idle", tone: "info", key: ne !== void 0 ? "ex.dhw_idle" : "ex.dhw_idle_short", params: { dhw: ce, set: ne }, comp: a?.id ?? n?.id }), p && s(p, "flow") && m.push({ id: "tap", tone: "dhw", key: "ex.tap", params: { flow: t(p, "flow") }, comp: p.id }), d && Me(d, e).has("running") && m.push({ id: "circ", tone: "info", key: "ex.circ", params: {}, hint: "ex.circ_hint", comp: d.id }), u.has("aux") && m.push({ id: "aux", tone: "warn", key: pe !== void 0 ? "ex.aux" : "ex.aux_short", params: { aux: pe }, hint: "ex.aux_hint", comp: n?.id });
   const ae = n?.props.input_labels || {};
   for (const I of [1, 2, 3, 4]) {
     if (!s(n, `input${I}`)) continue;
@@ -4403,9 +4403,9 @@ function Zs(r, e, t = 10, s = "casing") {
   return M`<rect class=${s} x="0" y="0" width=${r} height=${e} rx=${t} />
     <rect class="sheen" x="2" y="2" width=${r - 4} height=${Math.min(e * 0.35, 40)} rx=${t - 2} />`;
 }
-function Lo(r) {
+function To(r) {
   const { w: e, h: t, flags: s, c: i } = r, n = Fe(i.model);
-  if (n.source === "brine") return To(r);
+  if (n.source === "brine") return Lo(r);
   const o = s.has("running") && !s.has("defrost"), a = s.has("defrost"), l = s.has("alarm"), p = e * 0.36, d = t * 0.5, h = Math.min(t * 0.38, e * 0.3), u = r.num("fan_speed") ?? (o ? 60 : 0), m = u <= 0 ? 0 : u < 45 ? 2.8 : u < 70 ? 2 : 1.5, _ = l ? "#ff4d4d" : a ? "#6cc4ff" : o ? "#3ddc97" : "#5b6573", w = [0, 120, 240].map(
     (b) => M`<path transform="rotate(${b})" d="M0 0 C ${h * 0.18} ${-h * 0.25}, ${h * 0.55} ${-h * 0.35}, ${h * 0.82} ${-h * 0.12} C ${h * 0.6} ${h * 0.05}, ${h * 0.25} ${h * 0.08}, 0 0 Z" />`
   );
@@ -4428,7 +4428,7 @@ function Lo(r) {
     ${l ? M`<rect x="1" y="1" width=${e - 2} height=${t - 2} rx="11" class="alarm-ring" />` : ""}
   `;
 }
-function To(r) {
+function Lo(r) {
   const { w: e, h: t, flags: s } = r, i = s.has("running");
   return M`
     ${Zs(e, t * 0.55, 10)}
@@ -4462,13 +4462,16 @@ function ot([r, e], t, s = "l", i = "PC0") {
     <text class="itag halo" y=${n + 9} text-anchor="middle">${i}</text>
   </g>`;
 }
-function vt([r, e], t, s = "VW1", i = !1) {
-  const n = 0.5 * E;
+function vt([r, e], t, s, i = "VW1", n = !1) {
+  const o = 0.5 * E, a = (h) => {
+    const [u, m] = { l: [-1, 0], r: [1, 0], u: [0, -1], d: [0, 1] }[h], _ = u * o - m * o * 0.6, w = m * o + u * o * 0.6, b = u * o + m * o * 0.6, v = m * o - u * o * 0.6;
+    return `M ${_} ${w} L 0 0 L ${b} ${v} Z`;
+  }, [l, p, d] = s;
   return M`<g transform="translate(${r * E} ${e * E})">
-    <path class="valve-tri on" d="M ${-n} ${-n * 0.6} L 0 0 L ${-n} ${n * 0.6} Z" transform="rotate(-90)" />
-    <path class=${t ? "valve-tri" : "valve-tri on"} d="M ${n} ${-n * 0.6} L 0 0 L ${n} ${n * 0.6} Z" />
-    <path class=${t ? "valve-tri on" : "valve-tri"} d="M ${-n} ${-n * 0.6} L 0 0 L ${-n} ${n * 0.6} Z" />
-    ${i ? M`<text class="itag" x=${-n - 3} y=${-n * 0.4} text-anchor="end">${s} ${t ? "B" : "A"}</text>` : M`<text class="itag" x=${n + 3} y=${-n} >${s} ${t ? "B" : "A"}</text>`}
+    <path class="valve-tri on" d=${a(l)} />
+    <path class=${t ? "valve-tri" : "valve-tri on"} d=${a(p)} />
+    <path class=${t ? "valve-tri on" : "valve-tri"} d=${a(d)} />
+    ${n ? M`<text class="itag" x=${-o - 3} y=${-o * 0.4} text-anchor="end">${i} ${t ? "B" : "A"}</text>` : M`<text class="itag" x=${o + 3} y=${-o} >${i} ${t ? "B" : "A"}</text>`}
   </g>`;
 }
 function bt([r, e], t, s) {
@@ -4508,7 +4511,7 @@ function Vo(r, e) {
       ${Y([[4, 10.2], [4, 0]], _, i.has("flowing"))}
       ${Y([[5, 0], [5, 3], [5.6, 3], [5.6, 20.6]], "#38d0ff", i.has("flowing"))}
       ${bt([6, 1.4], 4, l)}
-      ${vt([4.6, 6.2], a)}
+      ${vt([4.6, 6.2], a, ["r", "l", "d"])}
       ${ot([4.2, 7.6], o, "r")}
       ${M`<g transform="translate(${3 * E} ${3.4 * E})"><circle class=${p ? "pump-body on" : "pump-body"} r="8" /><text class="itag" x="12" y="4">PC1</text></g>`}`;
   } else if (e === "tp70") {
@@ -4528,7 +4531,7 @@ function Vo(r, e) {
       ${Y([[5, 6.4], [5, 9.4]], d, o && !a)}
       ${Y([[5, 6.4], [7, 6.4], [7, 0]], d, o && a)}
       ${bt([5, 1.6], 2.8, l)}
-      ${vt([5, 6.4], a, "VW1", !0)}
+      ${vt([5, 6.4], a, ["u", "d", "r"], "VW1", !0)}
       ${ot([6, 3.4], o, "u")}
       ${ot([1, 5], p, "u", "PC1")}`;
   } else e === "brine" ? m = M`
@@ -4543,7 +4546,7 @@ function Vo(r, e) {
       ${Y([[6, 0], [6, 11.6], [4, 11.6], [4, 9]], h, o && !a)}
       ${Y([[5, 0], [5, 3.4]], h, o && a)}
       ${bt([4, 3], 3, l)}
-      ${vt([5.5, 9], a)}
+      ${vt([5.5, 9], a, ["u", "r", "d"])}
       ${ot([5.5, 11.6], o, "l")}` : m = M`
       ${yt(r, 2 * E, 0.8 * E, 6 * E)}
       ${Y([[3, 14], [3, 9.6], [4.3, 9.6], [4.3, 2.8], [7.6, 2.8], [7.6, 10.6]], d, o)}
@@ -4553,7 +4556,7 @@ function Vo(r, e) {
       ${Y([[6, 14], [6, 12.8]], h, o && a)}
       ${Y([[6, 12.8], [2, 12.8], [2, 14]], h, o)}
       ${bt([4.3, 3.4], 5.4, l)}
-      ${vt([7.6, 10.6], a)}
+      ${vt([7.6, 10.6], a, ["u", "r", "d"])}
       ${ot([4.3, 12.8], o, "l")}`;
   return M`
     ${Zs(t, s, 10, "casing light")}
@@ -4701,7 +4704,7 @@ function Zo(r) {
 function Yo(r) {
   switch (r.c.type) {
     case "outdoor_unit":
-      return Lo(r);
+      return To(r);
     case "indoor_unit":
       return Vo(r, De(r.c)?.id || "wall_e");
     case "buffer":
@@ -4732,7 +4735,7 @@ function Yo(r) {
       return M``;
   }
 }
-const Li = 1, xt = { l: { x: -1, y: 0 }, r: { x: 1, y: 0 }, t: { x: 0, y: -1 }, b: { x: 0, y: 1 } };
+const Ti = 1, xt = { l: { x: -1, y: 0 }, r: { x: 1, y: 0 }, t: { x: 0, y: -1 }, b: { x: 0, y: 1 } };
 function as(r) {
   return r === "l" || r === "r";
 }
@@ -4741,7 +4744,7 @@ function fn(r, e) {
   if (!t || !s) return null;
   const i = ye(t, r.from.p), n = ye(s, r.to.p);
   if (!i || !n) return null;
-  const o = t.type === "junction" ? 0 : Li, a = s.type === "junction" ? 0 : Li, l = { x: i.x, y: i.y }, p = { x: n.x, y: n.y }, d = { x: l.x + xt[i.dir].x * o, y: l.y + xt[i.dir].y * o }, h = { x: p.x + xt[n.dir].x * a, y: p.y + xt[n.dir].y * a }, u = as(i.dir), m = [l, d];
+  const o = t.type === "junction" ? 0 : Ti, a = s.type === "junction" ? 0 : Ti, l = { x: i.x, y: i.y }, p = { x: n.x, y: n.y }, d = { x: l.x + xt[i.dir].x * o, y: l.y + xt[i.dir].y * o }, h = { x: p.x + xt[n.dir].x * a, y: p.y + xt[n.dir].y * a }, u = as(i.dir), m = [l, d];
   if (r.via?.length) {
     let _ = !u;
     for (const [w, b] of [...r.via, [h.x, h.y]]) {
@@ -4752,7 +4755,7 @@ function fn(r, e) {
       }
       _ = m[m.length - 1].x === w, m.push({ x: w, y: b });
     }
-    return m.push(p), { pts: Ti(m), horizontalStart: u };
+    return m.push(p), { pts: Li(m), horizontalStart: u };
   }
   if (u)
     if (d.y === h.y && r.bend === void 0)
@@ -4767,9 +4770,9 @@ function fn(r, e) {
     const _ = r.bend ?? (d.y + h.y) / 2;
     as(n.dir) ? r.bend === void 0 ? m.push({ x: d.x, y: h.y }) : m.push({ x: d.x, y: _ }, { x: h.x, y: _ }) : m.push({ x: d.x, y: _ }, { x: h.x, y: _ }), m.push(h);
   }
-  return m.push(p), { pts: Ti(m), horizontalStart: u };
+  return m.push(p), { pts: Li(m), horizontalStart: u };
 }
-function Ti(r) {
+function Li(r) {
   const e = [];
   for (const t of r) {
     const s = e[e.length - 1];
@@ -4834,7 +4837,7 @@ const ue = 88, me = 34, he = 6;
 function cs(r, e = 17) {
   return r.length > e ? `${r.slice(0, e - 1)}…` : r;
 }
-const Lt = class Lt extends se {
+const Tt = class Tt extends se {
   constructor() {
     super(...arguments), this.gridStep = 1, this.showGrid = !1, this.snapGrid = !0, this.snapObjects = !0, this._guides = {}, this.icons = /* @__PURE__ */ new Map(), this.edit = !1, this.autoHeight = !1, this.selected = null, this.version = 0, this._view = null, this._drag = null, this._valueDrag = null, this._connect = null, this._pointers = /* @__PURE__ */ new Map(), this._gesture = null, this._segments = [], this._pills = [], this._lastMoved = !1, this._structureKey = "", this._onKey = (e) => {
       e.key === "Escape" && this._connect && (this._connect = null);
@@ -5477,7 +5480,7 @@ const Lt = class Lt extends se {
     this._view = { x: s.x - (s.x - t.x) * i, y: s.y - (s.y - t.y) * i, w: t.w * i, h: t.h * i };
   }
 };
-Lt.properties = {
+Tt.properties = {
   plant: { attribute: !1 },
   src: { attribute: !1 },
   icons: { attribute: !1 },
@@ -5494,7 +5497,7 @@ Lt.properties = {
   showGrid: { type: Boolean },
   snapGrid: { type: Boolean },
   snapObjects: { type: Boolean }
-}, Lt.styles = re`
+}, Tt.styles = re`
     :host {
       display: block;
       position: relative;
@@ -5676,9 +5679,9 @@ Lt.properties = {
       .spin, .pulse, .pipe-flow, .heat-wave, .drop, .tank-coil.hot { animation: none; }
     }
   `;
-let xs = Lt;
+let xs = Tt;
 customElements.get("cp-schematic") || customElements.define("cp-schematic", xs);
-const Tt = class Tt extends se {
+const Lt = class Lt extends se {
   constructor() {
     super(...arguments), this.points = [], this.color = "var(--cp-accent)", this.step = !1;
   }
@@ -5703,12 +5706,12 @@ const Tt = class Tt extends se {
     </svg>`;
   }
 };
-Tt.properties = { points: { attribute: !1 }, color: {}, step: { type: Boolean } }, Tt.styles = re`
+Lt.properties = { points: { attribute: !1 }, color: {}, step: { type: Boolean } }, Lt.styles = re`
     :host { display: block; height: 90px; }
     svg { width: 100%; height: 100%; display: block; overflow: visible; }
     .empty { height: 100%; display: grid; place-items: center; color: var(--cp-muted); font-size: 12px; }
   `;
-let $s = Tt;
+let $s = Lt;
 const Ot = class Ot extends se {
   constructor() {
     super(...arguments), this.canWrite = !1, this.demo = !1, this._draft = null, this._confirm = !1, this._wmsg = "", this._busy = !1, this.slotKey = "", this.x = 0, this.y = 0, this.version = 0, this._hist = null, this._loadedFor = "";
@@ -7584,7 +7587,7 @@ const Kt = class Kt extends se {
     super(...arguments), this._chartKey = "", this._costs = [], this._costKey = "", this.sim = null, this.version = 0, this._data = null, this._error = "", this._loadedAt = 0, this._loadedFor = null;
   }
   connectedCallback() {
-    super.connectedCallback(), Ii ??= import("./echart-1b1I5WFu.js").catch((e) => {
+    super.connectedCallback(), Ii ??= import("./echart-EHwV5a73.js").catch((e) => {
       Ii = null, console.error("COPilot: chart module failed to load", e);
     });
   }
@@ -7861,12 +7864,12 @@ Kt.properties = {
 ];
 let Ds = Kt;
 customElements.get("cp-efficiency") || customElements.define("cp-efficiency", Ds);
-const Ls = 60;
+const Ts = 60;
 function Ee(r, e, t, s) {
   const i = new Array(t).fill(null), n = [...r].sort((l, p) => l.t - p.t);
   let o = 0, a = null;
   for (let l = 0; l < t; l++) {
-    const p = e + l * Ls;
+    const p = e + l * Ts;
     for (; o < n.length && n[o].t <= p; ) a = s(n[o++]);
     i[l] = a;
   }
@@ -7894,7 +7897,7 @@ async function $e(r, e, t, s) {
   }
 }
 async function vr(r, e, t = 24, s = Date.now() / 1e3) {
-  const i = us(r, "outdoor_unit"), n = us(r, "indoor_unit"), o = us(r, "buffer"), a = Math.floor(t * 3600 / Ls), l = s - a * Ls, [p, d, h, u, m, _, w, b, v, x, k] = await Promise.all([
+  const i = us(r, "outdoor_unit"), n = us(r, "indoor_unit"), o = us(r, "buffer"), a = Math.floor(t * 3600 / Ts), l = s - a * Ts, [p, d, h, u, m, _, w, b, v, x, k] = await Promise.all([
     $e(e, i, "compressor_on", t),
     $e(e, i, "compressor_speed", t),
     $e(e, i, "heat_power", t),
@@ -7906,9 +7909,9 @@ async function vr(r, e, t = 24, s = Date.now() / 1e3) {
     $e(e, n, "aux_level", t),
     $e(e, n, "vw1_position", t),
     $e(e, n, "pressure", t)
-  ]), A = p.length ? p : d.length ? d : h, W = Ee(A, l, a, Ae).map((T) => T !== null && T > (A === h ? 0.2 : 0)), P = Ee(u, l, a, (T) => et({ raw: T.raw ?? null, available: T.raw !== void 0 }) ?? null), N = P.map((T) => T === "defrost"), ce = Ee(x, l, a, Ae).map((T, L) => T !== null ? T > 0 : P[L] === "hot_water"), ne = W.map((T, L) => T && !N[L] && !ce[L]), pe = ne.map((T, L) => T && ne.slice(Math.max(0, L - 5), L).every(Boolean) && L >= 5), q = A.length > 0, oe = [], ee = w.length ? w : b;
+  ]), A = p.length ? p : d.length ? d : h, W = Ee(A, l, a, Ae).map((L) => L !== null && L > (A === h ? 0.2 : 0)), P = Ee(u, l, a, (L) => et({ raw: L.raw ?? null, available: L.raw !== void 0 }) ?? null), N = P.map((L) => L === "defrost"), ce = Ee(x, l, a, Ae).map((L, T) => L !== null ? L > 0 : P[T] === "hot_water"), ne = W.map((L, T) => L && !N[T] && !ce[T]), pe = ne.map((L, T) => L && ne.slice(Math.max(0, T - 5), T).every(Boolean) && T >= 5), q = A.length > 0, oe = [], ee = w.length ? w : b;
   if (o || b.length) {
-    const T = Ee(m, l, a, Ae), L = Ee(ee, l, a, Ae), U = T.map((Z, ae) => pe[ae] && Z !== null && L[ae] !== null ? Z - L[ae] : null), j = Ki(U);
+    const L = Ee(m, l, a, Ae), T = Ee(ee, l, a, Ae), U = L.map((Z, ae) => pe[ae] && Z !== null && T[ae] !== null ? Z - T[ae] : null), j = Ki(U);
     oe.push(
       j === void 0 ? { id: "mixing", ampel: "none", detail: "chk.nodata", params: {} } : {
         id: "mixing",
@@ -7921,9 +7924,9 @@ async function vr(r, e, t = 24, s = Date.now() / 1e3) {
     );
   }
   if (q) {
-    const L = ji(W).filter(([ie]) => ie > 0), U = L.length, j = L.length ? L.reduce((ie, [de, we]) => ie + (we - de), 0) / L.length : void 0;
+    const T = ji(W).filter(([ie]) => ie > 0), U = T.length, j = T.length ? T.reduce((ie, [de, we]) => ie + (we - de), 0) / T.length : void 0;
     let Z = 0;
-    for (let ie = 0; ie + 60 <= a; ie += 10) Z = Math.max(Z, L.filter(([de]) => de >= ie && de < ie + 60).length);
+    for (let ie = 0; ie + 60 <= a; ie += 10) Z = Math.max(Z, T.filter(([de]) => de >= ie && de < ie + 60).length);
     const ae = U / t, I = ae <= 1 && Z <= 3 && (j ?? 99) >= 20 ? "green" : Z > 4 || (j ?? 99) < 10 ? "red" : "yellow";
     oe.push({
       id: "cycling",
@@ -7936,7 +7939,7 @@ async function vr(r, e, t = 24, s = Date.now() / 1e3) {
   } else
     oe.push({ id: "cycling", ampel: "none", detail: "chk.nodata", params: {} });
   {
-    const T = Ee(m, l, a, Ae), L = Ee(_, l, a, Ae), U = T.map((Z, ae) => pe[ae] && Z !== null && L[ae] !== null ? Z - L[ae] : null), j = Ki(U);
+    const L = Ee(m, l, a, Ae), T = Ee(_, l, a, Ae), U = L.map((Z, ae) => pe[ae] && Z !== null && T[ae] !== null ? Z - T[ae] : null), j = Ki(U);
     oe.push(
       j === void 0 ? { id: "spread", ampel: "none", detail: "chk.nodata", params: {} } : {
         id: "spread",
@@ -7949,35 +7952,35 @@ async function vr(r, e, t = 24, s = Date.now() / 1e3) {
     );
   }
   if (u.length) {
-    const T = ji(N), L = T.reduce((Z, [ae, I]) => Z + (I - ae), 0), U = W.filter(Boolean).length || 1, j = L / U;
+    const L = ji(N), T = L.reduce((Z, [ae, I]) => Z + (I - ae), 0), U = W.filter(Boolean).length || 1, j = T / U;
     oe.push({
       id: "defrost",
       ampel: j <= 0.08 ? "green" : j <= 0.15 ? "yellow" : "red",
-      value: `${T.length}×`,
+      value: `${L.length}×`,
       detail: "chk.defrost.detail",
-      params: { count: T.length, minutes: L, share: j * 100 },
+      params: { count: L.length, minutes: T, share: j * 100 },
       hint: "chk.defrost.hint"
     });
   }
   if (v.length) {
-    const L = Ee(v, l, a, Ae).map((U) => U !== null && U > 0).filter(Boolean).length;
+    const T = Ee(v, l, a, Ae).map((U) => U !== null && U > 0).filter(Boolean).length;
     oe.push({
       id: "aux",
-      ampel: L === 0 ? "green" : L <= 60 ? "yellow" : "red",
-      value: L ? `${Math.round(L)} min` : "0",
+      ampel: T === 0 ? "green" : T <= 60 ? "yellow" : "red",
+      value: T ? `${Math.round(T)} min` : "0",
       detail: "chk.aux.detail",
-      params: { minutes: L },
+      params: { minutes: T },
       hint: "chk.aux.hint"
     });
   }
   if (k.length && n) {
-    const T = k.map(Ae).filter((I) => I !== null), L = Number(n.props.pressure_min ?? 1), U = Number(n.props.pressure_max ?? 2.7), j = Math.min(...T), Z = Math.max(...T), ae = T.length ? T[0] - T[T.length - 1] : 0;
+    const L = k.map(Ae).filter((I) => I !== null), T = Number(n.props.pressure_min ?? 1), U = Number(n.props.pressure_max ?? 2.7), j = Math.min(...L), Z = Math.max(...L), ae = L.length ? L[0] - L[L.length - 1] : 0;
     oe.push({
       id: "pressure",
-      ampel: j < L || Z > U ? "red" : j < L + 0.2 || ae > 0.2 ? "yellow" : "green",
+      ampel: j < T || Z > U ? "red" : j < T + 0.2 || ae > 0.2 ? "yellow" : "green",
       value: `${F(j, 1)}–${F(Z, 1)} bar`,
       detail: "chk.pressure.detail",
-      params: { min: j, max: Z, lo: L, hi: U },
+      params: { min: j, max: Z, lo: T, hi: U },
       hint: "chk.pressure.hint"
     });
   }
@@ -8070,8 +8073,8 @@ Ft.properties = {
       .ok { font-size: 12px; color: var(--cp-accent); font-weight: 600; }
     `
 ];
-let Ts = Ft;
-customElements.get("cp-check") || customElements.define("cp-check", Ts);
+let Ls = Ft;
+customElements.get("cp-check") || customElements.define("cp-check", Ls);
 const rt = [
   { key: "design", slot: "design_temp", min: 28, max: 65, step: 1 },
   { key: "offset", slot: "offset_temp", min: -10, max: 10, step: 0.5 },
@@ -8288,7 +8291,7 @@ const Ut = class Ut extends se {
     })}></cp-echart>`;
   }
   connectedCallback() {
-    super.connectedCallback(), Gi ??= import("./echart-1b1I5WFu.js").catch((e) => {
+    super.connectedCallback(), Gi ??= import("./echart-EHwV5a73.js").catch((e) => {
       Gi = null, console.error("COPilot: chart module failed to load", e);
     });
   }
