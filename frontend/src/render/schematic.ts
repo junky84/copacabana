@@ -601,7 +601,7 @@ export class CpSchematic extends LitElement {
     const accent = isTemp ? tempColor(v!.num!, "#8b949e") : "var(--cp-accent)";
     return svg`
       <g class="chip ${v?.available === false ? "na" : ""}" @click=${(e: MouseEvent) => this._slotClick(e, c, slot)}
-        @pointerdown=${(e: PointerEvent) => this._onValueDown(e, c, slot, x, y)}>
+        @pointerdown=${(e: PointerEvent) => this._onValueDown(e, c, slot, x, y, CHIP_W, CHIP_H)}>
         <rect x=${x} y=${y} width=${CHIP_W} height=${CHIP_H} rx="8" />
         <rect class="chip-accent" x=${x} y=${y + 7} width="3" height=${CHIP_H - 14} rx="1.5" style="fill:${accent}" />
         <text class="chip-label" x=${x + 10} y=${y + 13}>${short(label)}</text>
@@ -708,7 +708,7 @@ export class CpSchematic extends LitElement {
     const accent = kind === "temp" && v?.available && v.num !== null ? tempColor(v.num, "#8b949e") : "var(--cp-accent)";
     return svg`
       <g class="apill" @click=${(e: MouseEvent) => this._slotClick(e, p.c, p.slot)}
-        @pointerdown=${(e: PointerEvent) => this._onValueDown(e, p.c, p.slot, p.x, p.y)}>
+        @pointerdown=${(e: PointerEvent) => this._onValueDown(e, p.c, p.slot, p.x, p.y, p.w, PILL_H)}>
         <title>${slotLabel(p.c.type, p.slot)}</title>
         <rect x=${p.x} y=${p.y} width=${p.w} height=${PILL_H} rx=${PILL_H / 2} style="stroke:${accent}" />
         <text x=${p.x + 8} y=${p.y + 13}><tspan class="apill-label">${shortLabel(p.c.type, p.slot)}</tspan> ${text}<tspan class="chip-unit" dx="1">${unit}</tspan></text>
@@ -721,7 +721,7 @@ export class CpSchematic extends LitElement {
     const { text, unit } = formatValue(v, kindOf(c, slot));
     return svg`
       <g class="pill" @click=${(e: MouseEvent) => this._slotClick(e, c, slot)}
-        @pointerdown=${(e: PointerEvent) => this._onValueDown(e, c, slot, x, y)}>
+        @pointerdown=${(e: PointerEvent) => this._onValueDown(e, c, slot, x, y, w, 22)}>
         <title>${slotLabel(c.type, slot)}</title>
         <rect x=${x} y=${y} width=${w} height="22" rx="11" />
         <text x=${x + w / 2} y=${y + 15.5} text-anchor="middle">${text}<tspan class="chip-unit" dx="1">${unit}</tspan></text>
@@ -879,11 +879,53 @@ export class CpSchematic extends LitElement {
     return { x: bx?.pos, y: by?.pos, gx: bx?.guide, gy: by?.guide };
   }
 
+  /**
+   * Object snap for a value field (pixels): edges and centres of other value fields and parts,
+   * and the pipes (field centred on a run).
+   */
+  private _valueSnap(id: string, slot: string, fx: number, fy: number, w: number, h: number): { x?: number; y?: number; gx?: number; gy?: number } | null {
+    const TOL = CELL * 0.75;
+    const xs: { v: number; off: number }[] = [];
+    const ys: { v: number; off: number }[] = [];
+    const box = (x: number, y: number, bw: number, bh: number) => {
+      xs.push({ v: x, off: 0 }, { v: x + bw, off: w }, { v: x + bw / 2, off: w / 2 });
+      ys.push({ v: y, off: 0 }, { v: y + bh, off: h }, { v: y + bh / 2, off: h / 2 });
+    };
+    for (const c0 of this.plant.components) {
+      const c = this._comp(c0);
+      if (c.type !== "label") {
+        const sz = sizeOf(c);
+        box(c.x * CELL, c.y * CELL, sz.w * CELL, sz.h * CELL);
+      }
+      for (const b of this._badgeLayout(c)) {
+        if (c.id === id && b.slot === slot) continue;
+        box(b.x, b.y, b.w ?? CHIP_W, b.w ? 22 : CHIP_H);
+      }
+    }
+    for (const p of this._pills) if (!(p.c.id === id && p.slot === slot)) box(p.x, p.y, p.w, PILL_H);
+    for (const sg of this._segments) {
+      if (sg.x1 === sg.x2) xs.push({ v: sg.x1, off: w / 2 });
+      if (sg.y1 === sg.y2) ys.push({ v: sg.y1, off: h / 2 });
+    }
+    const best = (cands: { v: number; off: number }[], pos: number) => {
+      let r: { pos: number; guide: number; d: number } | null = null;
+      for (const k of cands) {
+        const d = Math.abs(k.v - k.off - pos);
+        if (d <= TOL && (!r || d < r.d)) r = { pos: k.v - k.off, guide: k.v, d };
+      }
+      return r;
+    };
+    const bx = best(xs, fx);
+    const by = best(ys, fy);
+    if (!bx && !by) return null;
+    return { x: bx?.pos, y: by?.pos, gx: bx ? bx.guide / CELL : undefined, gy: by ? by.guide / CELL : undefined };
+  }
+
   /** Editor: value fields can be dragged anywhere (half-cell steps, Alt = free). */
-  private _onValueDown(e: PointerEvent, c: PlantComponent, slot: string, x: number, y: number): void {
+  private _onValueDown(e: PointerEvent, c: PlantComponent, slot: string, x: number, y: number, w: number, h: number): void {
     if (!this.edit) return;
     e.stopPropagation();
-    this._gesture = { type: "value", id: c.id, slot, ox: x, oy: y, start: this._svgPoint(e), cx: e.clientX, cy: e.clientY, moved: false };
+    this._gesture = { type: "value", id: c.id, slot, ox: x, oy: y, w, h, start: this._svgPoint(e), cx: e.clientX, cy: e.clientY, moved: false };
     this._capture(e);
   }
 
@@ -997,9 +1039,15 @@ export class CpSchematic extends LitElement {
       const p = this._svgPoint(e);
       if (Math.abs(e.clientX - g.cx) + Math.abs(e.clientY - g.cy) > 3) g.moved = true;
       if (!g.moved) return;
-      const step = e.altKey ? 1 : CELL / 2;
-      const x = Math.round((g.ox + p.x - g.start.x) / step) * step;
-      const y = Math.round((g.oy + p.y - g.start.y) / step) * step;
+      const step = e.altKey || !this.snapGrid ? 1 : CELL / 2;
+      const fx = g.ox + p.x - g.start.x;
+      const fy = g.oy + p.y - g.start.y;
+      let x = Math.round(fx / step) * step;
+      let y = Math.round(fy / step) * step;
+      const snap = this.snapObjects && !e.altKey ? this._valueSnap(g.id, g.slot, fx, fy, g.w, g.h) : null;
+      if (snap?.x !== undefined) x = snap.x;
+      if (snap?.y !== undefined) y = snap.y;
+      this._guides = { x: snap?.gx, y: snap?.gy };
       this._valueDrag = { id: g.id, slot: g.slot, x, y };
       return;
     }
@@ -1043,6 +1091,7 @@ export class CpSchematic extends LitElement {
       }
       this._drag = null;
     } else if (g.type === "value") {
+      this._guides = {};
       const d = this._valueDrag;
       const c = this.plant.components.find((k) => k.id === g.id);
       if (g.moved && d && c) {
