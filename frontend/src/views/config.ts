@@ -475,8 +475,7 @@ export class CpSettings extends LitElement {
   private async _restore(b: Backup) {
     if (!this.api || !confirm(t("bk.restore_confirm", { date: new Date(b.ts * 1000).toLocaleString() }))) return;
     try {
-      const plant = await this.api.restoreBackup(b.ts);
-      emit(this, "plant-restored", plant);
+      emit(this, "plant-restored", await this.api.restoreBackup(b.ts));
       this._bmsg = t("bk.restored");
       await this._loadBackups();
     } catch (err: any) {

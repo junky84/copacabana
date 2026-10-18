@@ -10,6 +10,8 @@ export interface ScanResult {
 export interface ConfigResult {
   version: string;
   plant: Plant | null;
+  /** revision of the stored plant (missing in the standalone demo) */
+  rev?: number;
   options: Record<string, any>;
   is_admin: boolean;
 }
@@ -43,6 +45,11 @@ export interface Backup {
   components: number;
 }
 
+/** True when a save was refused because another window saved first. */
+export function isConflict(err: unknown): boolean {
+  return (err as { code?: string } | null)?.code === "conflict";
+}
+
 export class Api {
   constructor(private hass: Hass) {}
 
@@ -59,9 +66,26 @@ export class Api {
     return this.hass.callWS<ConfigResult>({ type: "copilot/config/get" });
   }
 
-  async saveConfig(plant: Plant): Promise<void> {
-    if (this.standalone) return lsSet(LS_PLANT, plant);
-    await this.hass.callWS({ type: "copilot/config/save", plant });
+  /**
+   * Save the plant. With `rev` the backend refuses (error code `conflict`) when the plant was
+   * changed elsewhere since that revision. Resolves to the new revision.
+   */
+  async saveConfig(plant: Plant, rev?: number): Promise<number | undefined> {
+    if (this.standalone) {
+      lsSet(LS_PLANT, plant);
+      return undefined;
+    }
+    const msg: Record<string, unknown> = { type: "copilot/config/save", plant };
+    if (rev !== undefined) msg.rev = rev;
+    return (await this.hass.callWS<{ rev?: number }>(msg)).rev;
+  }
+
+  /** Follow saves from every window; the current state is delivered right away (and after reconnects). */
+  async subscribeConfig(cb: (plant: Plant | null, rev: number) => void): Promise<() => void> {
+    if (this.standalone || !this.hass.connection) return () => undefined;
+    return this.hass.connection.subscribeMessage<{ plant: Plant | null; rev: number }>((ev) => cb(ev.plant, ev.rev), {
+      type: "copilot/config/subscribe",
+    });
   }
 
   async write(componentId: string, slot: string, value: string | number | boolean | null): Promise<{ old: string; new: unknown }> {
@@ -73,8 +97,8 @@ export class Api {
     return (await this.hass.callWS<{ backups: Backup[] }>({ type: "copilot/backups/list" })).backups;
   }
 
-  async restoreBackup(ts: number): Promise<Plant> {
-    return (await this.hass.callWS<{ plant: Plant }>({ type: "copilot/backups/restore", ts })).plant;
+  async restoreBackup(ts: number): Promise<{ plant: Plant; rev?: number }> {
+    return this.hass.callWS<{ plant: Plant; rev?: number }>({ type: "copilot/backups/restore", ts });
   }
 
   async scan(plant: Plant): Promise<ScanResult> {

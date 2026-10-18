@@ -4,7 +4,7 @@
  */
 
 import type { ReactiveController, ReactiveControllerHost } from "lit";
-import { Api } from "./api";
+import { Api, isConflict } from "./api";
 import { resolveLang, setLang, t } from "./i18n";
 import type { Hass, Plant, PlantMessage, UserIcon } from "./types";
 import { HassSource, type ValueSource } from "./data/values";
@@ -28,11 +28,16 @@ export class PlantController implements ReactiveController {
   error = "";
   admin = true;
   backendVersion = "";
+  /** revision of `plant` in the backend; sent with every save so a stale window cannot overwrite */
+  rev: number | undefined = undefined;
 
   private _raf = 0;
   private _lastFrame = 0;
   private _accum = 0;
   private _unsubMsg?: () => void;
+  private _unsubCfg?: () => void;
+  /** plant (JSON) of a save in flight: its own push event must not count as a foreign change */
+  private _pending?: string;
   private _unsubSim?: () => void;
   private _boundIds: string[] = [];
   private _lastStates: unknown[] = [];
@@ -67,6 +72,8 @@ export class PlantController implements ReactiveController {
     this._stopSim();
     this._unsubMsg?.();
     this._unsubMsg = undefined;
+    this._unsubCfg?.();
+    this._unsubCfg = undefined;
     this.api = undefined;
   }
 
@@ -129,19 +136,31 @@ export class PlantController implements ReactiveController {
       const cfg = await this.api.getConfig();
       this.admin = cfg.is_admin;
       this.backendVersion = cfg.version;
+      this.rev = cfg.rev;
       let plant = cfg.plant;
+      let migrated = false;
       if (!plant) {
         plant = examplePlant();
-        if (cfg.is_admin && this.saveExample) await this.api.saveConfig(plant);
+        migrated = true;
       } else if ((plant.version ?? 1) < 5 && plant.settings?.wizard && !plant.settings.layout_edited) {
         // older generated layouts (separate PC0/VW1, circulation from the tap): rebuild from the wizard
         // answers. Layouts arranged by hand are never regenerated – migrations must keep positions.
         plant = generatePlant(plant.settings.wizard, plant);
-        if (cfg.is_admin && this.saveExample) await this.api.saveConfig(plant);
+        migrated = true;
       }
-      this.setPlant(plant);
+      if (migrated && cfg.is_admin && this.saveExample) {
+        try {
+          await this.save(plant);
+        } catch (err) {
+          // another window was faster: its plant arrives through the subscription below
+          if (!isConflict(err)) throw err;
+        }
+      } else {
+        this.setPlant(plant, cfg.rev);
+      }
       await this.loadIcons();
       if (!this.api.standalone) {
+        this._unsubCfg = await this.api.subscribeConfig((p, rev) => this._onRemote(p, rev));
         this.backendMessages = await this.api.listMessages();
         this._unsubMsg = await this.api.subscribeMessages((m) => this._mergeMessage(m));
       }
@@ -168,7 +187,18 @@ export class PlantController implements ReactiveController {
     this._changed();
   }
 
-  setPlant(plant: Plant): void {
+  /** A save from any window (or the current state after (re)subscribing). */
+  private _onRemote(plant: Plant | null, rev: number): void {
+    if (!plant || (this.rev !== undefined && rev <= this.rev)) return;
+    if (this._pending !== undefined && JSON.stringify(plant) === this._pending) {
+      // our own save: `save()` applies it once the result is in
+      return;
+    }
+    this.setPlant(plant, rev);
+  }
+
+  setPlant(plant: Plant, rev?: number): void {
+    if (rev !== undefined) this.rev = rev;
     const prevParams = JSON.stringify(simParamsFor(this.plant));
     this.plant = plant;
     setLang(resolveLang(plant.settings.language, this.hass?.language));
@@ -183,9 +213,27 @@ export class PlantController implements ReactiveController {
     this._changed();
   }
 
-  async save(plant: Plant): Promise<void> {
-    await this.api!.saveConfig(plant);
-    this.setPlant(plant);
+  /**
+   * Save the plant. `rev` is the revision the change is based on (default: the one shown). When
+   * another window saved in between, the newest plant is loaded and the conflict error rethrown.
+   */
+  async save(plant: Plant, rev: number | undefined = this.rev): Promise<void> {
+    const api = this.api!;
+    this._pending = JSON.stringify(plant);
+    try {
+      this.setPlant(plant, await api.saveConfig(plant, rev));
+    } catch (err) {
+      if (isConflict(err)) await this.reload();
+      throw err;
+    } finally {
+      this._pending = undefined;
+    }
+  }
+
+  /** Fetch the stored plant again (after a conflict). */
+  async reload(): Promise<void> {
+    const cfg = await this.api!.getConfig();
+    if (cfg.plant) this.setPlant(cfg.plant, cfg.rev);
   }
 
   async clearMessages(): Promise<void> {

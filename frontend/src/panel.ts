@@ -1,4 +1,5 @@
 import { LitElement, css, html, nothing, type PropertyValues } from "lit";
+import { isConflict } from "./api";
 import { PlantController } from "./controller";
 import { t } from "./i18n";
 import { icon, logo, tokens, ui } from "./styles";
@@ -70,12 +71,15 @@ export class CopilotPanel extends LitElement {
     if (changed.has("hass") && this.hass) this._ctl.setHass(this.hass);
   }
 
-  private async _save(plant: Plant): Promise<void> {
+  /** @param rev revision the change is based on (default: the plant currently shown) */
+  private async _save(plant: Plant, rev?: number): Promise<boolean> {
     try {
-      await this._ctl.save(plant);
+      await this._ctl.save(plant, rev);
       this._showToast(t("saved"));
+      return true;
     } catch (err: any) {
-      this._showToast(err?.message || String(err));
+      this._showToast(isConflict(err) ? t("sync.conflict") : err?.message || String(err));
+      return false;
     }
   }
 
@@ -178,13 +182,14 @@ export class CopilotPanel extends LitElement {
       <div class="cfg ${this._sub === "editor" ? "fill" : ""}">
         ${this._sub === "wizard"
           ? html`<cp-wizard .plant=${plant} @plant-generated=${async (e: CustomEvent) => {
-              await this._save(e.detail);
+              if (!(await this._save(e.detail))) return;
               this._showToast(t("wz.done"));
               this._go("config", "editor");
             }}></cp-wizard>`
           : nothing}
         ${this._sub === "editor"
-          ? html`<cp-editor .plant=${plant} .hass=${this.hass} .src=${src} .icons=${this._ctl.icons} .version=${this._ctl.version} @save=${onSave}></cp-editor>`
+          ? html`<cp-editor .plant=${plant} .rev=${this._ctl.rev} .hass=${this.hass} .src=${src} .icons=${this._ctl.icons} .version=${this._ctl.version}
+              @save=${(e: CustomEvent) => this._save(e.detail.plant, e.detail.rev)}></cp-editor>`
           : nothing}
         ${this._sub === "mapping" ? html`<cp-mapping .plant=${plant} .hass=${this.hass} .api=${this._ctl.api} @save=${onSave}></cp-mapping>` : nothing}
         ${this._sub === "icons"
@@ -193,7 +198,7 @@ export class CopilotPanel extends LitElement {
         ${this._sub === "settings"
           ? html`<cp-settings .plant=${plant} .hass=${this.hass} .api=${this._ctl.api} .version=${this._ctl.backendVersion} @save=${onSave}
               @plant-restored=${(e: CustomEvent) => {
-                this._ctl.setPlant(e.detail);
+                this._ctl.setPlant(e.detail.plant, e.detail.rev);
                 this._showToast(t("bk.restored"));
               }}
               @reset-plant=${() => this._save({ ...examplePlant(), settings: { ...examplePlant().settings, demo: true } })}></cp-settings>`

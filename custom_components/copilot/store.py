@@ -8,9 +8,9 @@ from pathlib import Path
 import re
 import secrets
 import time
-from typing import Any
+from typing import Any, Callable
 
-from homeassistant.core import HomeAssistant
+from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.helpers.storage import Store
 
 from .const import (
@@ -61,12 +61,16 @@ class CopilotStore:
         self._last_version: str | None = None
         self._icon_dir = Path(hass.config.path(ICON_DIR))
         self.plant: dict[str, Any] | None = None
+        # bumped on every save; panels send it back so a stale window cannot overwrite newer changes
+        self.rev = 0
+        self._listeners: list[Callable[[dict[str, Any] | None, int], None]] = []
         self.icons: dict[str, dict[str, Any]] = {}
 
     async def async_load(self) -> None:
         data = await self._plant_store.async_load()
         icons = await self._icon_store.async_load()
         self.plant = (data or {}).get("plant")
+        self.rev = int((data or {}).get("rev") or 0)
         self.icons = (icons or {}).get("icons", {})
         backups = await self._backup_store.async_load() or {}
         self.backups = backups.get("backups", [])
@@ -83,7 +87,22 @@ class CopilotStore:
             self._push_backup(self.plant, reason, VERSION)
             await self._save_backups()
         self.plant = plant
-        await self._plant_store.async_save({"plant": plant})
+        self.rev += 1
+        await self._plant_store.async_save({"plant": plant, "rev": self.rev})
+        for listener in list(self._listeners):
+            listener(plant, self.rev)
+
+    @callback
+    def async_subscribe(self, listener: Callable[[dict[str, Any] | None, int], None]) -> CALLBACK_TYPE:
+        """Call `listener(plant, rev)` after every save; returns the unsubscribe function."""
+        self._listeners.append(listener)
+
+        @callback
+        def unsubscribe() -> None:
+            if listener in self._listeners:
+                self._listeners.remove(listener)
+
+        return unsubscribe
 
     # ---------------------------------------------------------------- backups
 

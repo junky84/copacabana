@@ -30,6 +30,7 @@ def async_register(hass: HomeAssistant) -> None:
     for handler in (
         ws_config_get,
         ws_config_save,
+        ws_config_subscribe,
         ws_mapping_scan,
         ws_icons_list,
         ws_icons_upload,
@@ -54,6 +55,7 @@ async def ws_config_get(hass: HomeAssistant, connection: websocket_api.ActiveCon
         {
             "version": VERSION,
             "plant": rt.store.plant,
+            "rev": rt.store.rev,
             "options": dict(rt.entry.options),
             "is_admin": connection.user.is_admin,
         },
@@ -62,7 +64,12 @@ async def ws_config_get(hass: HomeAssistant, connection: websocket_api.ActiveCon
 
 @websocket_api.require_admin
 @websocket_api.websocket_command(
-    {vol.Required("type"): "copilot/config/save", vol.Required("plant"): dict}
+    {
+        vol.Required("type"): "copilot/config/save",
+        vol.Required("plant"): dict,
+        # revision the plant was based on; omitted by old clients, which then always save
+        vol.Optional("rev"): int,
+    }
 )
 @websocket_api.async_response
 async def ws_config_save(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
@@ -75,9 +82,28 @@ async def ws_config_save(hass: HomeAssistant, connection: websocket_api.ActiveCo
     if not isinstance(plant.get("components"), list) or not isinstance(plant.get("pipes", []), list):
         connection.send_error(msg["id"], "invalid", "components and pipes must be lists")
         return
+    if "rev" in msg and msg["rev"] != rt.store.rev:
+        connection.send_error(msg["id"], "conflict", "The plant was changed elsewhere in the meantime")
+        return
     await rt.store.async_save_plant(plant)
     rt.messages.async_set_plant(plant)
-    connection.send_result(msg["id"], {"saved": True})
+    connection.send_result(msg["id"], {"saved": True, "rev": rt.store.rev})
+
+
+@websocket_api.websocket_command({vol.Required("type"): "copilot/config/subscribe"})
+@websocket_api.async_response
+async def ws_config_subscribe(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
+    """Push the plant after every save; the current state is sent right away (also after a reconnect)."""
+    if (rt := _runtime(hass, connection, msg)) is None:
+        return
+
+    @callback
+    def forward(plant: dict[str, Any] | None, rev: int) -> None:
+        connection.send_message(websocket_api.event_message(msg["id"], {"plant": plant, "rev": rev}))
+
+    connection.subscriptions[msg["id"]] = rt.store.async_subscribe(forward)
+    connection.send_result(msg["id"])
+    forward(rt.store.plant, rt.store.rev)
 
 
 @websocket_api.require_admin
@@ -189,7 +215,7 @@ async def ws_backups_restore(hass: HomeAssistant, connection: websocket_api.Acti
         connection.send_error(msg["id"], "not_found", "Backup not found")
         return
     rt.messages.async_set_plant(plant)
-    connection.send_result(msg["id"], {"plant": plant})
+    connection.send_result(msg["id"], {"plant": plant, "rev": rt.store.rev})
 
 
 # domains that can be written, and how

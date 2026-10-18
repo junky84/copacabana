@@ -81,6 +81,7 @@ if (!customElements.get("cp-entity-picker")) customElements.define("cp-entity-pi
 export class CpEditor extends LitElement {
   static properties = {
     plant: { attribute: false },
+    rev: { attribute: false },
     hass: { attribute: false },
     src: { attribute: false },
     icons: { attribute: false },
@@ -89,6 +90,7 @@ export class CpEditor extends LitElement {
     _sel: { state: true },
     _hint: { state: true },
     _dirty: { state: true },
+    _stale: { state: true },
     _gridCfg: { state: true },
   };
   /** grid display and snapping (per browser, not part of the plant) */
@@ -129,6 +131,8 @@ export class CpEditor extends LitElement {
     }
   }
   plant!: Plant;
+  /** backend revision of `plant` */
+  rev?: number;
   hass?: Hass;
   src!: ValueSource;
   icons: Map<string, UserIcon> = new Map();
@@ -140,16 +144,42 @@ export class CpEditor extends LitElement {
   private _undo: string[] = [];
   private _redo: string[] = [];
   private _source?: Plant;
+  /** revision the draft is based on; sent with the save so it cannot overwrite newer changes */
+  private _baseRev?: number;
+  /** JSON of the last plant handed to `save` (recognises our own save coming back) */
+  private _sent?: string;
+  /** the plant was changed in another window while this draft had unsaved changes */
+  private _stale = false;
 
   protected willUpdate(): void {
     if (this.plant && this.plant !== this._source) {
       this._source = this.plant;
-      this._draft = clone(this.plant);
-      this._undo = [];
-      this._redo = [];
-      this._dirty = false;
-      this._sel = null;
+      if (this._dirty && JSON.stringify(this.plant) !== this._sent) {
+        // never drop unsaved work silently: keep the draft and let the user decide
+        this._stale = true;
+        return;
+      }
+      this._take();
     }
+  }
+
+  /** Start over from the stored plant (keeps the selection when the element still exists). */
+  private _take() {
+    const sel = this._sel;
+    this._draft = clone(this.plant);
+    this._baseRev = this.rev;
+    this._undo = [];
+    this._redo = [];
+    this._dirty = false;
+    this._stale = false;
+    this._sent = undefined;
+    this._sel = sel && (sel.kind === "c" ? this._comp(sel.id) : this._pipe(sel.id)) ? sel : null;
+  }
+
+  /** Keep the own draft on top of the newer plant: the next save deliberately replaces it. */
+  private _keepMine() {
+    this._baseRev = this.rev;
+    this._stale = false;
   }
 
   connectedCallback(): void {
@@ -335,16 +365,14 @@ export class CpEditor extends LitElement {
   private _save() {
     const plant = clone(this._draft);
     plant.settings = { ...plant.settings, layout_edited: true };
-    this.dispatchEvent(new CustomEvent("save", { detail: plant, bubbles: true, composed: true }));
-    this._dirty = false;
+    this._sent = JSON.stringify(plant);
+    // the draft stays dirty until the saved plant comes back; a conflict keeps it for the user
+    this.dispatchEvent(new CustomEvent("save", { detail: { plant, rev: this._baseRev }, bubbles: true, composed: true }));
   }
 
   private _discard() {
-    this._draft = clone(this.plant);
-    this._undo = [];
-    this._redo = [];
-    this._dirty = false;
     this._sel = null;
+    this._take();
   }
 
   // ------------------------------------------------------------ events
@@ -387,6 +415,13 @@ export class CpEditor extends LitElement {
           <button @click=${this._discard}>${t("discard")}</button>` : nothing}
         <button class="primary" ?disabled=${!this._dirty} @click=${this._save}>${icon("save")} ${t("save")}</button>
       </div>
+      ${this._stale
+        ? html`<div class="stale">
+            <span>${icon("warn")} ${t("sync.stale")}</span>
+            <button @click=${this._discard}>${t("sync.take")}</button>
+            <button @click=${this._keepMine}>${t("sync.keep")}</button>
+          </div>`
+        : nothing}
       <div class="layout">
         <aside class="palette card">
           <div class="cap">${t("ed.palette")}</div>
@@ -651,6 +686,8 @@ export class CpEditor extends LitElement {
       .toolbar { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
       .hint { font-size: 12px; color: var(--cp-select); margin-left: 6px; }
       .dirty { font-size: 12px; color: var(--cp-warn); }
+      .stale { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 10px; margin-bottom: 6px; border: 1px solid var(--cp-warn); border-radius: 6px; font-size: 13px; color: var(--cp-warn); }
+      .stale span { flex: 1; min-width: 200px; }
       .layout { flex: 1; min-height: 0; display: grid; grid-template-columns: 190px 1fr 330px; gap: 10px; }
       .palette, .props { overflow: auto; padding: 12px; }
       .palette { display: flex; flex-direction: column; gap: 4px; }

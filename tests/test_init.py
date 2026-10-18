@@ -61,6 +61,65 @@ async def test_config_roundtrip(hass: HomeAssistant, hass_ws_client) -> None:
     assert not (await ws.receive_json())["success"]
 
 
+async def test_save_with_stale_rev_is_rejected(hass: HomeAssistant, hass_ws_client) -> None:
+    await _setup(hass)
+    ws = await hass_ws_client(hass)
+    await ws.send_json({"id": 1, "type": "copilot/config/get"})
+    rev = (await ws.receive_json())["result"]["rev"]
+    await ws.send_json({"id": 2, "type": "copilot/config/save", "plant": PLANT, "rev": rev})
+    res = await ws.receive_json()
+    assert res["success"] and res["result"]["rev"] == rev + 1
+    # a second window still based on the old revision must not overwrite the newer plant
+    stale = {**PLANT, "settings": {"typeIcons": {}}}
+    await ws.send_json({"id": 3, "type": "copilot/config/save", "plant": stale, "rev": rev})
+    res = await ws.receive_json()
+    assert not res["success"] and res["error"]["code"] == "conflict"
+    await ws.send_json({"id": 4, "type": "copilot/config/get"})
+    res = (await ws.receive_json())["result"]
+    assert res["rev"] == rev + 1 and "settings" not in res["plant"]
+    # clients without a revision keep saving as before
+    await ws.send_json({"id": 5, "type": "copilot/config/save", "plant": stale})
+    res = await ws.receive_json()
+    assert res["success"] and res["result"]["rev"] == rev + 2
+
+
+async def test_rev_survives_restart(hass: HomeAssistant, hass_storage) -> None:
+    hass_storage["copilot.plant"] = {"version": 1, "minor_version": 1, "key": "copilot.plant", "data": {"plant": PLANT, "rev": 41}}
+    await _setup(hass)
+    assert hass.data[DOMAIN].store.rev == 41
+
+
+async def test_config_subscribe_pushes_saves(hass: HomeAssistant, hass_ws_client) -> None:
+    await _setup(hass)
+    viewer = await hass_ws_client(hass)
+    editor = await hass_ws_client(hass)
+    await viewer.send_json({"id": 1, "type": "copilot/config/subscribe"})
+    assert (await viewer.receive_json())["success"]
+    # the current state comes right away
+    first = await viewer.receive_json()
+    assert first["type"] == "event" and first["event"] == {"plant": None, "rev": 0}
+    await editor.send_json({"id": 1, "type": "copilot/config/save", "plant": PLANT, "rev": 0})
+    assert (await editor.receive_json())["success"]
+    ev = await viewer.receive_json()
+    assert ev["id"] == 1 and ev["event"]["rev"] == 1
+    assert ev["event"]["plant"]["components"][0]["id"] == "iu"
+    # a restored backup is pushed as well
+    await editor.send_json({"id": 2, "type": "copilot/config/save", "plant": {**PLANT, "pipes": [{"id": "p"}]}})
+    assert (await editor.receive_json())["success"]
+    assert (await viewer.receive_json())["event"]["rev"] == 2
+    await editor.send_json({"id": 3, "type": "copilot/backups/list"})
+    ts = (await editor.receive_json())["result"]["backups"][0]["ts"]
+    await editor.send_json({"id": 4, "type": "copilot/backups/restore", "ts": ts})
+    res = await editor.receive_json()
+    assert res["success"] and res["result"]["rev"] == 3
+    ev = await viewer.receive_json()
+    assert ev["event"]["rev"] == 3 and ev["event"]["plant"]["pipes"] == []
+    # unsubscribing stops the pushes
+    await viewer.send_json({"id": 2, "type": "unsubscribe_events", "subscription": 1})
+    assert (await viewer.receive_json())["success"]
+    assert hass.data[DOMAIN].store._listeners == []
+
+
 async def test_mapping_scan(hass: HomeAssistant, hass_ws_client) -> None:
     await _setup(hass)
     registry = er.async_get(hass)
