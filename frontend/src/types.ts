@@ -40,6 +40,8 @@ export interface PlantComponent {
   writable?: string[];
   /** slots shown as value badges; undefined = type defaults */
   show?: string[];
+  /** value fields moved in the editor: top left corner in cells, relative to the component */
+  valuePos?: Record<string, [number, number]>;
 }
 
 export interface PortRef {

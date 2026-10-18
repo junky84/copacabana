@@ -100,6 +100,7 @@ export class CpSchematic extends LitElement {
     version: { type: Number },
     _view: { state: true },
     _drag: { state: true },
+    _valueDrag: { state: true },
     _connect: { state: true },
     _guides: { state: true },
     gridStep: { type: Number },
@@ -126,6 +127,8 @@ export class CpSchematic extends LitElement {
 
   private _view: Box | null = null;
   private _drag: { id: string; dx: number; dy: number } | null = null;
+  /** editor: value field being dragged (pixel position of its top left corner) */
+  private _valueDrag: { id: string; slot: string; x: number; y: number } | null = null;
   private _connect: PortRef | null = null;
   private _pointers = new Map<number, { x: number; y: number }>();
   private _gesture: any = null;
@@ -200,8 +203,7 @@ export class CpSchematic extends LitElement {
 
   private _shownSlots(c: PlantComponent): string[] {
     const slots = c.show ?? slotsOf(c).filter((s) => s.show).map((s) => s.key);
-    if (this.edit) return [];
-    return slots.filter((s) => this.src.get(c, s) !== undefined);
+    return slots.filter((s) => this.src.get(c, s) !== undefined || (this.edit && !!c.bindings?.[s]));
   }
 
   /** Slots shown in the component's value list (not anchored to a pipe or a measuring point). */
@@ -210,7 +212,19 @@ export class CpSchematic extends LitElement {
     return this._shownSlots(c).filter((s) => !anchored.has(s));
   }
 
+  /** Position of a value field: dragged, moved in the editor, or the automatic one. */
+  private _valueAt(c: PlantComponent, slot: string, x: number, y: number): { x: number; y: number } {
+    const d = this._valueDrag;
+    if (d && d.id === c.id && d.slot === slot) return { x: d.x, y: d.y };
+    const p = c.valuePos?.[slot];
+    return p ? { x: (c.x + p[0]) * CELL, y: (c.y + p[1]) * CELL } : { x, y };
+  }
+
   private _badgeLayout(c: PlantComponent): { slot: string; x: number; y: number; w?: number }[] {
+    return this._autoBadges(c).map((b) => ({ ...b, ...this._valueAt(c, b.slot, b.x, b.y) }));
+  }
+
+  private _autoBadges(c: PlantComponent): { slot: string; x: number; y: number; w?: number }[] {
     const badges = badgesOf(c);
     if (badges === "none" || badges === "inside") return [];
     const slots = this._listSlots(c);
@@ -244,6 +258,15 @@ export class CpSchematic extends LitElement {
       slots.forEach((slot, i) => out.push({ slot, x: x + wpx + 12, y: y + 4 + i * (CHIP_H + CHIP_GAP) }));
     } else if (badges === "left") {
       slots.forEach((slot, i) => out.push({ slot, x: x - 12 - CHIP_W, y: y + 4 + i * (CHIP_H + CHIP_GAP) }));
+    } else if (badges === "above" && (c.rot === 90 || c.rot === 270) && slots.length <= 2) {
+      // part in a vertical run: values beside it, on the side without pipes
+      const stackH = slots.length * (CHIP_H + CHIP_GAP) - CHIP_GAP;
+      // flush with the top, so the name beside the part stays readable
+      const y0 = y + hpx - 6 - stackH;
+      const right = x + wpx + 10;
+      const left = x - 10 - CHIP_W;
+      const sx = !this._hitsPipe(right, y0, right + CHIP_W, y0 + stackH) || this._hitsPipe(left, y0, left + CHIP_W, y0 + stackH) ? right : left;
+      slots.forEach((slot, i) => out.push({ slot, x: sx, y: y0 + i * (CHIP_H + CHIP_GAP) }));
     } else if (badges === "above") {
       // rows of three in catalog order, stacked upwards; further rows start flush with the first one
       const order = slotsOf(c).map((s) => s.key);
@@ -322,7 +345,7 @@ export class CpSchematic extends LitElement {
       }),
     );
 
-    this._pills = this.edit ? [] : this._placePills(byId, routes);
+    this._pills = this._placePills(byId, routes);
 
     return html`
       <svg
@@ -470,7 +493,7 @@ export class CpSchematic extends LitElement {
         ? svg`<rect class="outside" x=${outX0} y=${top} width=${outX1 - outX0} height=${G - top} />
             <rect class="ground" x=${outX0} y=${G} width=${outX1 - outX0} height=${bottom - G} />
             <line class="floor-line" x1=${outX0} x2=${outX1} y1=${G} y2=${G} />
-            <text class="room" x=${outRight ? W + 14 : W - 14} y=${G - CELL * 13} text-anchor=${outRight ? "start" : "end"}>${t("bld.outside")}</text>`
+            <text class="room" x=${outRight ? w * CELL - 14 : W - 14} y=${G - CELL * 13} text-anchor="end">${t("bld.outside")}</text>`
         : nothing}
       <rect class="ground" x=${inX0} y=${F} width=${inX1 - inX0} height=${bottom - F} />
       <line class="floor-line" x1=${inX0} x2=${inX1} y1=${F} y2=${F} />
@@ -478,7 +501,7 @@ export class CpSchematic extends LitElement {
       ${S !== undefined
         ? svg`<rect class="slab" x=${inX0} y=${S} width=${inX1 - inX0} height="10" />
             <text class="room" x=${outRight ? W - 14 : W + 14} y=${S - 8} text-anchor=${outRight ? "end" : "start"}>${t("bld.living")}</text>
-            <text class="room" x=${outRight ? W - 14 : W + 14} y=${S + CELL * 3.6} text-anchor=${outRight ? "end" : "start"}>${t(G < F ? "bld.basement" : "bld.plant_room")}</text>`
+            <text class="room" x=${outRight ? W - 14 : W + 14} y=${S + CELL * 5.6} text-anchor=${outRight ? "end" : "start"}>${t(G < F ? "bld.basement" : "bld.plant_room")}</text>`
         : nothing}
     </g>`;
   }
@@ -577,7 +600,8 @@ export class CpSchematic extends LitElement {
     const isTemp = kind === "temp" && v?.num !== null && v?.available;
     const accent = isTemp ? tempColor(v!.num!, "#8b949e") : "var(--cp-accent)";
     return svg`
-      <g class="chip ${v?.available === false ? "na" : ""}" @click=${(e: MouseEvent) => this._slotClick(e, c, slot)}>
+      <g class="chip ${v?.available === false ? "na" : ""}" @click=${(e: MouseEvent) => this._slotClick(e, c, slot)}
+        @pointerdown=${(e: PointerEvent) => this._onValueDown(e, c, slot, x, y)}>
         <rect x=${x} y=${y} width=${CHIP_W} height=${CHIP_H} rx="8" />
         <rect class="chip-accent" x=${x} y=${y + 7} width="3" height=${CHIP_H - 14} rx="1.5" style="fill:${accent}" />
         <text class="chip-label" x=${x + 10} y=${y + 13}>${short(label)}</text>
@@ -601,6 +625,10 @@ export class CpSchematic extends LitElement {
         const { w, h } = sizeOf(c);
         return { x: c.x * CELL - 4, y: c.y * CELL - 4, w: w * CELL + 8, h: h * CELL + 26 };
       });
+    // ... and off the value chips beside the parts
+    for (const c of byId.values()) {
+      for (const v of this._badgeLayout(c)) if (!v.w) blocks.push({ x: v.x - 4, y: v.y - 4, w: CHIP_W + 8, h: CHIP_H + 8 });
+    }
     const free = (x: number, y: number, w: number, pipe = true) =>
       placed.every((p) => x + w + 4 <= p.x || x >= p.x + p.w + 4 || y + PILL_H + 3 <= p.y || y >= p.y + PILL_H + 3) &&
       (!pipe || blocks.every((b) => x + w <= b.x || x >= b.x + b.w || y + PILL_H <= b.y || y >= b.y + b.h));
@@ -609,6 +637,10 @@ export class CpSchematic extends LitElement {
       for (const s of anchoredSlots(c)) {
         if (!shown.has(s.key) || (!s.at && !s.pos)) continue;
         const w = this._pillWidth(c, s.key);
+        if (c.valuePos?.[s.key] || (this._valueDrag?.id === c.id && this._valueDrag.slot === s.key)) {
+          placed.push({ c, slot: s.key, ...this._valueAt(c, s.key, 0, 0), w });
+          continue;
+        }
         if (s.pos) {
           placed.push({ c, slot: s.key, x: (c.x + s.pos[0]) * CELL - w / 2, y: (c.y + s.pos[1]) * CELL - PILL_H / 2, w });
           continue;
@@ -675,7 +707,8 @@ export class CpSchematic extends LitElement {
     const { text, unit } = formatValue(v, kind);
     const accent = kind === "temp" && v?.available && v.num !== null ? tempColor(v.num, "#8b949e") : "var(--cp-accent)";
     return svg`
-      <g class="apill" @click=${(e: MouseEvent) => this._slotClick(e, p.c, p.slot)}>
+      <g class="apill" @click=${(e: MouseEvent) => this._slotClick(e, p.c, p.slot)}
+        @pointerdown=${(e: PointerEvent) => this._onValueDown(e, p.c, p.slot, p.x, p.y)}>
         <title>${slotLabel(p.c.type, p.slot)}</title>
         <rect x=${p.x} y=${p.y} width=${p.w} height=${PILL_H} rx=${PILL_H / 2} style="stroke:${accent}" />
         <text x=${p.x + 8} y=${p.y + 13}><tspan class="apill-label">${shortLabel(p.c.type, p.slot)}</tspan> ${text}<tspan class="chip-unit" dx="1">${unit}</tspan></text>
@@ -687,7 +720,8 @@ export class CpSchematic extends LitElement {
     const v = this.src.get(c, slot);
     const { text, unit } = formatValue(v, kindOf(c, slot));
     return svg`
-      <g class="pill" @click=${(e: MouseEvent) => this._slotClick(e, c, slot)}>
+      <g class="pill" @click=${(e: MouseEvent) => this._slotClick(e, c, slot)}
+        @pointerdown=${(e: PointerEvent) => this._onValueDown(e, c, slot, x, y)}>
         <title>${slotLabel(c.type, slot)}</title>
         <rect x=${x} y=${y} width=${w} height="22" rx="11" />
         <text x=${x + w / 2} y=${y + 15.5} text-anchor="middle">${text}<tspan class="chip-unit" dx="1">${unit}</tspan></text>
@@ -845,6 +879,14 @@ export class CpSchematic extends LitElement {
     return { x: bx?.pos, y: by?.pos, gx: bx?.guide, gy: by?.guide };
   }
 
+  /** Editor: value fields can be dragged anywhere (half-cell steps, Alt = free). */
+  private _onValueDown(e: PointerEvent, c: PlantComponent, slot: string, x: number, y: number): void {
+    if (!this.edit) return;
+    e.stopPropagation();
+    this._gesture = { type: "value", id: c.id, slot, ox: x, oy: y, start: this._svgPoint(e), cx: e.clientX, cy: e.clientY, moved: false };
+    this._capture(e);
+  }
+
   private _onSegmentDown(e: PointerEvent, id: string, pts: Pt[], index: number): void {
     e.stopPropagation();
     this._gesture = { type: "segment", id, pts: pts.map((p) => ({ ...p })), index, moved: false, start: this._svgPoint(e) };
@@ -951,6 +993,16 @@ export class CpSchematic extends LitElement {
       }
       return;
     }
+    if (g.type === "value") {
+      const p = this._svgPoint(e);
+      if (Math.abs(e.clientX - g.cx) + Math.abs(e.clientY - g.cy) > 3) g.moved = true;
+      if (!g.moved) return;
+      const step = e.altKey ? 1 : CELL / 2;
+      const x = Math.round((g.ox + p.x - g.start.x) / step) * step;
+      const y = Math.round((g.oy + p.y - g.start.y) / step) * step;
+      this._valueDrag = { id: g.id, slot: g.slot, x, y };
+      return;
+    }
     if (g.type === "segment") {
       const p = this._svgPoint(e);
       const a = g.pts[g.index];
@@ -990,6 +1042,16 @@ export class CpSchematic extends LitElement {
         this._emit("cp-select", { kind: "c", id: g.id });
       }
       this._drag = null;
+    } else if (g.type === "value") {
+      const d = this._valueDrag;
+      const c = this.plant.components.find((k) => k.id === g.id);
+      if (g.moved && d && c) {
+        const r = (v: number) => Math.round(v * 100) / 100;
+        this._emit("cp-value-move", { id: g.id, slot: g.slot, pos: [r(d.x / CELL - c.x), r(d.y / CELL - c.y)] });
+      } else {
+        this._emit("cp-select", { kind: "c", id: g.id });
+      }
+      this._valueDrag = null;
     } else if (g.type === "tap" && !g.moved) {
       this._emit("cp-component-click", { component: g.comp, x: e.clientX, y: e.clientY });
     } else if (g.type === "bend" && g.moved) {
@@ -1055,6 +1117,7 @@ export class CpSchematic extends LitElement {
     /* component artwork */
     .comp { cursor: default; }
     svg.edit .comp { cursor: grab; }
+    svg.edit .chip, svg.edit .pill, svg.edit .apill { cursor: move; }
     .comp-hit { fill: transparent; }
     .sel-outline { fill: none; stroke: var(--cp-select); stroke-width: 2; stroke-dasharray: 6 4; pointer-events: none; }
     .comp-label {

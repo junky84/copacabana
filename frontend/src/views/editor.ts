@@ -431,6 +431,10 @@ export class CpEditor extends LitElement {
             @cp-connect=${(e: CustomEvent) => this._connect(e.detail.from, e.detail.to)}
             @cp-bend=${this._onBend}
             @cp-segment=${this._onSegment}
+            @cp-value-move=${(e: CustomEvent) => this._commit((p) => {
+              const c = p.components.find((k) => k.id === e.detail.id);
+              if (c) c.valuePos = { ...(c.valuePos || {}), [e.detail.slot]: e.detail.pos };
+            })}
             .gridStep=${this._gridCfg.step}
             ?showGrid=${this._gridCfg.show}
             ?snapGrid=${this._gridCfg.snap}
@@ -512,6 +516,9 @@ export class CpEditor extends LitElement {
             if ((e.target as HTMLInputElement).checked) k.flip = true;
             else delete k.flip;
           })} />${t("ed.flip")}</label>`
+        : nothing}
+      ${c.valuePos && Object.keys(c.valuePos).length
+        ? html`<button class="ghost" @click=${() => this._set((k) => delete k.valuePos)}>${t("ed.values_reset")}</button>`
         : nothing}
       ${!["junction", "label", "value_tile"].includes(c.type)
         ? html`<label class="field">${t("ed.icon")}<select @change=${(e: Event) => this._set((k) => {

@@ -116,12 +116,18 @@ export function generatePlant(cfg: WizardConfig, previous?: Plant | null): Plant
   // plant room in the basement: the ceiling (SLAB) is ground level outside
   const FLOOR = 50;
   const SLAB = 16;
+  // runs to the outdoor unit pass the wall below ground level (ground: 2 cells under the ceiling)
+  const RAIL = SLAB + 3;
+  // floor-standing parts keep 2 cells to the drawn floor, so their names stay above the foundation
+  const FLOOR_GAP = 2;
   // T180: heat pump connections are the rightmost ones, so the outside is on the right
   const outRight = bldTop && variant === "t180";
-  const WALL = outRight ? (extBuffer ? 48 : 32) : 16;
+  // generous spacing as in the wall-hung layout: outdoor unit inset from the edge, 5 cells to the wall
+  const ixTop = variant === "t180" ? (extBuffer ? 42 : 26) : variant === "tp70" ? 34 : 32;
+  const WALL = outRight ? ixTop + 18 : bld || bldTop ? 19 : 16;
   // brine: the "outdoor unit" is the ground collector, below ground level
   const probe = bldTop && outdoorModel(cfg.outdoorModel).source === "brine";
-  const ox = outRight ? WALL + 2 : 1;
+  const ox = outRight ? WALL + 5 : bld || bldTop ? 4 : 1;
   // wall units: outdoor connections level with the two rows below the indoor unit
   const oy = bldTop ? (probe ? SLAB + 3 : SLAB - 7) : bld ? SLAB - 7 : tp70 ? 5 : top ? 12 : 2 + 14 - 4;
   b.add("ou", "outdoor_unit", cfg.outdoorLabel || t("type.outdoor_unit"), ox, oy, {
@@ -129,9 +135,9 @@ export function generatePlant(cfg: WizardConfig, previous?: Plant | null): Plant
     props: { nominal_kw: cfg.nominalKw },
   });
   // generous gap between outdoor unit (x 1..10) and indoor unit
-  const ix = bldTop ? (variant === "t180" ? (extBuffer ? 36 : 20) : 24) : bld ? 30 : tp70 ? 22 : top ? 14 : 16;
+  const ix = bldTop ? ixTop : bld ? 44 : tp70 ? 22 : top ? 14 : 16;
   // wall-hung: bottom connections 14 rows above the floor, the cylinder fits below the pipe runs
-  const iy = bldTop ? FLOOR - (variant === "t180" ? 22 : variant === "tp70" ? 16 : 14) : bld ? FLOOR - 29 : tp70 ? 27 : top ? 12 : 2;
+  const iy = bldTop ? FLOOR - (variant === "t180" ? 22 : variant === "tp70" ? 16 : 14) : bld ? FLOOR - 32 : tp70 ? 27 : top ? 12 : 2;
   b.add("iu", "indoor_unit", cfg.indoorLabel || t("type.indoor_unit"), ix, iy, { model: cfg.indoorModel, props: indoorProps });
   const iu = b.components.find((c) => c.id === "iu")!;
   const port = (id: string) => portPos(iu, id)!;
@@ -231,23 +237,23 @@ export function generatePlant(cfg: WizardConfig, previous?: Plant | null): Plant
     const px = (id: string) => port(id).x;
     // heat pump / brine circuit: up beside the unit, through the basement wall below the ceiling
     if (outRight) {
-      b.pipe(P("ou", "out"), P("iu", "src_in"), "supply", [IU], { via: [[ox + 10, oy + 6], [ox + 10, SLAB + 1], [px("src_in"), SLAB + 1]] });
-      b.pipe(P("iu", "src_out"), P("ou", "in"), "return", [IU], { via: [[px("src_out"), SLAB + 2], [ox + 11, SLAB + 2], [ox + 11, oy + 5]] });
+      b.pipe(P("ou", "out"), P("iu", "src_in"), "supply", [IU], { via: [[ox + 10, oy + 6], [ox + 10, RAIL], [px("src_in"), RAIL]] });
+      b.pipe(P("iu", "src_out"), P("ou", "in"), "return", [IU], { via: [[px("src_out"), RAIL + 1], [ox + 11, RAIL + 1], [ox + 11, oy + 5]] });
     } else if (probe) {
       // collector in the ground: the runs go down outside
-      b.pipe(P("iu", "src_out"), P("ou", "in"), "return", [IU], { via: [[px("src_out"), SLAB + 1], [WALL - 3, SLAB + 1], [WALL - 3, oy + 5]] });
-      b.pipe(P("ou", "out"), P("iu", "src_in"), "supply", [IU], { via: [[WALL - 2, oy + 6], [WALL - 2, SLAB + 2], [px("src_in"), SLAB + 2]] });
+      b.pipe(P("iu", "src_out"), P("ou", "in"), "return", [IU], { via: [[px("src_out"), RAIL], [WALL - 3, RAIL], [WALL - 3, oy + 5]] });
+      b.pipe(P("ou", "out"), P("iu", "src_in"), "supply", [IU], { via: [[WALL - 2, oy + 6], [WALL - 2, RAIL + 1], [px("src_in"), RAIL + 1]] });
     } else {
-      b.pipe(P("iu", "src_out"), P("ou", "in"), "return", [IU], { via: [[px("src_out"), SLAB + 1], [WALL - 2, SLAB + 1], [WALL - 2, oy + 5]] });
-      b.pipe(P("ou", "out"), P("iu", "src_in"), "supply", [IU], { via: [[WALL - 3, oy + 6], [WALL - 3, SLAB + 2], [px("src_in"), SLAB + 2]] });
+      b.pipe(P("iu", "src_out"), P("ou", "in"), "return", [IU], { via: [[px("src_out"), RAIL], [WALL - 2, RAIL], [WALL - 2, oy + 5]] });
+      b.pipe(P("ou", "out"), P("iu", "src_in"), "supply", [IU], { via: [[WALL - 3, oy + 6], [WALL - 3, RAIL + 1], [px("src_in"), RAIL + 1]] });
     }
-    const chainY = SLAB + 4;
+    const chainY = SLAB + 6;
     if (variant === "tp70") {
       // built-in buffer and PC1: risers from the HK1 connections, radiator to the right of them
       const IPC1: FlowCond = { c: "iu", s: "pc1" };
       radiatorUp(P("iu", "ret"), P("iu", "sup"), px("ret"), yTop, [IPC1], false, false, { supSrcX: px("sup"), chainY, mag: false });
       // cylinder mirrored on the right: coil faces the unit, drinking water side faces away
-      const tx = ix + 12;
+      const tx = ix + 20;
       const ty = FLOOR - 11;
       b.add("dhw", "dhw_tank", cfg.dhwLabel || t("type.dhw_tank"), tx, ty, { flip: true, props: { volume: cfg.dhwVolume } });
       b.pipe(P("iu", "dhw_sup"), P("dhw", "coil_in"), "supply", [IU, B], { via: [[px("dhw_sup"), yTop - 2], [tx - 1, yTop - 2], [tx - 1, ty + 4]] });
@@ -260,7 +266,7 @@ export function generatePlant(cfg: WizardConfig, previous?: Plant | null): Plant
       const IPC1: FlowCond = { c: "iu", s: "pc1" };
       if (extBuffer) {
         // buffer left of the unit, mirrored: its inlets face the unit, the risers to the radiator stay outside
-        const bx = ix - 16;
+        const bx = ix - 20;
         const by = FLOOR - 9;
         const rowS = yTop - 6;
         const rowR = yTop - 4;
@@ -318,18 +324,18 @@ export function generatePlant(cfg: WizardConfig, previous?: Plant | null): Plant
     } else {
       // brine compact unit: heating to the right (optionally via a buffer), cylinder on the far right
       const flowHc: FlowCond[] = [IU, ...A];
-      let cx = ix + 12;
+      let cx = ix + 14;
       if (extBuffer) {
-        const bx = ix + 12;
+        const bx = ix + 17;
         const by = FLOOR - 9;
         b.add("buf", "buffer", cfg.bufferLabel || t("type.buffer"), bx, by, { props: { volume: cfg.bufferVolume } });
         b.pipe(P("iu", "sup"), P("buf", "in_sup"), "supply", flowHc, { via: [[px("sup"), yTop - 1], [bx + 1, yTop - 1]] });
         b.pipe(P("buf", "in_ret"), P("iu", "ret"), "return", flowHc, { via: [[bx + 2, yTop - 2], [px("ret"), yTop - 2]] });
-        radiatorUp(P("buf", "out_ret"), P("buf", "out_sup"), bx + 3, by, [PC1], true, true, { chainY, pumpY: SLAB + 12 });
-        cx = bx + 10;
+        radiatorUp(P("buf", "out_ret"), P("buf", "out_sup"), bx + 3, by, [PC1], true, true, { chainY, pumpY: SLAB + 2 });
+        cx = bx + 16;
       } else {
         radiatorUp(P("iu", "ret"), P("iu", "sup"), px("ret"), yTop + 1, flowHc, false, true, { supSrcX: px("sup"), chainY, mag: false });
-        cx = ix + 14;
+        cx = ix + 20;
       }
       if (extDhw) {
         const tx = cx;
@@ -347,14 +353,15 @@ export function generatePlant(cfg: WizardConfig, previous?: Plant | null): Plant
     // heat pump circuit: up beside the unit, through the basement wall just below the ceiling,
     // then up through the soil to the outdoor unit at ground level (two parallel runs, no crossing)
     b.pipe(P("iu", "src_out"), P("ou", "in"), "return", [IU], {
-      via: [[px("src_out"), bot + 1], [ix - 1, bot + 1], [ix - 1, SLAB + 1], [WALL - 2, SLAB + 1], [WALL - 2, oy + 5]],
+      via: [[px("src_out"), bot + 4], [ix - 2, bot + 4], [ix - 2, RAIL], [WALL - 2, RAIL], [WALL - 2, oy + 5]],
     });
     b.pipe(P("ou", "out"), P("iu", "src_in"), "supply", [IU], {
-      via: [[WALL - 3, oy + 6], [WALL - 3, SLAB + 2], [ix - 2, SLAB + 2], [ix - 2, bot + 2], [px("src_in"), bot + 2]],
+      via: [[WALL - 3, oy + 6], [WALL - 3, RAIL + 1], [ix - 3, RAIL + 1], [ix - 3, bot + 5], [px("src_in"), bot + 5]],
     });
     // DHW cylinder on the floor, left of the unit and below the pipe runs; drinking water by the wall
     if (extDhw) {
-      const tx = ix - 4;
+      // spread out: cylinder well left of the unit, below nothing
+      const tx = ix - 14;
       const ty = FLOOR - 11;
       b.add("dhw", "dhw_tank", cfg.dhwLabel || t("type.dhw_tank"), tx, ty, { props: { volume: cfg.dhwVolume } });
       b.pipe(P("iu", "dhw_sup"), P("dhw", "coil_in"), "supply", [IU, B], { via: [[px("dhw_sup"), ty + 4]] });
@@ -363,7 +370,7 @@ export function generatePlant(cfg: WizardConfig, previous?: Plant | null): Plant
       const draw: FlowCond = { c: "tap", s: "flowing" };
       const circOn: FlowCond = { c: "circ", s: "running" };
       const hotX = tx - 2;
-      b.add("tap", "tap", t("wz.shower"), WALL + 2, SLAB - 9, { props: { variant: "shower" } });
+      b.add("tap", "tap", t("wz.shower"), hotX - 6, SLAB - 9, { props: { variant: "shower" } });
       b.add("inlet", "water_inlet", t("type.water_inlet"), WALL + 1, ty + 9);
       b.pipe(P("inlet", "out"), P("dhw", "cold"), "dhw_cold", [draw]);
       if (cfg.circulation) {
@@ -378,15 +385,16 @@ export function generatePlant(cfg: WizardConfig, previous?: Plant | null): Plant
       }
     }
     // buffer on the floor; return accessories in one run in front of the indoor unit
-    const bx = ix + 22;
+    const bx = ix + 27;
     const by = FLOOR - 9;
-    const row = by - 1;
+    // flow run above, return run with its accessories below (as in the installation schemes)
+    const row = bot + 5;
     const flowR = [IU, ...A];
     b.add("buf", "buffer", cfg.bufferLabel || t("type.buffer"), bx, by, { props: { volume: cfg.bufferVolume } });
-    b.pipe(P("iu", "sup"), P("buf", "in_sup"), "supply", flowR, { via: [[px("sup"), bot + 1], [bx + 1, bot + 1]] });
+    b.pipe(P("iu", "sup"), P("buf", "in_sup"), "supply", flowR, { via: [[px("sup"), bot + 3], [bx + 1, bot + 3]] });
     const chain: { inP: PortRef; outP: PortRef }[] = [];
     if (cfg.separator) {
-      b.add("sep", "separator", t("wz.separator_short"), px("sup") + 9, row - 1, { rot: 180 as Rotation });
+      b.add("sep", "separator", t("wz.separator_short"), px("sup") + 10, row - 1, { rot: 180 as Rotation });
       chain.push({ inP: P("sep", "in"), outP: P("sep", "out") });
     }
     if (cfg.expansion) {
@@ -396,7 +404,7 @@ export function generatePlant(cfg: WizardConfig, previous?: Plant | null): Plant
       chain.push({ inP: P("jmag", "r"), outP: P("jmag", "l") });
     }
     if (cfg.separator) {
-      b.add("sc1", "separator", "SC1", px("sup") + 1, row - 1, { rot: 180 as Rotation, props: { filter: true } });
+      b.add("sc1", "separator", "SC1", px("sup") + 2, row - 1, { rot: 180 as Rotation, props: { filter: true } });
       chain.push({ inP: P("sc1", "in"), outP: P("sc1", "out") });
     }
     for (let i = 0; i < chain.length - 1; i++) b.pipe(chain[i].outP, chain[i + 1].inP, "return", flowR);
@@ -573,12 +581,12 @@ export function generatePlant(cfg: WizardConfig, previous?: Plant | null): Plant
   const plant: Plant = {
     version: 5,
     name: cfg.name,
-    grid: bldTop ? { w: outRight ? (extBuffer ? 64 : 48) : variant === "tp70" ? 52 : extBuffer ? 62 : 54, h: FLOOR + 2 } : bld ? { w: 68, h: FLOOR + 2 } : tp70 ? { w: 58, h: 49 } : { w: n > 1 ? 76 : 66, h: Math.max(38, (top ? 46 : 38) + (n - 1) * 10) },
+    grid: bldTop ? { w: outRight ? ox + 15 : variant === "tp70" ? 70 : extBuffer ? 82 : 68, h: FLOOR + FLOOR_GAP + 2 } : bld ? { w: 80, h: FLOOR + FLOOR_GAP + 2 } : tp70 ? { w: 58, h: 49 } : { w: n > 1 ? 76 : 66, h: Math.max(38, (top ? 46 : 38) + (n - 1) * 10) },
     components: b.components,
     pipes: b.pipes,
     settings: previous?.settings ?? { style: "flat", demo: true },
   };
-  plant.settings = { ...plant.settings, wizard: cfg, layout_edited: false, building: bld || bldTop ? { show: true, floor: FLOOR, wall: WALL, slab: SLAB, ground: SLAB, outside: outRight ? "right" : "left" } : undefined };
+  plant.settings = { ...plant.settings, wizard: cfg, layout_edited: false, building: bld || bldTop ? { show: true, floor: FLOOR + FLOOR_GAP, wall: WALL, slab: SLAB, ground: SLAB + 2, outside: outRight ? "right" : "left" } : undefined };
 
   // keep bindings, icons and badge choices of components that still exist
   if (previous) {
