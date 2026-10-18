@@ -264,7 +264,7 @@ Ye.elementStyles = [], Ye.shadowRootOptions = { mode: "open" }, Ye[ct("elementPr
  */
 const Is = globalThis, si = (r) => r, zt = Is.trustedTypes, ii = zt ? zt.createPolicy("lit-html", { createHTML: (r) => r }) : void 0, Ji = "$lit$", Pe = `lit$${Math.random().toFixed(9).slice(2)}$`, Xi = "?" + Pe, An = `<${Xi}>`, je = document, dt = () => je.createComment(""), ht = (r) => r === null || typeof r != "object" && typeof r != "function", js = Array.isArray, Pn = (r) => js(r) || typeof r?.[Symbol.iterator] == "function", es = `[ 	
 \f\r]`, st = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, ni = /-->/g, oi = />/g, Oe = RegExp(`>|${es}(?:([^\\s"'>=/]+)(${es}*=${es}*(?:[^ 	
-\f\r"'\`<>=]|("|')|))|$)`, "g"), ri = /'/g, ai = /"/g, Qi = /^(?:script|style|textarea|title)$/i, en = (r) => (e, ...t) => ({ _$litType$: r, strings: e, values: t }), g = en(1), M = en(2), Je = Symbol.for("lit-noChange"), y = Symbol.for("lit-nothing"), li = /* @__PURE__ */ new WeakMap(), Re = je.createTreeWalker(je, 129);
+\f\r"'\`<>=]|("|')|))|$)`, "g"), ri = /'/g, ai = /"/g, Qi = /^(?:script|style|textarea|title)$/i, en = (r) => (e, ...t) => ({ _$litType$: r, strings: e, values: t }), f = en(1), M = en(2), Je = Symbol.for("lit-noChange"), y = Symbol.for("lit-nothing"), li = /* @__PURE__ */ new WeakMap(), Re = je.createTreeWalker(je, 129);
 function tn(r, e) {
   if (!js(r) || !r.hasOwnProperty("raw")) throw Error("invalid template strings array");
   return ii !== void 0 ? ii.createHTML(e) : e;
@@ -1230,6 +1230,11 @@ const Nn = {
   "ic.iso": "Für isometrische Ansicht",
   "ic.empty": "Noch keine eigenen Icons.",
   "ic.type_default": "Standard für Typ",
+  "ic.used_by": "Eigenes Icon von: {list}",
+  "ic.default_for": "Standard für: {list}",
+  "ic.unused": "Nicht zugewiesen",
+  "ic.own_one": "Komponente nutzt eigenes Icon: {name}",
+  "ic.own_some": "{n} von {m} Komponenten mit eigenem Icon",
   "ic.err.unsupported_type": "Dateityp nicht unterstützt",
   "ic.err.too_large": "Datei zu groß (max. 256 KB)",
   "ic.err.unsafe_svg": "SVG enthält Skripte oder aktive Inhalte",
@@ -1874,6 +1879,11 @@ const Nn = {
   "ic.iso": "For isometric view",
   "ic.empty": "No custom icons yet.",
   "ic.type_default": "Default for type",
+  "ic.used_by": "Own icon of: {list}",
+  "ic.default_for": "Default for: {list}",
+  "ic.unused": "Not assigned",
+  "ic.own_one": "Component uses its own icon: {name}",
+  "ic.own_some": "{n} of {m} components with their own icon",
   "ic.err.unsupported_type": "File type not supported",
   "ic.err.too_large": "File too large (max 256 KB)",
   "ic.err.unsafe_svg": "SVG contains scripts or active content",
@@ -3131,7 +3141,7 @@ class lo {
     this.pipes.push({ id: `p${++this.n}`, from: e, to: t, kind: s, flow: i, ...n });
   }
 }
-const f = (r, e) => ({ c: r, p: e });
+const g = (r, e) => ({ c: r, p: e });
 function Xt(r, e) {
   const t = new lo(), s = Qe(r.indoorModel), i = s?.variant || "wall_e", n = !!s?.dhw, o = !!s?.buffer, a = r.dhw === "tank" && !n, l = r.dhw === "tank" || n, p = r.buffer !== "none" && !o, d = { c: "iu", s: "running" }, h = l ? [{ c: "iu", s: "a" }] : [], u = { c: "iu", s: "b" }, m = { c: "pc1", s: "running" }, _ = {
     aux_kw: r.aux ? r.auxKw : 0,
@@ -3152,127 +3162,127 @@ function Xt(r, e) {
     t.add("hc1", ve.emitter, ve.label || c("wz.circuit", { n: 1 }), xe, fe, { flip: C, props: { circuit: 1 } });
     let Te = D;
     const qs = G === K ? [] : [[G, Q], [K, Q]];
-    H ? (Te = [{ c: "pc1", s: "running" }], t.add("pc1", "pump", "PC1", K - 1, O.pumpY ?? R - 10, { rot: 270, props: { role: "secondary", circuit: 1 } }), t.pipe(z, f("pc1", "in"), "supply", Te, { via: qs }), t.pipe(f("pc1", "out"), f("hc1", "sup"), "supply", Te, { via: [[K, fe + 1]] })) : t.pipe(z, f("hc1", "sup"), "supply", Te, { via: [...qs, [K, fe + 1]] });
-    let tt = f("hc1", "ret"), Le = [[V, fe + 5]];
+    H ? (Te = [{ c: "pc1", s: "running" }], t.add("pc1", "pump", "PC1", K - 1, O.pumpY ?? R - 10, { rot: 270, props: { role: "secondary", circuit: 1 } }), t.pipe(z, g("pc1", "in"), "supply", Te, { via: qs }), t.pipe(g("pc1", "out"), g("hc1", "sup"), "supply", Te, { via: [[K, fe + 1]] })) : t.pipe(z, g("hc1", "sup"), "supply", Te, { via: [...qs, [K, fe + 1]] });
+    let tt = g("hc1", "ret"), Le = [[V, fe + 5]];
     if (O.chainY !== void 0) {
       let gt = O.chainY;
       const Js = [];
       r.separator && Js.push(["sep", c("wz.separator_short"), {}], ["sc1", "SC1", { filter: !0 }]);
       for (const [Qt, _n, wn] of Js)
-        t.add(Qt, "separator", _n, V - 1, gt, { rot: 90, props: wn }), t.pipe(tt, f(Qt, "in"), "return", Te, { via: Le }), tt = f(Qt, "out"), Le = [], gt += 3;
-      r.expansion && O.mag !== !1 && (t.add("jmag", "junction", "", V, gt + 1), t.add("mag", "expansion_vessel", "MAG", C ? V - 4 : V + 1, gt, { rot: C ? 270 : 90 }), t.pipe(f("mag", "conn"), f("jmag", C ? "l" : "r"), "return", []), t.pipe(tt, f("jmag", "t"), "return", Te, { via: Le }), tt = f("jmag", "b"), Le = []);
+        t.add(Qt, "separator", _n, V - 1, gt, { rot: 90, props: wn }), t.pipe(tt, g(Qt, "in"), "return", Te, { via: Le }), tt = g(Qt, "out"), Le = [], gt += 3;
+      r.expansion && O.mag !== !1 && (t.add("jmag", "junction", "", V, gt + 1), t.add("mag", "expansion_vessel", "MAG", C ? V - 4 : V + 1, gt, { rot: C ? 270 : 90 }), t.pipe(g("mag", "conn"), g("jmag", C ? "l" : "r"), "return", []), t.pipe(tt, g("jmag", "t"), "return", Te, { via: Le }), tt = g("jmag", "b"), Le = []);
     }
     O.retSrcX !== void 0 && O.retSrcX !== V && (Le = [...Le, [V, O.retJogY ?? R - 1], [O.retSrcX, O.retJogY ?? R - 1]]), t.pipe(tt, S, "return", Te, { via: Le });
   }, ie = (S, z, V, R, D) => {
     const H = { c: "tap", s: "flowing" }, C = { c: "circ", s: "running" }, O = R + V;
-    if (t.add("tap", "tap", c("wz.shower"), R - 6, P - 9, { props: { variant: "shower" } }), t.add("inlet", "water_inlet", c("type.water_inlet"), D, z + 9, { flip: !0 }), t.pipe(f("inlet", "out"), f("dhw", "cold"), "dhw_cold", [H]), !r.circulation) {
-      t.pipe(f("dhw", "hot"), f("tap", "hot"), "dhw_hot", [H], { via: [[R, z + 1], [R, P - 8]] });
+    if (t.add("tap", "tap", c("wz.shower"), R - 6, P - 9, { props: { variant: "shower" } }), t.add("inlet", "water_inlet", c("type.water_inlet"), D, z + 9, { flip: !0 }), t.pipe(g("inlet", "out"), g("dhw", "cold"), "dhw_cold", [H]), !r.circulation) {
+      t.pipe(g("dhw", "hot"), g("tap", "hot"), "dhw_hot", [H], { via: [[R, z + 1], [R, P - 8]] });
       return;
     }
-    t.add("jww", "junction", "", R, P - 7), t.pipe(f("dhw", "hot"), f("jww", "b"), "dhw_hot", [], { via: [[R, z + 1]], flowAny: [H, C] }), t.pipe(f("jww", "t"), f("tap", "hot"), "dhw_hot", [H], { via: [[R, P - 8]] }), t.add("circ", "pump", "PW2", O - 1, z + 2, { rot: 90, props: { role: "circulation" } }), t.pipe(f("jww", "r"), f("circ", "in"), "circulation", [C], { via: [[O, P - 7]] }), t.pipe(f("circ", "out"), f("dhw", "circ"), "circulation", [C], { via: [[O, z + 6]] });
+    t.add("jww", "junction", "", R, P - 7), t.pipe(g("dhw", "hot"), g("jww", "b"), "dhw_hot", [], { via: [[R, z + 1]], flowAny: [H, C] }), t.pipe(g("jww", "t"), g("tap", "hot"), "dhw_hot", [H], { via: [[R, P - 8]] }), t.add("circ", "pump", "PW2", O - 1, z + 2, { rot: 90, props: { role: "circulation" } }), t.pipe(g("jww", "r"), g("circ", "in"), "circulation", [C], { via: [[O, P - 7]] }), t.pipe(g("circ", "out"), g("dhw", "circ"), "circulation", [C], { via: [[O, z + 6]] });
   };
   if (v) {
     const S = U, z = (R) => Z(R).x;
-    ne ? (t.pipe(f("ou", "out"), f("iu", "src_in"), "supply", [d], { via: [[ee + 10, L + 6], [ee + 10, N], [z("src_in"), N]] }), t.pipe(f("iu", "src_out"), f("ou", "in"), "return", [d], { via: [[z("src_out"), N + 1], [ee + 11, N + 1], [ee + 11, L + 5]] })) : oe ? (t.pipe(f("iu", "src_out"), f("ou", "in"), "return", [d], { via: [[z("src_out"), N], [q - 3, N], [q - 3, L + 5]] }), t.pipe(f("ou", "out"), f("iu", "src_in"), "supply", [d], { via: [[q - 2, L + 6], [q - 2, N + 1], [z("src_in"), N + 1]] })) : (t.pipe(f("iu", "src_out"), f("ou", "in"), "return", [d], { via: [[z("src_out"), N], [q - 2, N], [q - 2, L + 5]] }), t.pipe(f("ou", "out"), f("iu", "src_in"), "supply", [d], { via: [[q - 3, L + 6], [q - 3, N + 1], [z("src_in"), N + 1]] }));
+    ne ? (t.pipe(g("ou", "out"), g("iu", "src_in"), "supply", [d], { via: [[ee + 10, L + 6], [ee + 10, N], [z("src_in"), N]] }), t.pipe(g("iu", "src_out"), g("ou", "in"), "return", [d], { via: [[z("src_out"), N + 1], [ee + 11, N + 1], [ee + 11, L + 5]] })) : oe ? (t.pipe(g("iu", "src_out"), g("ou", "in"), "return", [d], { via: [[z("src_out"), N], [q - 3, N], [q - 3, L + 5]] }), t.pipe(g("ou", "out"), g("iu", "src_in"), "supply", [d], { via: [[q - 2, L + 6], [q - 2, N + 1], [z("src_in"), N + 1]] })) : (t.pipe(g("iu", "src_out"), g("ou", "in"), "return", [d], { via: [[z("src_out"), N], [q - 2, N], [q - 2, L + 5]] }), t.pipe(g("ou", "out"), g("iu", "src_in"), "supply", [d], { via: [[q - 3, L + 6], [q - 3, N + 1], [z("src_in"), N + 1]] }));
     const V = P + 6;
     if (i === "tp70") {
       const R = { c: "iu", s: "pc1" };
-      I(f("iu", "ret"), f("iu", "sup"), z("ret"), S, [R], !1, !1, { supSrcX: z("sup"), chainY: V, mag: !1 });
+      I(g("iu", "ret"), g("iu", "sup"), z("ret"), S, [R], !1, !1, { supSrcX: z("sup"), chainY: V, mag: !1 });
       const D = T + 20, H = W - 11;
-      t.add("dhw", "dhw_tank", r.dhwLabel || c("type.dhw_tank"), D, H, { flip: !0, props: { volume: r.dhwVolume } }), t.pipe(f("iu", "dhw_sup"), f("dhw", "coil_in"), "supply", [d, u], { via: [[z("dhw_sup"), S - 2], [D - 1, S - 2], [D - 1, H + 4]] }), t.pipe(f("dhw", "coil_out"), f("iu", "dhw_ret"), "return", [d, u], { via: [[D - 2, H + 9], [D - 2, S - 1], [z("dhw_ret"), S - 1]] }), ie(D, H, 1, D + 8, D + 10);
+      t.add("dhw", "dhw_tank", r.dhwLabel || c("type.dhw_tank"), D, H, { flip: !0, props: { volume: r.dhwVolume } }), t.pipe(g("iu", "dhw_sup"), g("dhw", "coil_in"), "supply", [d, u], { via: [[z("dhw_sup"), S - 2], [D - 1, S - 2], [D - 1, H + 4]] }), t.pipe(g("dhw", "coil_out"), g("iu", "dhw_ret"), "return", [d, u], { via: [[D - 2, H + 9], [D - 2, S - 1], [z("dhw_ret"), S - 1]] }), ie(D, H, 1, D + 8, D + 10);
     } else if (i === "t180") {
       const R = { c: "tap", s: "flowing" }, D = { c: "circ", s: "running" }, H = { c: "iu", s: "pc1" };
       if (p) {
         const O = T - 20, le = W - 9, K = S - 6, G = S - 4, Q = [d, ...h];
-        t.add("buf", "buffer", r.bufferLabel || c("type.buffer"), O, le, { flip: !0, props: { volume: r.bufferVolume } }), t.pipe(f("iu", "sup"), f("buf", "in_sup"), "supply", Q, { via: [[z("sup"), K], [O + 4, K]] });
-        let xe = f("buf", "in_ret"), fe = [[O + 3, G]], ve = O + 5;
-        r.separator && (t.add("sep", "separator", c("wz.separator_short"), ve, G - 1), t.add("sc1", "separator", "SC1", ve + 3, G - 1, { props: { filter: !0 } }), t.pipe(xe, f("sep", "in"), "return", Q, { via: fe }), t.pipe(f("sep", "out"), f("sc1", "in"), "return", Q), xe = f("sc1", "out"), fe = [], ve += 7), r.expansion && (t.add("jmag", "junction", "", ve + 1, G), t.add("mag", "expansion_vessel", "MAG", ve, G, { rot: 180 }), t.pipe(f("mag", "conn"), f("jmag", "b"), "return", []), t.pipe(xe, f("jmag", "l"), "return", Q, { via: fe }), xe = f("jmag", "r"), fe = []), t.pipe(xe, f("iu", "ret"), "return", Q, { via: [...fe, [z("ret"), G]] }), I(f("buf", "out_ret"), f("buf", "out_sup"), O + 2, le, [m], !0, !1, { supSrcX: O + 1 });
+        t.add("buf", "buffer", r.bufferLabel || c("type.buffer"), O, le, { flip: !0, props: { volume: r.bufferVolume } }), t.pipe(g("iu", "sup"), g("buf", "in_sup"), "supply", Q, { via: [[z("sup"), K], [O + 4, K]] });
+        let xe = g("buf", "in_ret"), fe = [[O + 3, G]], ve = O + 5;
+        r.separator && (t.add("sep", "separator", c("wz.separator_short"), ve, G - 1), t.add("sc1", "separator", "SC1", ve + 3, G - 1, { props: { filter: !0 } }), t.pipe(xe, g("sep", "in"), "return", Q, { via: fe }), t.pipe(g("sep", "out"), g("sc1", "in"), "return", Q), xe = g("sc1", "out"), fe = [], ve += 7), r.expansion && (t.add("jmag", "junction", "", ve + 1, G), t.add("mag", "expansion_vessel", "MAG", ve, G, { rot: 180 }), t.pipe(g("mag", "conn"), g("jmag", "b"), "return", []), t.pipe(xe, g("jmag", "l"), "return", Q, { via: fe }), xe = g("jmag", "r"), fe = []), t.pipe(xe, g("iu", "ret"), "return", Q, { via: [...fe, [z("ret"), G]] }), I(g("buf", "out_ret"), g("buf", "out_sup"), O + 2, le, [m], !0, !1, { supSrcX: O + 1 });
       } else
-        I(f("iu", "ret"), f("iu", "sup"), z("ret") - 3, S, [H], !1, !0, {
+        I(g("iu", "ret"), g("iu", "sup"), z("ret") - 3, S, [H], !1, !0, {
           supSrcX: z("sup"),
           jogY: S - 2,
           retSrcX: z("ret"),
           retJogY: S - 1
         });
       const C = z("dhw_hot");
-      t.add("tap", "tap", c("wz.shower"), C + 2, P - 9, { flip: !0, props: { variant: "shower" } }), r.circulation ? (t.add("jww", "junction", "", C, P - 5), t.pipe(f("iu", "dhw_hot"), f("jww", "b"), "dhw_hot", [], { flowAny: [R, D] }), t.pipe(f("jww", "t"), f("tap", "hot"), "dhw_hot", [R], { via: [[C, P - 8]] }), t.add("circ", "pump", "PW2", z("circ") - 1, p ? P + 1 : S - 8, { rot: 90, props: { role: "circulation" } }), t.pipe(f("jww", "l"), f("circ", "in"), "circulation", [D], { via: [[z("circ"), P - 5]] }), t.pipe(f("circ", "out"), f("iu", "circ"), "circulation", [D])) : t.pipe(f("iu", "dhw_hot"), f("tap", "hot"), "dhw_hot", [R], { via: [[C, P - 8]] }), t.add("inlet", "water_inlet", c("type.water_inlet"), q - 4, S - 5, { flip: !0 }), t.pipe(f("inlet", "out"), f("iu", "dhw_cold"), "dhw_cold", [R], { via: [[z("dhw_cold"), S - 4]] });
+      t.add("tap", "tap", c("wz.shower"), C + 2, P - 9, { flip: !0, props: { variant: "shower" } }), r.circulation ? (t.add("jww", "junction", "", C, P - 5), t.pipe(g("iu", "dhw_hot"), g("jww", "b"), "dhw_hot", [], { flowAny: [R, D] }), t.pipe(g("jww", "t"), g("tap", "hot"), "dhw_hot", [R], { via: [[C, P - 8]] }), t.add("circ", "pump", "PW2", z("circ") - 1, p ? P + 1 : S - 8, { rot: 90, props: { role: "circulation" } }), t.pipe(g("jww", "l"), g("circ", "in"), "circulation", [D], { via: [[z("circ"), P - 5]] }), t.pipe(g("circ", "out"), g("iu", "circ"), "circulation", [D])) : t.pipe(g("iu", "dhw_hot"), g("tap", "hot"), "dhw_hot", [R], { via: [[C, P - 8]] }), t.add("inlet", "water_inlet", c("type.water_inlet"), q - 4, S - 5, { flip: !0 }), t.pipe(g("inlet", "out"), g("iu", "dhw_cold"), "dhw_cold", [R], { via: [[z("dhw_cold"), S - 4]] });
     } else {
       const R = [d, ...h];
       let D = T + 14;
       if (p) {
         const H = T + 17, C = W - 9;
-        t.add("buf", "buffer", r.bufferLabel || c("type.buffer"), H, C, { props: { volume: r.bufferVolume } }), t.pipe(f("iu", "sup"), f("buf", "in_sup"), "supply", R, { via: [[z("sup"), S - 1], [H + 1, S - 1]] }), t.pipe(f("buf", "in_ret"), f("iu", "ret"), "return", R, { via: [[H + 2, S - 2], [z("ret"), S - 2]] }), I(f("buf", "out_ret"), f("buf", "out_sup"), H + 3, C, [m], !0, !0, { chainY: V, pumpY: P + 2 }), D = H + 16;
+        t.add("buf", "buffer", r.bufferLabel || c("type.buffer"), H, C, { props: { volume: r.bufferVolume } }), t.pipe(g("iu", "sup"), g("buf", "in_sup"), "supply", R, { via: [[z("sup"), S - 1], [H + 1, S - 1]] }), t.pipe(g("buf", "in_ret"), g("iu", "ret"), "return", R, { via: [[H + 2, S - 2], [z("ret"), S - 2]] }), I(g("buf", "out_ret"), g("buf", "out_sup"), H + 3, C, [m], !0, !0, { chainY: V, pumpY: P + 2 }), D = H + 16;
       } else
-        I(f("iu", "ret"), f("iu", "sup"), z("ret"), S + 1, R, !1, !0, { supSrcX: z("sup"), chainY: V, mag: !1 }), D = T + 20;
+        I(g("iu", "ret"), g("iu", "sup"), z("ret"), S + 1, R, !1, !0, { supSrcX: z("sup"), chainY: V, mag: !1 }), D = T + 20;
       if (a) {
         const H = D, C = W - 11;
-        t.add("dhw", "dhw_tank", r.dhwLabel || c("type.dhw_tank"), H, C, { flip: !0, props: { volume: r.dhwVolume } }), t.pipe(f("iu", "dhw_sup"), f("dhw", "coil_in"), "supply", [d, u], { via: [[z("dhw_sup"), S - 4], [H - 1, S - 4], [H - 1, C + 4]] }), t.pipe(f("dhw", "coil_out"), f("iu", "dhw_ret"), "return", [d, u], { via: [[H - 2, C + 9], [H - 2, S - 3], [z("dhw_ret"), S - 3]] }), ie(H, C, 1, H + 8, H + 10);
+        t.add("dhw", "dhw_tank", r.dhwLabel || c("type.dhw_tank"), H, C, { flip: !0, props: { volume: r.dhwVolume } }), t.pipe(g("iu", "dhw_sup"), g("dhw", "coil_in"), "supply", [d, u], { via: [[z("dhw_sup"), S - 4], [H - 1, S - 4], [H - 1, C + 4]] }), t.pipe(g("dhw", "coil_out"), g("iu", "dhw_ret"), "return", [d, u], { via: [[H - 2, C + 9], [H - 2, S - 3], [z("dhw_ret"), S - 3]] }), ie(H, C, 1, H + 8, H + 10);
       }
     }
   } else if (A) {
     const S = U + 14, z = (O) => Z(O).x;
-    if (t.pipe(f("iu", "src_out"), f("ou", "in"), "return", [d], {
+    if (t.pipe(g("iu", "src_out"), g("ou", "in"), "return", [d], {
       via: [[z("src_out"), S + 4], [T - 2, S + 4], [T - 2, N], [q - 2, N], [q - 2, L + 5]]
-    }), t.pipe(f("ou", "out"), f("iu", "src_in"), "supply", [d], {
+    }), t.pipe(g("ou", "out"), g("iu", "src_in"), "supply", [d], {
       via: [[q - 3, L + 6], [q - 3, N + 1], [T - 3, N + 1], [T - 3, S + 5], [z("src_in"), S + 5]]
     }), a) {
       const O = T - 14, le = W - 11;
-      t.add("dhw", "dhw_tank", r.dhwLabel || c("type.dhw_tank"), O, le, { props: { volume: r.dhwVolume } }), t.pipe(f("iu", "dhw_sup"), f("dhw", "coil_in"), "supply", [d, u], { via: [[z("dhw_sup"), le + 4]] }), t.pipe(f("dhw", "coil_out"), f("iu", "dhw_ret"), "return", [d, u], { via: [[z("dhw_ret"), le + 9]] });
+      t.add("dhw", "dhw_tank", r.dhwLabel || c("type.dhw_tank"), O, le, { props: { volume: r.dhwVolume } }), t.pipe(g("iu", "dhw_sup"), g("dhw", "coil_in"), "supply", [d, u], { via: [[z("dhw_sup"), le + 4]] }), t.pipe(g("dhw", "coil_out"), g("iu", "dhw_ret"), "return", [d, u], { via: [[z("dhw_ret"), le + 9]] });
       const K = { c: "tap", s: "flowing" }, G = { c: "circ", s: "running" }, Q = O - 2;
-      t.add("tap", "tap", c("wz.shower"), Q - 6, P - 9, { props: { variant: "shower" } }), t.add("inlet", "water_inlet", c("type.water_inlet"), q + 1, le + 9), t.pipe(f("inlet", "out"), f("dhw", "cold"), "dhw_cold", [K]), r.circulation ? (t.add("jww", "junction", "", Q, P - 7), t.pipe(f("dhw", "hot"), f("jww", "b"), "dhw_hot", [], { via: [[Q, le + 1]], flowAny: [K, G] }), t.pipe(f("jww", "t"), f("tap", "hot"), "dhw_hot", [K], { via: [[Q, P - 8]] }), t.add("circ", "pump", "PW2", Q - 2, le + 2, { rot: 90, props: { role: "circulation" } }), t.pipe(f("jww", "l"), f("circ", "in"), "circulation", [G], { via: [[Q - 1, P - 7]] }), t.pipe(f("circ", "out"), f("dhw", "circ"), "circulation", [G], { via: [[Q - 1, le + 6]] })) : t.pipe(f("dhw", "hot"), f("tap", "hot"), "dhw_hot", [K], { via: [[Q, le + 1], [Q, P - 8]] });
+      t.add("tap", "tap", c("wz.shower"), Q - 6, P - 9, { props: { variant: "shower" } }), t.add("inlet", "water_inlet", c("type.water_inlet"), q + 1, le + 9), t.pipe(g("inlet", "out"), g("dhw", "cold"), "dhw_cold", [K]), r.circulation ? (t.add("jww", "junction", "", Q, P - 7), t.pipe(g("dhw", "hot"), g("jww", "b"), "dhw_hot", [], { via: [[Q, le + 1]], flowAny: [K, G] }), t.pipe(g("jww", "t"), g("tap", "hot"), "dhw_hot", [K], { via: [[Q, P - 8]] }), t.add("circ", "pump", "PW2", Q - 2, le + 2, { rot: 90, props: { role: "circulation" } }), t.pipe(g("jww", "l"), g("circ", "in"), "circulation", [G], { via: [[Q - 1, P - 7]] }), t.pipe(g("circ", "out"), g("dhw", "circ"), "circulation", [G], { via: [[Q - 1, le + 6]] })) : t.pipe(g("dhw", "hot"), g("tap", "hot"), "dhw_hot", [K], { via: [[Q, le + 1], [Q, P - 8]] });
     }
     const V = T + 27, R = W - 9, D = S + 5, H = [d, ...h];
-    t.add("buf", "buffer", r.bufferLabel || c("type.buffer"), V, R, { props: { volume: r.bufferVolume } }), t.pipe(f("iu", "sup"), f("buf", "in_sup"), "supply", H, { via: [[z("sup"), S + 3], [V + 1, S + 3]] });
+    t.add("buf", "buffer", r.bufferLabel || c("type.buffer"), V, R, { props: { volume: r.bufferVolume } }), t.pipe(g("iu", "sup"), g("buf", "in_sup"), "supply", H, { via: [[z("sup"), S + 3], [V + 1, S + 3]] });
     const C = [];
-    r.separator && (t.add("sep", "separator", c("wz.separator_short"), z("sup") + 10, D - 1, { rot: 180 }), C.push({ inP: f("sep", "in"), outP: f("sep", "out") })), r.expansion && (t.add("jmag", "junction", "", z("sup") + 6, D), t.add("mag", "expansion_vessel", "MAG", z("sup") + 5, D + 1, { rot: 180 }), t.pipe(f("mag", "conn"), f("jmag", "b"), "return", []), C.push({ inP: f("jmag", "r"), outP: f("jmag", "l") })), r.separator && (t.add("sc1", "separator", "SC1", z("sup") + 2, D - 1, { rot: 180, props: { filter: !0 } }), C.push({ inP: f("sc1", "in"), outP: f("sc1", "out") }));
+    r.separator && (t.add("sep", "separator", c("wz.separator_short"), z("sup") + 10, D - 1, { rot: 180 }), C.push({ inP: g("sep", "in"), outP: g("sep", "out") })), r.expansion && (t.add("jmag", "junction", "", z("sup") + 6, D), t.add("mag", "expansion_vessel", "MAG", z("sup") + 5, D + 1, { rot: 180 }), t.pipe(g("mag", "conn"), g("jmag", "b"), "return", []), C.push({ inP: g("jmag", "r"), outP: g("jmag", "l") })), r.separator && (t.add("sc1", "separator", "SC1", z("sup") + 2, D - 1, { rot: 180, props: { filter: !0 } }), C.push({ inP: g("sc1", "in"), outP: g("sc1", "out") }));
     for (let O = 0; O < C.length - 1; O++) t.pipe(C[O].outP, C[O + 1].inP, "return", H);
-    C.length ? (t.pipe(C[C.length - 1].outP, f("iu", "ret"), "return", H, { via: [[z("ret"), D]] }), t.pipe(f("buf", "in_ret"), C[0].inP, "return", H, { via: [[V + 2, D]] })) : t.pipe(f("buf", "in_ret"), f("iu", "ret"), "return", H, { via: [[V + 2, D], [z("ret"), D]] }), I(f("buf", "out_ret"), f("buf", "out_sup"), V + 3, R, [m], !0);
+    C.length ? (t.pipe(C[C.length - 1].outP, g("iu", "ret"), "return", H, { via: [[z("ret"), D]] }), t.pipe(g("buf", "in_ret"), C[0].inP, "return", H, { via: [[V + 2, D]] })) : t.pipe(g("buf", "in_ret"), g("iu", "ret"), "return", H, { via: [[V + 2, D], [z("ret"), D]] }), I(g("buf", "out_ret"), g("buf", "out_sup"), V + 3, R, [m], !0);
   } else if (x) {
     const S = U, z = (G) => Z(G).x, V = { c: "iu", s: "pc1" };
-    t.pipe(f("iu", "src_out"), f("ou", "in"), "return", [d], { via: [[z("src_out"), L + 5]] }), t.pipe(f("ou", "out"), f("iu", "src_in"), "supply", [d], { via: [[z("src_in"), L + 6]] });
+    t.pipe(g("iu", "src_out"), g("ou", "in"), "return", [d], { via: [[z("src_out"), L + 5]] }), t.pipe(g("ou", "out"), g("iu", "src_in"), "supply", [d], { via: [[z("src_in"), L + 6]] });
     const R = r.circuits[0] ?? { emitter: "radiators", label: "" }, D = 2, H = S - 8, C = S - 4;
-    t.add("hc1", R.emitter, R.label || c("wz.circuit", { n: 1 }), D, H - 1, { flip: !0, props: { circuit: 1 } }), t.pipe(f("iu", "sup"), f("hc1", "sup"), "supply", [V], { via: [[z("sup"), H]] });
-    let O = f("hc1", "ret"), le = [], K = D + 9;
-    if (r.separator && (t.add("sep", "separator", c("wz.separator_short"), K, C - 1), t.add("sc1", "separator", "SC1", K + 3, C - 1, { props: { filter: !0 } }), t.pipe(O, f("sep", "in"), "return", [V]), t.pipe(f("sep", "out"), f("sc1", "in"), "return", [V]), O = f("sc1", "out"), K += 7), r.expansion && (t.add("jmag", "junction", "", K + 1, C), t.add("mag", "expansion_vessel", "MAG", K, C, { rot: 180 }), t.pipe(f("mag", "conn"), f("jmag", "b"), "return", []), t.pipe(O, f("jmag", "l"), "return", [V]), O = f("jmag", "r")), t.pipe(O, f("iu", "ret"), "return", [V], { via: [...le, [z("ret"), C]] }), a) {
+    t.add("hc1", R.emitter, R.label || c("wz.circuit", { n: 1 }), D, H - 1, { flip: !0, props: { circuit: 1 } }), t.pipe(g("iu", "sup"), g("hc1", "sup"), "supply", [V], { via: [[z("sup"), H]] });
+    let O = g("hc1", "ret"), le = [], K = D + 9;
+    if (r.separator && (t.add("sep", "separator", c("wz.separator_short"), K, C - 1), t.add("sc1", "separator", "SC1", K + 3, C - 1, { props: { filter: !0 } }), t.pipe(O, g("sep", "in"), "return", [V]), t.pipe(g("sep", "out"), g("sc1", "in"), "return", [V]), O = g("sc1", "out"), K += 7), r.expansion && (t.add("jmag", "junction", "", K + 1, C), t.add("mag", "expansion_vessel", "MAG", K, C, { rot: 180 }), t.pipe(g("mag", "conn"), g("jmag", "b"), "return", []), t.pipe(O, g("jmag", "l"), "return", [V]), O = g("jmag", "r")), t.pipe(O, g("iu", "ret"), "return", [V], { via: [...le, [z("ret"), C]] }), a) {
       const G = T + 22, Q = S + 2;
-      t.add("dhw", "dhw_tank", r.dhwLabel || c("type.dhw_tank"), G, Q, { props: { volume: r.dhwVolume } }), t.pipe(f("iu", "dhw_sup"), f("dhw", "coil_in"), "supply", [d, u], { via: [[z("dhw_sup"), S - 3], [G + 9, S - 3], [G + 9, Q + 4]] }), t.pipe(f("dhw", "coil_out"), f("iu", "dhw_ret"), "return", [d, u], { via: [[G + 8, Q + 9], [G + 8, S - 2], [z("dhw_ret"), S - 2]] }), wt(t, r, f("dhw", "hot"), f("dhw", "circ"), f("dhw", "cold"), G, Q);
+      t.add("dhw", "dhw_tank", r.dhwLabel || c("type.dhw_tank"), G, Q, { props: { volume: r.dhwVolume } }), t.pipe(g("iu", "dhw_sup"), g("dhw", "coil_in"), "supply", [d, u], { via: [[z("dhw_sup"), S - 3], [G + 9, S - 3], [G + 9, Q + 4]] }), t.pipe(g("dhw", "coil_out"), g("iu", "dhw_ret"), "return", [d, u], { via: [[G + 8, Q + 9], [G + 8, S - 2], [z("dhw_ret"), S - 2]] }), wt(t, r, g("dhw", "hot"), g("dhw", "circ"), g("dhw", "cold"), G, Q);
     }
   } else if (w) {
     const S = U, z = (K) => Z(K).x, V = Math.max(...["src_in", "src_out", "sup", "ret", "dhw_sup", "dhw_ret", "dhw_hot", "dhw_cold", "circ"].filter((K) => ye(j, K)).map(z));
-    t.pipe(f("ou", "out"), f("iu", "src_in"), "supply", [d], { via: [[12, ae.y], [12, S - 9], [z("src_in"), S - 9]] }), t.pipe(f("iu", "src_out"), f("ou", "in"), "return", [d], { via: [[z("src_out"), S - 10], [11, S - 10]] });
-    let R = f("iu", "sup"), D = f("iu", "ret"), H = o ? [m] : [d, ...h], C = [[z("sup"), S - 2]];
+    t.pipe(g("ou", "out"), g("iu", "src_in"), "supply", [d], { via: [[12, ae.y], [12, S - 9], [z("src_in"), S - 9]] }), t.pipe(g("iu", "src_out"), g("ou", "in"), "return", [d], { via: [[z("src_out"), S - 10], [11, S - 10]] });
+    let R = g("iu", "sup"), D = g("iu", "ret"), H = o ? [m] : [d, ...h], C = [[z("sup"), S - 2]];
     const O = S - 4;
     let le = V + 14;
     if (p) {
       const K = V + 2, G = K + 10, Q = S + 4;
-      t.add("buf", "buffer", r.bufferLabel || c("type.buffer"), G, Q, { props: { volume: r.bufferVolume } }), t.pipe(f("iu", "sup"), f("buf", "in_sup"), "supply", [d, ...h], { via: [[z("sup"), S - 2], [G + 1, S - 2]] });
+      t.add("buf", "buffer", r.bufferLabel || c("type.buffer"), G, Q, { props: { volume: r.bufferVolume } }), t.pipe(g("iu", "sup"), g("buf", "in_sup"), "supply", [d, ...h], { via: [[z("sup"), S - 2], [G + 1, S - 2]] });
       const xe = [d, ...h];
-      let fe = f("buf", "in_ret"), ve = [[G + 2, O]];
-      r.separator && (t.add("sep", "separator", c("wz.separator_short"), K + 6, O - 1, { rot: 180 }), t.add("sc1", "separator", "SC1", K + 3, O - 1, { rot: 180, props: { filter: !0 } }), t.pipe(fe, f("sep", "in"), "return", xe, { via: ve }), t.pipe(f("sep", "out"), f("sc1", "in"), "return", xe), fe = f("sc1", "out"), ve = []), r.expansion && (t.add("jmag", "junction", "", K, O), t.add("mag", "expansion_vessel", "MAG", K - 1, O - 5), t.pipe(f("mag", "conn"), f("jmag", "t"), "return", []), t.pipe(fe, f("jmag", "r"), "return", xe, { via: ve }), fe = f("jmag", "l"), ve = []), t.pipe(fe, f("iu", "ret"), "return", xe, { via: [...ve, [z("ret"), O]] }), R = f("buf", "out_sup"), D = f("buf", "out_ret"), H = [m], C = [], le = G + 7;
+      let fe = g("buf", "in_ret"), ve = [[G + 2, O]];
+      r.separator && (t.add("sep", "separator", c("wz.separator_short"), K + 6, O - 1, { rot: 180 }), t.add("sc1", "separator", "SC1", K + 3, O - 1, { rot: 180, props: { filter: !0 } }), t.pipe(fe, g("sep", "in"), "return", xe, { via: ve }), t.pipe(g("sep", "out"), g("sc1", "in"), "return", xe), fe = g("sc1", "out"), ve = []), r.expansion && (t.add("jmag", "junction", "", K, O), t.add("mag", "expansion_vessel", "MAG", K - 1, O - 5), t.pipe(g("mag", "conn"), g("jmag", "t"), "return", []), t.pipe(fe, g("jmag", "r"), "return", xe, { via: ve }), fe = g("jmag", "l"), ve = []), t.pipe(fe, g("iu", "ret"), "return", xe, { via: [...ve, [z("ret"), O]] }), R = g("buf", "out_sup"), D = g("buf", "out_ret"), H = [m], C = [], le = G + 7;
     }
     if (ns(t, r, R, D, H, C, p || o, le, S + 4), n)
-      wt(t, r, f("iu", "dhw_hot"), f("iu", "circ"), f("iu", "dhw_cold"), T - 1, S + 18);
+      wt(t, r, g("iu", "dhw_hot"), g("iu", "circ"), g("iu", "dhw_cold"), T - 1, S + 18);
     else if (a) {
       const K = T - 9, G = S + 8;
-      t.add("dhw", "dhw_tank", r.dhwLabel || c("type.dhw_tank"), K, G, { props: { volume: r.dhwVolume } }), t.pipe(f("iu", "dhw_sup"), f("dhw", "coil_in"), "supply", [d, u], { via: [[z("dhw_sup"), S - 1], [K + 8, S - 1], [K + 8, G + 4]] }), t.pipe(f("dhw", "coil_out"), f("iu", "dhw_ret"), "return", [d, u], { via: [[K + 7, G + 9], [K + 7, S - 3], [z("dhw_ret"), S - 3]] }), wt(t, r, f("dhw", "hot"), f("dhw", "circ"), f("dhw", "cold"), K, G);
+      t.add("dhw", "dhw_tank", r.dhwLabel || c("type.dhw_tank"), K, G, { props: { volume: r.dhwVolume } }), t.pipe(g("iu", "dhw_sup"), g("dhw", "coil_in"), "supply", [d, u], { via: [[z("dhw_sup"), S - 1], [K + 8, S - 1], [K + 8, G + 4]] }), t.pipe(g("dhw", "coil_out"), g("iu", "dhw_ret"), "return", [d, u], { via: [[K + 7, G + 9], [K + 7, S - 3], [z("dhw_ret"), S - 3]] }), wt(t, r, g("dhw", "hot"), g("dhw", "circ"), g("dhw", "cold"), K, G);
     }
   } else {
     const S = U + 14, z = (C) => Z(C).x;
-    t.pipe(f("iu", "src_out"), f("ou", "in"), "return", [d], { via: [[z("src_out"), S + 1]] }), t.pipe(f("ou", "out"), f("iu", "src_in"), "supply", [d], { via: [[z("src_in"), S + 2]] });
+    t.pipe(g("iu", "src_out"), g("ou", "in"), "return", [d], { via: [[z("src_out"), S + 1]] }), t.pipe(g("ou", "out"), g("iu", "src_in"), "supply", [d], { via: [[z("src_in"), S + 2]] });
     const V = S + 6, R = [d, ...h], D = [];
-    r.separator && (t.add("sep", "separator", c("wz.separator_short"), z("sup") + 9, V - 1, { rot: 180 }), D.push({ inP: f("sep", "in"), outP: f("sep", "out") })), r.expansion && (t.add("jmag", "junction", "", z("sup") + 6, V), t.add("mag", "expansion_vessel", "MAG", z("sup") + 5, V + 1, { rot: 180 }), t.pipe(f("mag", "conn"), f("jmag", "b"), "return", []), D.push({ inP: f("jmag", "r"), outP: f("jmag", "l") })), r.separator && (t.add("sc1", "separator", "SC1", z("sup") + 1, V - 1, { rot: 180, props: { filter: !0 } }), D.push({ inP: f("sc1", "in"), outP: f("sc1", "out") }));
+    r.separator && (t.add("sep", "separator", c("wz.separator_short"), z("sup") + 9, V - 1, { rot: 180 }), D.push({ inP: g("sep", "in"), outP: g("sep", "out") })), r.expansion && (t.add("jmag", "junction", "", z("sup") + 6, V), t.add("mag", "expansion_vessel", "MAG", z("sup") + 5, V + 1, { rot: 180 }), t.pipe(g("mag", "conn"), g("jmag", "b"), "return", []), D.push({ inP: g("jmag", "r"), outP: g("jmag", "l") })), r.separator && (t.add("sc1", "separator", "SC1", z("sup") + 1, V - 1, { rot: 180, props: { filter: !0 } }), D.push({ inP: g("sc1", "in"), outP: g("sc1", "out") }));
     for (let C = 0; C < D.length - 1; C++) t.pipe(D[C].outP, D[C + 1].inP, "return", R);
-    let H = f("iu", "ret");
-    if (D.length && (t.pipe(D[D.length - 1].outP, f("iu", "ret"), "return", R, { via: [[z("ret"), V]] }), H = D[0].inP), p) {
+    let H = g("iu", "ret");
+    if (D.length && (t.pipe(D[D.length - 1].outP, g("iu", "ret"), "return", R, { via: [[z("ret"), V]] }), H = D[0].inP), p) {
       const C = T + 22, O = S + 8;
-      t.add("buf", "buffer", r.bufferLabel || c("type.buffer"), C, O, { props: { volume: r.bufferVolume } }), t.pipe(f("iu", "sup"), f("buf", "in_sup"), "supply", [d, ...h], { via: [[z("sup"), S + 2], [C + 1, S + 2]] }), t.pipe(f("buf", "in_ret"), H, "return", [d, ...h], { via: [[C + 2, V]] }), ns(t, r, f("buf", "out_sup"), f("buf", "out_ret"), [m], [], !0, C + 8, O + 1);
+      t.add("buf", "buffer", r.bufferLabel || c("type.buffer"), C, O, { props: { volume: r.bufferVolume } }), t.pipe(g("iu", "sup"), g("buf", "in_sup"), "supply", [d, ...h], { via: [[z("sup"), S + 2], [C + 1, S + 2]] }), t.pipe(g("buf", "in_ret"), H, "return", [d, ...h], { via: [[C + 2, V]] }), ns(t, r, g("buf", "out_sup"), g("buf", "out_ret"), [m], [], !0, C + 8, O + 1);
     } else {
       const C = T + 25;
-      ns(t, r, f("iu", "sup"), H, [d, ...h], [[z("sup"), S + 2], [C - 2, S + 2]], !1, C, S + 8, V);
+      ns(t, r, g("iu", "sup"), H, [d, ...h], [[z("sup"), S + 2], [C - 2, S + 2]], !1, C, S + 8, V);
     }
     if (a) {
       const C = z("dhw_sup") - 8, O = S + 6;
-      t.add("dhw", "dhw_tank", r.dhwLabel || c("type.dhw_tank"), C, O, { props: { volume: r.dhwVolume } }), t.pipe(f("iu", "dhw_sup"), f("dhw", "coil_in"), "supply", [d, u], { via: [[z("dhw_sup"), O + 4]] }), t.pipe(f("dhw", "coil_out"), f("iu", "dhw_ret"), "return", [d, u], { via: [[z("dhw_ret"), O + 9]] }), wt(t, r, f("dhw", "hot"), f("dhw", "circ"), f("dhw", "cold"), C, O);
+      t.add("dhw", "dhw_tank", r.dhwLabel || c("type.dhw_tank"), C, O, { props: { volume: r.dhwVolume } }), t.pipe(g("iu", "dhw_sup"), g("dhw", "coil_in"), "supply", [d, u], { via: [[z("dhw_sup"), O + 4]] }), t.pipe(g("dhw", "coil_out"), g("iu", "dhw_ret"), "return", [d, u], { via: [[z("dhw_ret"), O + 9]] }), wt(t, r, g("dhw", "hot"), g("dhw", "circ"), g("dhw", "cold"), C, O);
     }
   }
   const de = Math.max(1, r.circuits.length), we = {
@@ -3300,18 +3310,18 @@ function ns(r, e, t, s, i, n, o, a, l, p) {
   e.circuits.slice(0, 4).forEach((u, m) => {
     const _ = m + 1, w = l - 9 + m * 10, b = _ === 1 ? "pc1" : `hc${_}_pump`, v = `hc${_}_mix`, x = `hc${_}`;
     let k = a, A = null, W = null, P = i;
-    (o || u.mixed) && (r.add(b, "pump", _ === 1 ? "PC1" : `PC${_}`, k, w, { props: { role: u.mixed ? "hc" : "secondary", circuit: _ } }), A = f(b, "in"), W = f(b, "out"), P = [{ c: b, s: "running" }], d.push(P[0]), k += 4), u.mixed && (r.add(v, "mixer", `VC${_}`, k, w, { props: { circuit: _ } }), W ? r.pipe(W, f(v, "in"), "supply", P) : A = f(v, "in"), W = f(v, "out"), k += 3);
+    (o || u.mixed) && (r.add(b, "pump", _ === 1 ? "PC1" : `PC${_}`, k, w, { props: { role: u.mixed ? "hc" : "secondary", circuit: _ } }), A = g(b, "in"), W = g(b, "out"), P = [{ c: b, s: "running" }], d.push(P[0]), k += 4), u.mixed && (r.add(v, "mixer", `VC${_}`, k, w, { props: { circuit: _ } }), W ? r.pipe(W, g(v, "in"), "supply", P) : A = g(v, "in"), W = g(v, "out"), k += 3);
     const N = k + 3;
-    r.add(x, u.emitter, u.label || c("wz.circuit", { n: _ }), N, w - 2, { props: { circuit: _ } }), W ? r.pipe(W, f(x, "sup"), "supply", P, { via: [[N - 2, w + 1], [N - 2, w - 1]] }) : A = f(x, "sup"), r.pipe(h, A, "supply", P, m === 0 ? { via: [...n, [a - 1 - m, w + 1]] } : { via: [[a - 1 - m, w + 1]] }), u.mixed ? (r.add(`hc${_}_jm`, "junction", "", k - 2, w + 3), r.pipe(f(x, "ret"), f(`hc${_}_jm`, "r"), "return", P, { via: [[k - 2, w + 3]] }), r.pipe(f(`hc${_}_jm`, "t"), f(v, "ret"), "return", P), r.pipe(f(`hc${_}_jm`, "l"), s, "return", P, { via: [[a - 2 - m, w + 3], ...p ? [[a - 2 - m, p]] : []] })) : r.pipe(f(x, "ret"), s, "return", P, { via: [[a - 2 - m, w + 3], ...p ? [[a - 2 - m, p]] : []] });
+    r.add(x, u.emitter, u.label || c("wz.circuit", { n: _ }), N, w - 2, { props: { circuit: _ } }), W ? r.pipe(W, g(x, "sup"), "supply", P, { via: [[N - 2, w + 1], [N - 2, w - 1]] }) : A = g(x, "sup"), r.pipe(h, A, "supply", P, m === 0 ? { via: [...n, [a - 1 - m, w + 1]] } : { via: [[a - 1 - m, w + 1]] }), u.mixed ? (r.add(`hc${_}_jm`, "junction", "", k - 2, w + 3), r.pipe(g(x, "ret"), g(`hc${_}_jm`, "r"), "return", P, { via: [[k - 2, w + 3]] }), r.pipe(g(`hc${_}_jm`, "t"), g(v, "ret"), "return", P), r.pipe(g(`hc${_}_jm`, "l"), s, "return", P, { via: [[a - 2 - m, w + 3], ...p ? [[a - 2 - m, p]] : []] })) : r.pipe(g(x, "ret"), s, "return", P, { via: [[a - 2 - m, w + 3], ...p ? [[a - 2 - m, p]] : []] });
   });
 }
 function wt(r, e, t, s, i, n, o) {
   const a = { c: "tap", s: "flowing" }, l = { c: "circ", s: "running" };
-  if (r.add("tap", "tap", c("type.tap"), n - 9, o), r.add("inlet", "water_inlet", c("type.water_inlet"), n - 9, o + 9), r.pipe(f("inlet", "out"), i, "dhw_cold", [a]), !e.circulation) {
-    r.pipe(t, f("tap", "hot"), "dhw_hot", [a]);
+  if (r.add("tap", "tap", c("type.tap"), n - 9, o), r.add("inlet", "water_inlet", c("type.water_inlet"), n - 9, o + 9), r.pipe(g("inlet", "out"), i, "dhw_cold", [a]), !e.circulation) {
+    r.pipe(t, g("tap", "hot"), "dhw_hot", [a]);
     return;
   }
-  r.add("jww", "junction", "", n - 3, o + 1), r.pipe(t, f("jww", "r"), "dhw_hot", [], { flowAny: [a, l] }), r.pipe(f("jww", "l"), f("tap", "hot"), "dhw_hot", [a]), r.add("circ", "pump", "PW2", n - 4, o + 3, { rot: 90, props: { role: "circulation" } }), r.pipe(f("jww", "b"), f("circ", "in"), "circulation", [l]), r.pipe(f("circ", "out"), s, "circulation", [l]);
+  r.add("jww", "junction", "", n - 3, o + 1), r.pipe(t, g("jww", "r"), "dhw_hot", [], { flowAny: [a, l] }), r.pipe(g("jww", "l"), g("tap", "hot"), "dhw_hot", [a]), r.add("circ", "pump", "PW2", n - 4, o + 3, { rot: 90, props: { role: "circulation" } }), r.pipe(g("jww", "b"), g("circ", "in"), "circulation", [l]), r.pipe(g("circ", "out"), s, "circulation", [l]);
 }
 function _s() {
   const r = typeof location < "u" ? new URLSearchParams(location.search).get("indoor") : null, e = gs();
@@ -3799,20 +3809,20 @@ const fo = (r) => new Date(r * 1e3).toLocaleDateString(void 0, { day: "2-digit",
   }
   render() {
     const e = Date.now() / 1e3, t = { due: 0, soon: 1, unknown: 2, ok: 3 }, s = [...this._tasks].map((o) => ({ task: o, ...mo(o, e) })).sort((o, a) => t[o.status] - t[a.status] || (o.next ?? 0) - (a.next ?? 0)), i = s.filter((o) => o.status === "due").length, n = s.filter((o) => o.status === "unknown").length;
-    return g`<div class="card wrap">
+    return f`<div class="card wrap">
       <div class="row head">
         <h2>${c("mt.title")}</h2>
-        ${i ? g`<span class="chip due">${c("mt.n_due", { n: i })}</span>` : y}
-        ${n ? g`<span class="chip unknown">${c("mt.n_unknown", { n })}</span>` : y}
-        ${!i && !n ? g`<span class="chip ok">${c("mt.all_ok")}</span>` : y}
+        ${i ? f`<span class="chip due">${c("mt.n_due", { n: i })}</span>` : y}
+        ${n ? f`<span class="chip unknown">${c("mt.n_unknown", { n })}</span>` : y}
+        ${!i && !n ? f`<span class="chip ok">${c("mt.all_ok")}</span>` : y}
       </div>
       <p class="muted hint">${c("mt.hint")}</p>
       <ul class="tasks">
         ${s.map(
-      ({ task: o, status: a, next: l, days: p }) => g`<li class=${a}>
+      ({ task: o, status: a, next: l, days: p }) => f`<li class=${a}>
             <div class="main">
               <div class="t">${this._title(o)}</div>
-              ${o.key ? g`<div class="muted small">${c(`mt.${o.key}_how`)}</div>` : y}
+              ${o.key ? f`<div class="muted small">${c(`mt.${o.key}_how`)}</div>` : y}
               <div class="meta">
                 <span class="st ${a}">${a === "unknown" ? c("mt.enter_date") : a === "due" ? c("mt.overdue", { n: -p }) : c("mt.next", { date: fo(l), n: p })}</span>
               </div>
@@ -3834,7 +3844,7 @@ const fo = (r) => new Date(r * 1e3).toLocaleDateString(void 0, { day: "2-digit",
           </li>`
     )}
       </ul>
-      ${this.admin ? g`<div class="row add">
+      ${this.admin ? f`<div class="row add">
             <input placeholder=${c("mt.new")} .value=${this._newTitle} @input=${(o) => this._newTitle = o.target.value}
               @keydown=${(o) => o.key === "Enter" && this._add()} />
             <span class="iv"><input type="number" min="1" max="120" .value=${String(this._newMonths)}
@@ -4348,9 +4358,9 @@ const Dt = class Dt extends se {
     const t = this._wide ? Wo : Po, s = (e.pv ?? 0) + Math.max(0, e.battery ?? 0), i = (e.house ?? 0) + (e.wallbox ?? 0) + (e.hp ?? 0), n = i > 0.05 && (e.pv !== void 0 || e.battery !== void 0) ? Math.min(1, s / i) : void 0, o = e.soc, a = o !== void 0 ? M`<rect width="44" height="6" rx="3" class="soc-bg" />
             <rect width=${44 * Math.max(0, Math.min(100, o)) / 100} height="6" rx="3" style="fill:${Pi.battery}" />
             <text x="50" y="7" class="soc">${Math.round(o)} %</text>` : void 0, l = (p) => p === void 0 ? void 0 : -p;
-    return g`<div class="head">
+    return f`<div class="head">
         <b>${c("en.title")}</b>
-        ${n !== void 0 ? g`<span class="share">${c("en.share", { pct: Math.round(n * 100) })}</span>` : y}
+        ${n !== void 0 ? f`<span class="share">${c("en.share", { pct: Math.round(n * 100) })}</span>` : y}
       </div>
       <svg viewBox="0 0 ${t.w} ${t.h}" class=${this._wide ? "wide" : ""} role="img" aria-label=${c("en.title")}>
         <line x1=${t.busX[0]} y1=${t.bus} x2=${t.busX[1]} y2=${t.bus} class="bus" />
@@ -4964,7 +4974,7 @@ const Tt = class Tt extends se {
         const p = o.pts[l];
         return { x1: Math.min(p.x, a.x) * $, x2: Math.max(p.x, a.x) * $, y1: Math.min(p.y, a.y) * $, y2: Math.max(p.y, a.y) * $ };
       })
-    ), this._pills = this._placePills(t, n), g`
+    ), this._pills = this._placePills(t, n), f`
       <svg
         class=${this.edit ? "edit" : ""}
         viewBox="${e.x} ${e.y} ${e.w} ${e.h}"
@@ -5687,7 +5697,7 @@ const Lt = class Lt extends se {
   }
   render() {
     const e = this.points.filter((m) => m.v !== null);
-    if (e.length < 2) return g`<div class="empty">${c("ov.no_history")}</div>`;
+    if (e.length < 2) return f`<div class="empty">${c("ov.no_history")}</div>`;
     const t = 300, s = 90, i = e[0].t, n = e[e.length - 1].t;
     let o = Math.min(...e.map((m) => m.v)), a = Math.max(...e.map((m) => m.v));
     a - o < 1e-6 && (a += 1, o -= 1);
@@ -5698,7 +5708,7 @@ const Lt = class Lt extends se {
     for (let m = 1; m < e.length; m++)
       this.step ? h += ` H ${p(e[m].t)} V ${d(e[m].v)}` : h += ` L ${p(e[m].t)} ${d(e[m].v)}`;
     const u = `${h} L ${t} ${s} L 0 ${s} Z`;
-    return g`<svg viewBox="0 0 ${t} ${s}" preserveAspectRatio="none">
+    return f`<svg viewBox="0 0 ${t} ${s}" preserveAspectRatio="none">
       <defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0" stop-color=${this.color} stop-opacity="0.35" /><stop offset="1" stop-color=${this.color} stop-opacity="0" />
       </linearGradient></defs>
@@ -5733,8 +5743,8 @@ const Ot = class Ot extends se {
   _writer() {
     const e = this.component, t = e.bindings?.[this.slotKey], s = rn(t);
     if (!t || !s || !(e.writable || []).includes(this.slotKey)) return y;
-    if (this.demo) return g`<div class="w muted small">${c("wr.demo")}</div>`;
-    if (!this.canWrite) return g`<div class="w muted small">${c("wr.no_permission")}</div>`;
+    if (this.demo) return f`<div class="w muted small">${c("wr.demo")}</div>`;
+    if (!this.canWrite) return f`<div class="w muted small">${c("wr.no_permission")}</div>`;
     const i = this.hass?.states[t], n = i?.attributes || {}, o = i?.state, a = this._draft ?? (s === "number" ? Number(o) : s === "switch" ? o === "on" : o ?? null), l = (u) => typeof u == "boolean" ? c(u ? "wr.on" : "wr.off") : s === "number" ? `${F(Number(u), 1)} ${n.unit_of_measurement || ""}` : String(u), p = s === "button" || String(a) !== String(s === "switch" ? o === "on" : s === "number" ? Number(o) : o), d = async () => {
       this._busy = !0;
       try {
@@ -5748,28 +5758,28 @@ const Ot = class Ot extends se {
     let h;
     if (s === "number") {
       const u = Number(n.min ?? 0), m = Number(n.max ?? 100), _ = Number(n.step ?? 1);
-      h = g`<div class="wrow">
+      h = f`<div class="wrow">
         <input type="range" min=${u} max=${m} step=${_} .value=${String(a)} @input=${(w) => this._draft = Number(w.target.value)} />
         <input class="wnum" type="number" min=${u} max=${m} step=${_} .value=${String(a)} @change=${(w) => this._draft = Number(w.target.value)} />
         <span class="muted">${n.unit_of_measurement || ""}</span></div>`;
-    } else s === "select" ? h = g`<select @change=${(u) => this._draft = u.target.value}>
-        ${(n.options || []).map((u) => g`<option value=${u} ?selected=${u === a}>${u}</option>`)}</select>` : s === "switch" ? h = g`<label class="wsw"><input type="checkbox" .checked=${!!a} @change=${(u) => this._draft = u.target.checked} /> ${c(a ? "wr.on" : "wr.off")}</label>` : h = y;
-    return g`<div class="w">
+    } else s === "select" ? h = f`<select @change=${(u) => this._draft = u.target.value}>
+        ${(n.options || []).map((u) => f`<option value=${u} ?selected=${u === a}>${u}</option>`)}</select>` : s === "switch" ? h = f`<label class="wsw"><input type="checkbox" .checked=${!!a} @change=${(u) => this._draft = u.target.checked} /> ${c(a ? "wr.on" : "wr.off")}</label>` : h = y;
+    return f`<div class="w">
       <div class="cap">${c("wr.title")}</div>
       ${h}
-      ${this._confirm ? g`<div class="wconfirm">
+      ${this._confirm ? f`<div class="wconfirm">
             <div>${s === "button" ? c("wr.press_confirm") : c("wr.confirm", { old: l(s === "switch" ? o === "on" : o), new: l(a) })}</div>
             <div class="row"><button @click=${() => this._confirm = !1}>${c("cancel")}</button><span class="spacer"></span>
               <button class="primary" ?disabled=${this._busy} @click=${d}>${B("check")} ${c("wr.apply")}</button></div>
-          </div>` : g`<div class="row"><span class="spacer"></span>
+          </div>` : f`<div class="row"><span class="spacer"></span>
             <button class="primary" ?disabled=${!p} @click=${() => this._confirm = !0}>${c(s === "button" ? "wr.press" : "wr.change")}</button></div>`}
-      ${this._wmsg ? g`<div class="muted small">${this._wmsg}</div>` : y}
+      ${this._wmsg ? f`<div class="muted small">${this._wmsg}</div>` : y}
     </div>`;
   }
   render() {
     if (!this.component) return y;
     const e = this.component, t = at(e, this.slotKey), s = this.src.get(e, this.slotKey), { text: i, unit: n } = Be(s, t), o = this.src.entityOf(e, this.slotKey), a = this._hist || [], l = a.map((_) => _.v).filter((_) => _ !== null), p = t === "temp" && s?.num !== null && s?.num !== void 0 ? ge(s.num, "#3ddc97") : "var(--cp-accent)", d = 320, h = Math.max(12, Math.min(window.innerWidth - d - 12, this.x - d / 2)), u = Math.max(12, Math.min(window.innerHeight - 260, this.y + 14)), m = e.type === "value_tile" ? this.slotKey : We(e.type, this.slotKey);
-    return g`
+    return f`
       <div class="backdrop" @pointerdown=${this._close}></div>
       <div class="pop card" style="left:${h}px; top:${u}px; width:${d}px">
         <div class="row head">
@@ -5782,13 +5792,13 @@ const Ot = class Ot extends se {
         </div>
         <div class="now"><span class="val">${i}</span><span class="unit">${n}</span></div>
         <div class="muted cap">${c("ov.history24")}</div>
-        ${this._hist === null ? g`<div class="loading"></div>` : g`<cp-sparkline .points=${a} .color=${p} .step=${t === "bool"}></cp-sparkline>`}
-        ${l.length && t !== "bool" && t !== "enum" ? g`<div class="row stats">
+        ${this._hist === null ? f`<div class="loading"></div>` : f`<cp-sparkline .points=${a} .color=${p} .step=${t === "bool"}></cp-sparkline>`}
+        ${l.length && t !== "bool" && t !== "enum" ? f`<div class="row stats">
               <span>${c("ov.min")} <b>${F(Math.min(...l))}</b></span>
               <span>${c("ov.max")} <b>${F(Math.max(...l))}</b></span>
             </div>` : y}
         ${this._writer()}
-        ${o ? g`<div class="row foot"><code>${o}</code><span class="spacer"></span>
+        ${o ? f`<div class="row foot"><code>${o}</code><span class="spacer"></span>
               <button @click=${() => this._more(o)}>${c("ov.open_entity")}</button></div>` : y}
       </div>
     `;
@@ -5852,31 +5862,31 @@ const Ht = class Ht extends se {
   }
   _row(e) {
     const t = e.end_ts ? e.end_ts - e.ts : null;
-    return g`<li class="msg ${e.level} ${e.active ? "active" : ""}">
+    return f`<li class="msg ${e.level} ${e.active ? "active" : ""}">
       <span class="lv">${B(er[e.level] || "info")}</span>
       <div class="body">
         <div class="text">${tr(e)}</div>
         <div class="meta">
           ${jn(e.ts)}
-          ${e.active ? g` · <b>${c("msg.active")}</b>` : t !== null ? g` · ${c("msg.duration", { duration: Kn(t) })}` : y}
+          ${e.active ? f` · <b>${c("msg.active")}</b>` : t !== null ? f` · ${c("msg.duration", { duration: Kn(t) })}` : y}
         </div>
       </div>
     </li>`;
   }
   render() {
     const e = [...this.messages].sort((n, o) => o.ts - n.ts), t = this._filter === "all" ? e : e.filter((n) => n.level === this._filter), s = t.filter((n) => n.active), i = t.filter((n) => !n.active).slice(0, this.compact ? 12 : 300);
-    return g`
-      ${this.compact ? y : g`<div class="row filters">
+    return f`
+      ${this.compact ? y : f`<div class="row filters">
             ${["all", "error", "warning", "notice", "info"].map(
-      (n) => g`<button class=${this._filter === n ? "primary" : ""} @click=${() => this._filter = n}>
+      (n) => f`<button class=${this._filter === n ? "primary" : ""} @click=${() => this._filter = n}>
                 ${c(n === "all" ? "msg.filter_all" : `msg.level.${n}`)}</button>`
     )}
             <span class="spacer"></span>
-            ${this.canClear ? g`<button @click=${() => this.dispatchEvent(new CustomEvent("clear"))}>${B("trash")} ${c("msg.clear")}</button>` : y}
+            ${this.canClear ? f`<button @click=${() => this.dispatchEvent(new CustomEvent("clear"))}>${B("trash")} ${c("msg.clear")}</button>` : y}
           </div>`}
-      ${s.length ? g`<h4>${c("msg.active")}</h4><ul>${s.map((n) => this._row(n))}</ul>` : y}
+      ${s.length ? f`<h4>${c("msg.active")}</h4><ul>${s.map((n) => this._row(n))}</ul>` : y}
       <h4>${c("msg.history")}</h4>
-      ${i.length ? g`<ul>${i.map((n) => this._row(n))}</ul>` : g`<div class="empty muted">${c("msg.empty")}</div>`}
+      ${i.length ? f`<ul>${i.map((n) => this._row(n))}</ul>` : f`<div class="empty muted">${c("msg.empty")}</div>`}
     `;
   }
 };
@@ -5994,7 +6004,7 @@ const Vt = class Vt extends se {
     const e = this._tm;
     if (!e) return y;
     const t = e.src, s = t.start, n = new Date(t.t * 1e3).toLocaleString(void 0, { weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }), o = { heating: "#ff8a3d", hot_water: "#ff4f8b", defrost: "#6cc4ff", compressor_alarm: "#ff5a5f", off: "transparent" };
-    return g`<div class="tm">
+    return f`<div class="tm">
       <button class="icon" title=${e.playing ? c("tm.pause") : c("tm.play")} @click=${this._play}>${B(e.playing ? "pause" : "play")}</button>
       <div class="tm-track">
         <input type="range" min=${s} max=${t.to} step="60" .value=${String(t.t)}
@@ -6005,10 +6015,10 @@ const Vt = class Vt extends se {
       </div>
       <span class="tm-time">${n}</span>
       <select title=${c("tm.speed")} @change=${(a) => this._tm = { ...e, speed: Number(a.target.value) }}>
-        ${[300, 900, 1800, 3600].map((a) => g`<option value=${a} ?selected=${e.speed === a}>${c("tm.speed_v", { min: a / 60 })}</option>`)}
+        ${[300, 900, 1800, 3600].map((a) => f`<option value=${a} ?selected=${e.speed === a}>${c("tm.speed_v", { min: a / 60 })}</option>`)}
       </select>
-      ${this.sim ? y : g`<select title=${c("tm.range")} @change=${(a) => this._openTm(Number(a.target.value))}>
-            ${[6, 24, 72].map((a) => g`<option value=${a} ?selected=${e.hours === a}>${c("tm.hours", { h: a })}</option>`)}
+      ${this.sim ? y : f`<select title=${c("tm.range")} @change=${(a) => this._openTm(Number(a.target.value))}>
+            ${[6, 24, 72].map((a) => f`<option value=${a} ?selected=${e.hours === a}>${c("tm.hours", { h: a })}</option>`)}
           </select>`}
       <button class="live" @click=${this._closeTm}>${c("tm.live")}</button>
     </div>`;
@@ -6021,25 +6031,25 @@ const Vt = class Vt extends se {
   }
   _explainPanel() {
     const e = ko(this.plant, this._src);
-    return g`<div class="side-head"><b>${c("ex.title")}</b></div>
-      ${e.length ? g`<ul class="explain">
+    return f`<div class="side-head"><b>${c("ex.title")}</b></div>
+      ${e.length ? f`<ul class="explain">
             ${e.map(
-      (t) => g`<li style="--tone:${ir[t.tone]}">
+      (t) => f`<li style="--tone:${ir[t.tone]}">
                 <span class="dot"></span>
                 <div>
                   <div>${c(t.key, t.params)}</div>
-                  ${t.hint ? g`<div class="ex-hint">${c(t.hint, t.params)}</div>` : y}
+                  ${t.hint ? f`<div class="ex-hint">${c(t.hint, t.params)}</div>` : y}
                 </div>
               </li>`
     )}
-          </ul>` : g`<p class="muted">${c("ex.empty")}</p>`}
+          </ul>` : f`<p class="muted">${c("ex.empty")}</p>`}
       <p class="ex-tip">${B("info")} ${c("ex.tap_hint")}</p>`;
   }
   _compPop() {
     const e = this._comp;
     if (!e) return y;
     const t = So(e.component, this._src), s = 300, i = Math.max(12, Math.min(window.innerWidth - s - 12, e.x - s / 2)), n = Math.max(12, Math.min(window.innerHeight - 200, e.y + 14));
-    return g`<div class="backdrop" @pointerdown=${() => this._comp = null}></div>
+    return f`<div class="backdrop" @pointerdown=${() => this._comp = null}></div>
       <div class="cpop card" style="left:${i}px; top:${n}px; width:${s}px">
         <div class="row cpop-head">
           <div>
@@ -6049,8 +6059,8 @@ const Vt = class Vt extends se {
           <span class="spacer"></span>
           <button class="ghost icon" @click=${() => this._comp = null} aria-label=${c("close")}>${B("close")}</button>
         </div>
-        ${t.role ? g`<p>${c(t.role, t.params)}</p>` : y}
-        ${t.state ? g`<p class="cpop-state">${c(t.state, t.params)}</p>` : y}
+        ${t.role ? f`<p>${c(t.role, t.params)}</p>` : y}
+        ${t.state ? f`<p class="cpop-state">${c(t.state, t.params)}</p>` : y}
       </div>`;
   }
   _first(e) {
@@ -6114,27 +6124,27 @@ const Vt = class Vt extends se {
     const e = this.sim;
     if (!e || !this.showDemo) return y;
     const t = ["winter", "transition", "shower", "defrost", "dim14a", "pv", "disinfect", "fault", "reset"], s = { dim14a: e.dim14a, pv: e.pv, fault: e.fault, disinfect: e.disinfect };
-    return g`<div class="demo">
+    return f`<div class="demo">
       <span class="demo-tag">${B("flask")} ${c("demo.active")}</span>
       <span class="clock" title=${c("demo.time")}>${sn(e.time)}</span>
       <label class="ctl">${c("demo.speed")}
         <select @change=${(i) => e.speed = Number(i.target.value)}>
-          ${sr.map((i) => g`<option value=${i} ?selected=${e.speed === i}>${i}×</option>`)}
+          ${sr.map((i) => f`<option value=${i} ?selected=${e.speed === i}>${i}×</option>`)}
         </select>
       </label>
       <label class="ctl slider">${c("demo.outdoor")} <b>${F(e.outdoorMean, 0)} °C</b>
         <input type="range" min="-15" max="20" step="1" .value=${String(e.outdoorMean)}
           @input=${(i) => e.outdoorMean = Number(i.target.value)} />
       </label>
-      ${this.narrow ? g`<select class="scn-select" @change=${(i) => {
+      ${this.narrow ? f`<select class="scn-select" @change=${(i) => {
       const n = i.target;
       n.value && this._scenario(n.value), n.value = "";
     }}>
             <option value="">${c("demo.scenarios")} …</option>
-            ${t.map((i) => g`<option value=${i}>${s[i] ? "✓ " : ""}${c(`scn.${i}`)}</option>`)}
-          </select>` : g`<div class="scn">
+            ${t.map((i) => f`<option value=${i}>${s[i] ? "✓ " : ""}${c(`scn.${i}`)}</option>`)}
+          </select>` : f`<div class="scn">
             ${t.map(
-      (i) => g`<button class=${s[i] ? "primary" : ""} @click=${() => this._scenario(i)}>${c(`scn.${i}`)}</button>`
+      (i) => f`<button class=${s[i] ? "primary" : ""} @click=${() => this._scenario(i)}>${c(`scn.${i}`)}</button>`
     )}
           </div>`}
     </div>`;
@@ -6142,18 +6152,18 @@ const Vt = class Vt extends se {
   render() {
     if (!this.plant) return y;
     const e = this._kpis(), t = zo(this.plant, this._tm ? null : this.sim), s = this.messages.filter((i) => i.active && (i.level === "warning" || i.level === "error")).length;
-    return g`
+    return f`
       ${this._tm ? y : this._demoBar()}
-      ${this.showKpis ? g`<div class="kpis">
+      ${this.showKpis ? f`<div class="kpis">
         ${e.map(
-      (i) => g`<button class="kpi" ?disabled=${!i.comp} @click=${(n) => i.comp && (this._pop = { component: i.comp, slot: i.slot, x: n.clientX, y: n.clientY })}>
+      (i) => f`<button class="kpi" ?disabled=${!i.comp} @click=${(n) => i.comp && (this._pop = { component: i.comp, slot: i.slot, x: n.clientX, y: n.clientY })}>
             <span class="k-label">${i.label}</span>
             <span class="k-value" style=${i.color ? `color:${i.color}` : ""}>${i.value}<small>${i.unit}</small></span>
-            ${i.sub ? g`<span class="k-sub">${i.sub}</span>` : y}
+            ${i.sub ? f`<span class="k-sub">${i.sub}</span>` : y}
           </button>`
     )}
       </div>` : y}
-      ${t && this._energy ? g`<div class="energy card"><cp-energy .flow=${Eo(this.plant, this._src, this._tm ? null : this.sim)}></cp-energy></div>` : y}
+      ${t && this._energy ? f`<div class="energy card"><cp-energy .flow=${Eo(this.plant, this._src, this._tm ? null : this.sim)}></cp-energy></div>` : y}
       <div class="main ${this._explain || this._side && this.showSide ? "with-side" : ""}">
         <div class="stage card">
           <cp-schematic
@@ -6167,23 +6177,23 @@ const Vt = class Vt extends se {
           ></cp-schematic>
           ${this._tmBar()}
           <div class="zoom">
-            ${t ? g`<button class="icon ${this._energy ? "on" : ""}" title=${c("en.toggle")} aria-pressed=${this._energy ? "true" : "false"} @click=${this._toggleEnergy}>${B("bolt")}</button>` : y}
+            ${t ? f`<button class="icon ${this._energy ? "on" : ""}" title=${c("en.toggle")} aria-pressed=${this._energy ? "true" : "false"} @click=${this._toggleEnergy}>${B("bolt")}</button>` : y}
             <button class="icon ${this._tm ? "on" : ""} ${this._tmBusy ? "busy" : ""}" title=${c("tm.title")} aria-pressed=${this._tm ? "true" : "false"}
               @click=${() => this._tm ? this._closeTm() : this._openTm()}>${B("history")}</button>
             <button class="icon ${this._explain ? "on" : ""}" title=${c("ex.toggle")} aria-pressed=${this._explain ? "true" : "false"} @click=${this._toggleExplain}>${B("info")}</button>
             <button class="icon" title=${c("zoom_in")} @click=${() => this._sch()?.zoom(0.8)}>${B("plus")}</button>
             <button class="icon" title=${c("zoom_out")} @click=${() => this._sch()?.zoom(1.25)}>${B("minus")}</button>
             <button class="icon" title=${c("fit")} @click=${() => this._sch()?.fit()}>${B("fit")}</button>
-            ${this.narrow || !this.showSide ? y : g`<button class="icon" title=${c("msg.title")} @click=${() => this._side = !this._side}>
-                  ${B("bell")}${s ? g`<span class="badge">${s}</span>` : y}</button>`}
+            ${this.narrow || !this.showSide ? y : f`<button class="icon" title=${c("msg.title")} @click=${() => this._side = !this._side}>
+                  ${B("bell")}${s ? f`<span class="badge">${s}</span>` : y}</button>`}
           </div>
         </div>
-        ${this._explain ? g`<aside class="side card">${this._explainPanel()}</aside>` : this.showSide && (this._side || this.narrow) ? g`<aside class="side card">
+        ${this._explain ? f`<aside class="side card">${this._explainPanel()}</aside>` : this.showSide && (this._side || this.narrow) ? f`<aside class="side card">
                 <div class="side-head"><b>${c("msg.title")}</b></div>
                 <cp-messages compact .messages=${this.messages}></cp-messages>
               </aside>` : y}
       </div>
-      ${this._pop ? g`<cp-slot-popover
+      ${this._pop ? f`<cp-slot-popover
             .component=${this._pop.component}
             .slotKey=${this._pop.slot}
             .src=${this._src}
@@ -6541,14 +6551,14 @@ const qe = class qe extends se {
   }
   render() {
     const e = this.hass ? Object.keys(this.hass.states).sort() : [];
-    return g`<input
+    return f`<input
         list=${this._listId}
         .value=${this.value || ""}
         placeholder=${this.placeholder || c("ed.entity_search")}
         @change=${this._change}
       />
       <datalist id=${this._listId}>
-        ${e.map((t) => g`<option value=${t}>${this.hass.states[t].attributes.friendly_name || ""}</option>`)}
+        ${e.map((t) => f`<option value=${t}>${this.hass.states[t].attributes.friendly_name || ""}</option>`)}
       </datalist>`;
   }
 };
@@ -6710,7 +6720,7 @@ const Bt = class Bt extends se {
   render() {
     if (!this._draft) return y;
     const e = this._sel;
-    return g`
+    return f`
       <div class="toolbar">
         <button class="icon" title=${c("undo")} ?disabled=${!this._undo.length} @click=${this._doUndo}>${B("undo")}</button>
         <button class="icon" title=${c("redo")} ?disabled=${!this._redo.length} @click=${this._doRedo}>${B("redo")}</button>
@@ -6720,14 +6730,14 @@ const Bt = class Bt extends se {
         <button title=${c("ed.auto_title")} @click=${this._autoArrange}>${B("wand")} ${c("ed.auto")}</button>
         <span class="hint">${this._hint}</span>
         <span class="spacer"></span>
-        ${this._dirty ? g`<span class="dirty">${c("unsaved")}</span>
+        ${this._dirty ? f`<span class="dirty">${c("unsaved")}</span>
           <button @click=${this._discard}>${c("discard")}</button>` : y}
         <button class="primary" ?disabled=${!this._dirty} @click=${this._save}>${B("save")} ${c("save")}</button>
       </div>
       <div class="layout">
         <aside class="palette card">
           <div class="cap">${c("ed.palette")}</div>
-          ${cr.map((t) => g`<button class="pal" @click=${() => this._add(t)}>${B("plus")} ${c(`type.${t}`)}</button>`)}
+          ${cr.map((t) => f`<button class="pal" @click=${() => this._add(t)}>${B("plus")} ${c(`type.${t}`)}</button>`)}
           <div class="cap">${c("ed.grid")}</div>
           <div class="row grid-size">
             <input type="number" min="20" max="200" .value=${String(this._draft.grid.w)} @change=${(t) => this._commit((s) => s.grid.w = Number(t.target.value) || s.grid.w)} />
@@ -6743,7 +6753,7 @@ const Bt = class Bt extends se {
           <label class="bld"><input type="checkbox" .checked=${this._gridCfg.show} @change=${(t) => this._setGrid({ show: t.target.checked })} /> ${c("ed.grid_show")}</label>
           <label class="field">${c("ed.grid_step")}
             <select @change=${(t) => this._setGrid({ step: Number(t.target.value) })}>
-              ${[1, 2, 5].map((t) => g`<option value=${t} ?selected=${this._gridCfg.step === t}>${c("ed.grid_cells", { n: t })}</option>`)}
+              ${[1, 2, 5].map((t) => f`<option value=${t} ?selected=${this._gridCfg.step === t}>${c("ed.grid_cells", { n: t })}</option>`)}
             </select></label>
           <label class="bld"><input type="checkbox" .checked=${this._gridCfg.snap} @change=${(t) => this._setGrid({ snap: t.target.checked })} /> ${c("ed.grid_snap")}</label>
           <label class="bld"><input type="checkbox" .checked=${this._gridCfg.osnap} @change=${(t) => this._setGrid({ osnap: t.target.checked })} /> ${c("ed.object_snap")}</label>
@@ -6776,32 +6786,32 @@ const Bt = class Bt extends se {
             @cp-hint=${(t) => this._hint = t.detail}
           ></cp-schematic>
         </div>
-        <aside class="props card">${e?.kind === "c" ? this._compProps() : e?.kind === "p" ? this._pipeProps() : g`<p class="muted">${c("ed.nothing")}</p>`}</aside>
+        <aside class="props card">${e?.kind === "c" ? this._compProps() : e?.kind === "p" ? this._pipeProps() : f`<p class="muted">${c("ed.nothing")}</p>`}</aside>
       </div>
     `;
   }
   _num(e, t, s, i = 1) {
-    return g`<label class="field">${e}<input type="number" step=${i} .value=${t ?? ""} @change=${(n) => s(Number(n.target.value))} /></label>`;
+    return f`<label class="field">${e}<input type="number" step=${i} .value=${t ?? ""} @change=${(n) => s(Number(n.target.value))} /></label>`;
   }
   _compProps() {
     const e = this._comp();
     if (!e) return y;
     const t = te[e.type], s = new Set(e.show ?? Se(e).filter((n) => n.show).map((n) => n.key)), i = [...this.icons.values()];
-    return g`
+    return f`
       <div class="ptitle">${c(`type.${e.type}`)} <code>${e.id}</code></div>
-      ${e.type !== "junction" ? g`<label class="field">${c("ed.label")}<input .value=${e.label} @change=${(n) => this._set((o) => o.label = n.target.value)} /></label>` : y}
-      ${e.type === "outdoor_unit" ? g`<label class="field">${c("ed.model")}<select @change=${(n) => this._set((o) => o.model = n.target.value)}>
-              ${Et.map((n) => g`<option value=${n.id} ?selected=${n.id === e.model}>${n.label}</option>`)}
+      ${e.type !== "junction" ? f`<label class="field">${c("ed.label")}<input .value=${e.label} @change=${(n) => this._set((o) => o.label = n.target.value)} /></label>` : y}
+      ${e.type === "outdoor_unit" ? f`<label class="field">${c("ed.model")}<select @change=${(n) => this._set((o) => o.model = n.target.value)}>
+              ${Et.map((n) => f`<option value=${n.id} ?selected=${n.id === e.model}>${n.label}</option>`)}
             </select></label>
             ${this._num(c("ed.nominal"), e.props.nominal_kw, (n) => this._set((o) => o.props.nominal_kw = n), 0.1)}
             ${this._num(c("ed.cop_ref"), e.props.cop_ref ?? 4.9, (n) => this._set((o) => o.props.cop_ref = n), 0.1)}` : y}
-      ${e.type === "indoor_unit" ? g`<label class="field">${c("ed.model")}<select @change=${(n) => this._set((o) => o.model = n.target.value)}>
-              ${Fs.map((n) => g`<option value=${n.id} ?selected=${n.id === e.model}>${n.label}</option>`)}
+      ${e.type === "indoor_unit" ? f`<label class="field">${c("ed.model")}<select @change=${(n) => this._set((o) => o.model = n.target.value)}>
+              ${Fs.map((n) => f`<option value=${n.id} ?selected=${n.id === e.model}>${n.label}</option>`)}
             </select></label>
             ${this._num(c("wz.aux_kw"), e.props.aux_kw, (n) => this._set((o) => o.props.aux_kw = n), 1)}
             <div class="cap">${c("ed.input_labels")}</div>
             ${[1, 2, 3, 4].map(
-      (n) => g`<label class="field">${c(`slot.input${n}`)}<input .value=${e.props.input_labels?.[`input${n}`] || ""}
+      (n) => f`<label class="field">${c(`slot.input${n}`)}<input .value=${e.props.input_labels?.[`input${n}`] || ""}
                 @change=${(o) => this._set((a) => a.props.input_labels = { ...a.props.input_labels || {}, [`input${n}`]: o.target.value })} /></label>`
     )}
             <div class="cap">${c("ed.pressure_limits")}</div>
@@ -6810,42 +6820,42 @@ const Bt = class Bt extends se {
               ${this._num("max", e.props.pressure_max ?? 2.7, (n) => this._set((o) => o.props.pressure_max = n), 0.1)}
             </div>` : y}
       ${e.type === "buffer" || e.type === "dhw_tank" ? this._num(c("ed.volume"), e.props.volume, (n) => this._set((o) => o.props.volume = n)) : y}
-      ${t.roles ? g`<label class="field">${c("ed.role")}<select @change=${(n) => this._set((o) => o.props.role = n.target.value)}>
-            ${t.roles.map((n) => g`<option value=${n} ?selected=${e.props.role === n}>${c(`role.${n}`)}</option>`)}
+      ${t.roles ? f`<label class="field">${c("ed.role")}<select @change=${(n) => this._set((o) => o.props.role = n.target.value)}>
+            ${t.roles.map((n) => f`<option value=${n} ?selected=${e.props.role === n}>${c(`role.${n}`)}</option>`)}
           </select></label>` : y}
       ${["radiators", "floor_heating", "mixer", "pump"].includes(e.type) ? this._num(c("ed.circuit"), e.props.circuit ?? 1, (n) => this._set((o) => o.props.circuit = n)) : y}
       ${e.type === "dhw_tank" ? this._num(c("ed.dhw_circuit"), e.props.dhw_circuit ?? 1, (n) => this._set((o) => o.props.dhw_circuit = n)) : y}
-      ${e.type === "label" ? g`<label class="field">${c("ed.text")}<input .value=${e.props.text || ""} @change=${(n) => this._set((o) => o.props.text = n.target.value)} /></label>
+      ${e.type === "label" ? f`<label class="field">${c("ed.text")}<input .value=${e.props.text || ""} @change=${(n) => this._set((o) => o.props.text = n.target.value)} /></label>
             ${this._num("px", e.props.size || 18, (n) => this._set((o) => o.props.size = n))}` : y}
-      ${t.rotatable ? g`<label class="field">${c("ed.rotation")}<select @change=${(n) => this._set((o) => o.rot = Number(n.target.value))}>
-            ${[0, 90, 180, 270].map((n) => g`<option value=${n} ?selected=${(e.rot || 0) === n}>${n}°</option>`)}
+      ${t.rotatable ? f`<label class="field">${c("ed.rotation")}<select @change=${(n) => this._set((o) => o.rot = Number(n.target.value))}>
+            ${[0, 90, 180, 270].map((n) => f`<option value=${n} ?selected=${(e.rot || 0) === n}>${n}°</option>`)}
           </select></label>` : y}
-      ${e.type === "radiators" || e.type === "tap" ? g`<label class="field">${c(e.type === "tap" ? "ed.tap_kind" : "ed.connection")}<select @change=${(n) => this._set((o) => o.props.variant = n.target.value)}>
+      ${e.type === "radiators" || e.type === "tap" ? f`<label class="field">${c(e.type === "tap" ? "ed.tap_kind" : "ed.connection")}<select @change=${(n) => this._set((o) => o.props.variant = n.target.value)}>
             ${(e.type === "tap" ? ["tap", "shower"] : ["side", "bottom"]).map(
-      (n) => g`<option value=${n} ?selected=${(e.props.variant || (e.type === "tap" ? "tap" : "side")) === n}>${c(e.type === "tap" ? `ed.tap.${n}` : `ed.conn.${n}`)}</option>`
+      (n) => f`<option value=${n} ?selected=${(e.props.variant || (e.type === "tap" ? "tap" : "side")) === n}>${c(e.type === "tap" ? `ed.tap.${n}` : `ed.conn.${n}`)}</option>`
     )}
           </select></label>` : y}
-      ${t.mirrorable ? g`<label class="field check"><input type="checkbox" .checked=${!!e.flip} @change=${(n) => this._set((o) => {
+      ${t.mirrorable ? f`<label class="field check"><input type="checkbox" .checked=${!!e.flip} @change=${(n) => this._set((o) => {
       n.target.checked ? o.flip = !0 : delete o.flip;
     })} />${c("ed.flip")}</label>` : y}
-      ${e.valuePos && Object.keys(e.valuePos).length ? g`<button class="ghost" @click=${() => this._set((n) => delete n.valuePos)}>${c("ed.values_reset")}</button>` : y}
-      ${["junction", "label", "value_tile"].includes(e.type) ? y : g`<label class="field">${c("ed.icon")}<select @change=${(n) => this._set((o) => {
+      ${e.valuePos && Object.keys(e.valuePos).length ? f`<button class="ghost" @click=${() => this._set((n) => delete n.valuePos)}>${c("ed.values_reset")}</button>` : y}
+      ${["junction", "label", "value_tile"].includes(e.type) ? y : f`<label class="field">${c("ed.icon")}<select @change=${(n) => this._set((o) => {
       const a = n.target.value;
       a ? o.icon = a : delete o.icon;
     })}>
             <option value="">${c("ed.icon_default")}</option>
-            ${i.map((n) => g`<option value=${n.id} ?selected=${n.id === e.icon}>${n.name}</option>`)}
+            ${i.map((n) => f`<option value=${n.id} ?selected=${n.id === e.icon}>${n.name}</option>`)}
           </select></label>`}
       ${e.type === "value_tile" ? this._tileEntries(e) : this._bindings(e, s)}
     `;
   }
   _bindings(e, t) {
     const s = Se(e);
-    return s.length ? g`<div class="cap">${c("ed.bindings")}</div>
+    return s.length ? f`<div class="cap">${c("ed.bindings")}</div>
       <div class="bindings">
         ${s.map((i) => {
       const n = this.src.get(e, i.key), { text: o, unit: a } = Be(n, i.kind);
-      return g`<div class="bind">
+      return f`<div class="bind">
             <div class="bhead">
               <label class="show" title=${c("ed.show")}><input type="checkbox" .checked=${t.has(i.key)}
                 @change=${(l) => this._set((p) => {
@@ -6854,7 +6864,7 @@ const Bt = class Bt extends se {
       })} /></label>
               <span class="bname">${We(e.type, i.key)}</span>
               <span class="bval">${n ? `${o} ${a}` : ""}</span>
-              ${rn(e.bindings[i.key]) ? g`<label class="wr" title=${c("wr.release")}><input type="checkbox" .checked=${(e.writable || []).includes(i.key)}
+              ${rn(e.bindings[i.key]) ? f`<label class="wr" title=${c("wr.release")}><input type="checkbox" .checked=${(e.writable || []).includes(i.key)}
                     @change=${(l) => this._set((p) => {
         const d = new Set(p.writable || []);
         l.target.checked ? d.add(i.key) : d.delete(i.key), d.size ? p.writable = [...d] : delete p.writable;
@@ -6870,13 +6880,13 @@ const Bt = class Bt extends se {
   }
   _tileEntries(e) {
     const t = e.props.entries || [], s = ["temp", "power_kw", "power_w", "energy", "percent", "pressure", "flow", "count", "bool", "text"];
-    return g`<div class="cap">${c("ed.entries")}</div>
+    return f`<div class="cap">${c("ed.entries")}</div>
       ${t.map(
-      (i, n) => g`<div class="bind">
+      (i, n) => f`<div class="bind">
           <div class="two">
             <input .value=${i.label || ""} placeholder=${c("ed.label")} @change=${(o) => this._set((a) => a.props.entries[n].label = o.target.value)} />
             <select @change=${(o) => this._set((a) => a.props.entries[n].kind = o.target.value)}>
-              ${s.map((o) => g`<option value=${o} ?selected=${i.kind === o}>${o}</option>`)}
+              ${s.map((o) => f`<option value=${o} ?selected=${i.kind === o}>${o}</option>`)}
             </select>
           </div>
           <div class="row nowrap">
@@ -6892,14 +6902,14 @@ const Bt = class Bt extends se {
   }
   _conds(e, t) {
     const s = this._draft.components.filter((i) => ps[i.type]);
-    return g`${(e || []).map(
-      (i, n) => g`<div class="row nowrap cond">
+    return f`${(e || []).map(
+      (i, n) => f`<div class="row nowrap cond">
           <select @change=${(o) => this._setPipe((a) => a[t][n].c = o.target.value)}>
-            ${s.map((o) => g`<option value=${o.id} ?selected=${o.id === i.c}>${o.label || o.id}</option>`)}
+            ${s.map((o) => f`<option value=${o.id} ?selected=${o.id === i.c}>${o.label || o.id}</option>`)}
           </select>
           <select @change=${(o) => this._setPipe((a) => a[t][n].s = o.target.value)}>
             ${(ps[this._comp(i.c)?.type || "pump"] || []).map(
-        (o) => g`<option value=${o} ?selected=${o === i.s}>${o.startsWith("!") ? `${c("ed.not")} ${c(`state.${o.slice(1)}`)}` : c(`state.${o}`)}</option>`
+        (o) => f`<option value=${o} ?selected=${o === i.s}>${o.startsWith("!") ? `${c("ed.not")} ${c(`state.${o.slice(1)}`)}` : c(`state.${o}`)}</option>`
       )}
           </select>
           <button class="icon danger" @click=${() => this._setPipe((o) => o[t].splice(n, 1))}>${B("close")}</button>
@@ -6914,11 +6924,11 @@ const Bt = class Bt extends se {
     const e = this._pipe();
     if (!e) return y;
     const t = (s) => this._comp(s)?.label || s;
-    return g`
+    return f`
       <div class="ptitle">${c("ed.pipe")} <code>${e.id}</code></div>
       <p class="muted small">${t(e.from.c)} · ${e.from.p} → ${t(e.to.c)} · ${e.to.p}</p>
       <label class="field">${c("ed.kind")}<select @change=${(s) => this._setPipe((i) => i.kind = s.target.value)}>
-        ${pr.map((s) => g`<option value=${s} ?selected=${s === e.kind}>${c(`kind.${s}`)}</option>`)}
+        ${pr.map((s) => f`<option value=${s} ?selected=${s === e.kind}>${c(`kind.${s}`)}</option>`)}
       </select></label>
       <div class="cap">${c("ed.flow_when")}</div>
       ${this._conds(e.flow, "flow")}
@@ -7099,12 +7109,12 @@ const Rt = class Rt extends se {
     this.plant && !confirm(c("wz.replace_confirm")) || ze(this, "plant-generated", Xt(this._cfg, this.plant));
   }
   render() {
-    const e = this._cfg, t = (s, i = "text") => g`<input type=${i} .value=${String(e[s] ?? "")}
+    const e = this._cfg, t = (s, i = "text") => f`<input type=${i} .value=${String(e[s] ?? "")}
       @change=${(n) => {
       const o = n.target.value;
       this._upd({ [s]: i === "number" ? Number(o) : o });
     }} />`;
-    return g`
+    return f`
       <div class="card wrap">
         <h2>${c("wz.title")}</h2>
         <p class="muted">${c("wz.intro")}</p>
@@ -7114,18 +7124,18 @@ const Rt = class Rt extends se {
         <div class="grid">
           <label class="field">${c("wz.outdoor")}
             <select @change=${(s) => this._upd({ outdoorModel: s.target.value })}>
-              ${Et.map((s) => g`<option value=${s.id} ?selected=${s.id === e.outdoorModel}>${s.label}</option>`)}
+              ${Et.map((s) => f`<option value=${s.id} ?selected=${s.id === e.outdoorModel}>${s.label}</option>`)}
             </select></label>
           <label class="field">${c("ed.label")} ${t("outdoorLabel")}</label>
           <label class="field">${c("ed.nominal")} ${t("nominalKw", "number")}</label>
           <label class="field">${c("wz.indoor")}
             <select @change=${(s) => this._upd({ indoorModel: s.target.value })}>
-              ${Fs.map((s) => g`<option value=${s.id} ?selected=${s.id === e.indoorModel}>${s.label}</option>`)}
+              ${Fs.map((s) => f`<option value=${s.id} ?selected=${s.id === e.indoorModel}>${s.label}</option>`)}
             </select></label>
           <label class="field">${c("ed.label")} ${t("indoorLabel")}</label>
           <div class="field check">
             <label><input type="checkbox" .checked=${e.aux} @change=${(s) => this._upd({ aux: s.target.checked })} /> ${c("wz.aux")}</label>
-            ${e.aux ? g`<label class="field">${c("wz.aux_kw")} ${t("auxKw", "number")}</label>` : y}
+            ${e.aux ? f`<label class="field">${c("wz.aux_kw")} ${t("auxKw", "number")}</label>` : y}
           </div>
         </div>
 
@@ -7133,10 +7143,10 @@ const Rt = class Rt extends se {
         <div class="grid">
           <div class="radios">
             ${["parallel", "serial", "none"].map(
-      (s) => g`<label><input type="radio" name="buf" .checked=${e.buffer === s} @change=${() => this._upd({ buffer: s })} /> ${c(`wz.buffer.${s}`)}</label>`
+      (s) => f`<label><input type="radio" name="buf" .checked=${e.buffer === s} @change=${() => this._upd({ buffer: s })} /> ${c(`wz.buffer.${s}`)}</label>`
     )}
           </div>
-          ${e.buffer !== "none" ? g`<label class="field">${c("wz.buffer_volume")} ${t("bufferVolume", "number")}</label>
+          ${e.buffer !== "none" ? f`<label class="field">${c("wz.buffer_volume")} ${t("bufferVolume", "number")}</label>
                 <label class="field">${c("ed.label")} ${t("bufferLabel")}</label>` : y}
         </div>
 
@@ -7144,17 +7154,17 @@ const Rt = class Rt extends se {
         <div class="grid">
           <div class="radios">
             ${["tank", "none"].map(
-      (s) => g`<label><input type="radio" name="dhw" .checked=${e.dhw === s} @change=${() => this._upd({ dhw: s })} /> ${c(`wz.dhw.${s}`)}</label>`
+      (s) => f`<label><input type="radio" name="dhw" .checked=${e.dhw === s} @change=${() => this._upd({ dhw: s })} /> ${c(`wz.dhw.${s}`)}</label>`
     )}
           </div>
-          ${e.dhw === "tank" ? g`<label class="field">${c("wz.dhw_volume")} ${t("dhwVolume", "number")}</label>
+          ${e.dhw === "tank" ? f`<label class="field">${c("wz.dhw_volume")} ${t("dhwVolume", "number")}</label>
                 <label class="field">${c("ed.label")} ${t("dhwLabel")}</label>
                 <label class="check"><input type="checkbox" .checked=${e.circulation} @change=${(s) => this._upd({ circulation: s.target.checked })} /> ${c("wz.circulation")}</label>` : y}
         </div>
 
         <h3>${c("wz.circuits")}</h3>
         ${e.circuits.map(
-      (s, i) => g`<div class="circuit">
+      (s, i) => f`<div class="circuit">
             <b>${c("wz.circuit", { n: i + 1 })}</b>
             <input .value=${s.label} @change=${(n) => this._circ(i, { label: n.target.value })} />
             <select @change=${(n) => this._circ(i, { emitter: n.target.value })}>
@@ -7233,18 +7243,18 @@ const Nt = class Nt extends se {
     const e = !!this.hass?.__standalone, t = this._res, s = this.plant.components.flatMap(
       (i) => Se(i).filter((n) => !i.bindings[n.key] && !t?.suggestions.some((o) => o.component_id === i.id && o.slot === n.key)).map((n) => ({ c: i, s: n }))
     );
-    return g`<div class="card">
+    return f`<div class="card">
       <h2>${c("map.title")}</h2>
       <p class="muted">${c("map.intro")}</p>
-      ${e ? g`<p class="muted">${c("map.standalone")}</p>` : y}
+      ${e ? f`<p class="muted">${c("map.standalone")}</p>` : y}
       <div class="row">
         <button class="primary" ?disabled=${this._busy || e} @click=${this._scan}>${B("search")} ${c("map.scan")}</button>
-        ${t ? g`<span class="muted">${c("map.found", { count: t.entity_count })}</span>` : y}
+        ${t ? f`<span class="muted">${c("map.found", { count: t.entity_count })}</span>` : y}
         <span class="spacer"></span>
-        ${this._msg ? g`<span class="ok">${B("check")} ${this._msg}</span>` : y}
+        ${this._msg ? f`<span class="ok">${B("check")} ${this._msg}</span>` : y}
       </div>
-      ${t && t.entity_count === 0 ? g`<div class="help"><b>${c("map.none")}</b><p>${c("map.none_help")}</p></div>` : y}
-      ${t && t.suggestions.length ? g`<div class="tbl">
+      ${t && t.entity_count === 0 ? f`<div class="help"><b>${c("map.none")}</b><p>${c("map.none_help")}</p></div>` : y}
+      ${t && t.suggestions.length ? f`<div class="tbl">
             <table>
               <thead><tr>
                 <th><input type="checkbox" .checked=${this._sel.size === t.suggestions.length}
@@ -7254,14 +7264,14 @@ const Nt = class Nt extends se {
               <tbody>
                 ${t.suggestions.map((i) => {
       const n = `${i.component_id}|${i.slot}`, o = this._comp(i.component_id), a = o?.bindings[i.slot], l = this.hass?.states[i.entity_id];
-      return g`<tr>
+      return f`<tr>
                     <td><input type="checkbox" .checked=${this._sel.has(n)} @change=${(p) => {
         const d = new Set(this._sel);
         p.target.checked ? d.add(n) : d.delete(n), this._sel = d;
       }} /></td>
                     <td>${o?.label || i.component_id}</td>
                     <td>${We(o?.type || "", i.slot)}</td>
-                    <td><code>${i.entity_id}</code>${a && a !== i.entity_id ? g`<div class="muted small">${c("map.current")}: ${a}</div>` : y}</td>
+                    <td><code>${i.entity_id}</code>${a && a !== i.entity_id ? f`<div class="muted small">${c("map.current")}: ${a}</div>` : y}</td>
                     <td>${l ? `${l.state} ${l.attributes.unit_of_measurement || ""}` : "–"}</td>
                     <td><span class="conf ${i.confidence}">${c(`map.conf.${i.confidence}`)}</span></td>
                   </tr>`;
@@ -7272,7 +7282,7 @@ const Nt = class Nt extends se {
           <div class="row"><span class="spacer"></span><button class="primary" ?disabled=${!this._sel.size} @click=${this._apply}>${c("map.apply")} (${this._sel.size})</button></div>` : y}
       <h3>${c("map.unbound")}</h3>
       <p class="muted small">${c("map.unbound_hint")}</p>
-      <div class="chips">${s.slice(0, 80).map(({ c: i, s: n }) => g`<span class="chip">${i.label || i.id}: ${We(i.type, n.key)}</span>`)}</div>
+      <div class="chips">${s.slice(0, 80).map(({ c: i, s: n }) => f`<span class="chip">${i.label || i.id}: ${We(i.type, n.key)}</span>`)}</div>
     </div>`;
   }
 };
@@ -7333,32 +7343,48 @@ const gr = ["outdoor_unit", "indoor_unit", "buffer", "dhw_tank", "pump", "valve_
     const s = structuredClone(this.plant);
     s.settings.typeIcons = { ...s.settings.typeIcons || {} }, t ? s.settings.typeIcons[e] = t : delete s.settings.typeIcons[e], ze(this, "save", s);
   }
+  /** Where an icon is in use: components with it as their own icon, types with it as default. */
+  _usage(e) {
+    const t = this.plant.components.filter((i) => i.icon === e).map((i) => i.label || c(`type.${i.type}`)), s = Object.entries(this.plant.settings.typeIcons || {}).filter(([, i]) => i === e).map(([i]) => c(`type.${i}`));
+    return !t.length && !s.length ? f`<div class="use muted">${c("ic.unused")}</div>` : f`<div class="use">
+      ${t.length ? f`<div>${c("ic.used_by", { list: t.join(", ") })}</div>` : y}
+      ${s.length ? f`<div>${c("ic.default_for", { list: s.join(", ") })}</div>` : y}
+    </div>`;
+  }
+  /** Components of this type that use an own icon (they override the type default). */
+  _ownHint(e) {
+    const t = this.plant.components.filter((n) => n.type === e), s = t.filter((n) => n.icon && this.icons.has(n.icon));
+    if (!s.length) return y;
+    const i = s.length === 1 && t.length === 1 ? c("ic.own_one", { name: this.icons.get(s[0].icon).name }) : c("ic.own_some", { n: s.length, m: t.length });
+    return f`<span class="hint">${i}</span>`;
+  }
   render() {
     const e = [...this.icons.values()];
-    return g`<div class="card">
+    return f`<div class="card">
       <h2>${c("ic.title")}</h2>
       <p class="muted">${c("ic.intro")}</p>
       <div class="row">
         <label class="btn primary up">${B("upload")} ${c("ic.upload")}
           <input type="file" accept=".svg,.png,.webp,.jpg,.jpeg,image/svg+xml,image/png,image/webp,image/jpeg" @change=${this._upload} hidden /></label>
         <label class="row small"><input type="checkbox" .checked=${this._iso} @change=${(t) => this._iso = t.target.checked} /> ${c("ic.iso")}</label>
-        ${this._err ? g`<span class="err">${this._err}</span>` : y}
+        ${this._err ? f`<span class="err">${this._err}</span>` : y}
       </div>
-      ${e.length ? g`<div class="gallery">${e.map(
-      (t) => g`<div class="ic">
+      ${e.length ? f`<div class="gallery">${e.map(
+      (t) => f`<div class="ic">
               <div class="prev"><img src=${t.data_url} alt=${t.name} /></div>
-              <div class="name">${t.name}${t.iso ? g` <span class="muted">· iso</span>` : y}</div>
+              <div class="name">${t.name}${t.iso ? f` <span class="muted">· iso</span>` : y}</div>
+              ${this._usage(t.id)}
               <button class="ghost danger icon" @click=${() => this._delete(t.id)}>${B("trash")}</button>
             </div>`
-    )}</div>` : g`<p class="muted">${c("ic.empty")}</p>`}
+    )}</div>` : f`<p class="muted">${c("ic.empty")}</p>`}
       <h3>${c("ic.type_default")}</h3>
       <div class="defaults">
         ${gr.map(
-      (t) => g`<label class="field">${c(`type.${t}`)}
+      (t) => f`<label class="field">${c(`type.${t}`)}
             <select @change=${(s) => this._typeDefault(t, s.target.value)}>
               <option value="">${c("ed.icon_default")}</option>
-              ${e.map((s) => g`<option value=${s.id} ?selected=${this.plant.settings.typeIcons?.[t] === s.id}>${s.name}</option>`)}
-            </select></label>`
+              ${e.map((s) => f`<option value=${s.id} ?selected=${this.plant.settings.typeIcons?.[t] === s.id}>${s.name}</option>`)}
+            </select>${this._ownHint(t)}</label>`
     )}
       </div>
     </div>`;
@@ -7376,6 +7402,9 @@ It.properties = { plant: { attribute: !1 }, api: { attribute: !1 }, icons: { att
       .prev { height: 90px; display: grid; place-items: center; background: var(--cp-bg-2); border-radius: 8px; }
       .prev img { max-width: 90%; max-height: 80px; }
       .name { font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .use { font-size: 11px; color: var(--cp-accent); line-height: 1.35; }
+      .use.muted { color: var(--cp-muted); }
+      .hint { font-size: 11px; color: var(--cp-accent); font-weight: 500; }
       .defaults { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
     `
 ];
@@ -7385,9 +7414,9 @@ const jt = class jt extends se {
     super(...arguments), this.version = "", this._backups = null, this._tariff = null, this._bmsg = "", this._energy = null, this._note = "";
   }
   _tariffSection() {
-    const e = { ...Ys(this.plant), ...this._tariff || {} }, t = (i) => this._tariff = { ...this._tariff || {}, ...i }, s = (i, n, o) => g`<label class="field">${n}<input type="number" step=${o} min="0" .value=${String(e[i])}
+    const e = { ...Ys(this.plant), ...this._tariff || {} }, t = (i) => this._tariff = { ...this._tariff || {}, ...i }, s = (i, n, o) => f`<label class="field">${n}<input type="number" step=${o} min="0" .value=${String(e[i])}
         @change=${(a) => t({ [i]: Number(a.target.value) })} /></label>`;
-    return g`<div class="card wrap">
+    return f`<div class="card wrap">
       <h2>${c("st.tariff")}</h2>
       <p class="muted">${c("st.tariff_hint")}</p>
       <div class="grid2">
@@ -7396,7 +7425,7 @@ const jt = class jt extends se {
             <option value="fixed" ?selected=${e.mode === "fixed"}>${c("st.t_fixed")}</option>
             <option value="entity" ?selected=${e.mode === "entity"}>${c("st.t_entity")}</option>
           </select></label>
-        ${e.mode === "entity" ? g`<label class="field">${c("st.t_entity_pick")}
+        ${e.mode === "entity" ? f`<label class="field">${c("st.t_entity_pick")}
               <cp-entity-picker .hass=${this.hass} .value=${e.price_entity || ""} @value-changed=${(i) => t({ price_entity: i.detail || void 0 })}></cp-entity-picker></label>` : s("price", c("st.t_price"), "0.01")}
         ${s("feed_in", c("st.t_feed_in"), "0.001")}
         ${s("gas_price", c("st.t_gas"), "0.01")}
@@ -7445,24 +7474,24 @@ const jt = class jt extends se {
   }
   _backupSection() {
     const e = (t) => c(`bk.reason.${t}`);
-    return g`<div class="card wrap">
+    return f`<div class="card wrap">
       <h2>${c("bk.title")}</h2>
       <p class="muted">${c("bk.hint")}</p>
       <div class="row">
         <button @click=${this._export}>${B("download")} ${c("bk.export")}</button>
         <label class="filebtn">${B("upload")} ${c("bk.import")}
           <input type="file" accept="application/json,.json" @change=${this._import} /></label>
-        ${this._bmsg ? g`<span class="muted">${this._bmsg}</span>` : y}
+        ${this._bmsg ? f`<span class="muted">${this._bmsg}</span>` : y}
       </div>
-      ${this._backups === null ? y : this._backups.length ? g`<ul class="backups">
+      ${this._backups === null ? y : this._backups.length ? f`<ul class="backups">
               ${this._backups.map(
-      (t) => g`<li>
+      (t) => f`<li>
                   <div><b>${new Date(t.ts * 1e3).toLocaleString()}</b>
                     <span class="muted"> · ${e(t.reason)}${t.version ? ` · v${t.version}` : ""} · ${c("bk.components", { n: t.components })}</span></div>
                   <button @click=${() => this._restore(t)}>${B("undo")} ${c("bk.restore")}</button>
                 </li>`
     )}
-            </ul>` : g`<p class="muted">${c(this.api?.standalone ? "bk.demo" : "bk.none")}</p>`}
+            </ul>` : f`<p class="muted">${c(this.api?.standalone ? "bk.demo" : "bk.none")}</p>`}
     </div>`;
   }
   _en() {
@@ -7480,16 +7509,16 @@ const jt = class jt extends se {
     this._patch({ energy: this._en() }), this._energy = null, this._note = "";
   }
   _energySection() {
-    const e = this._en(), t = (i, n) => g`<label class="field">${n}
+    const e = this._en(), t = (i, n) => f`<label class="field">${n}
         <cp-entity-picker .hass=${this.hass} .value=${e[i] || ""}
-          @value-changed=${(o) => this._setEn({ [i]: o.detail || void 0 })}></cp-entity-picker></label>`, s = (i, n, o = !1) => g`<label class="check"><input type="checkbox" .checked=${e[i] ?? o}
+          @value-changed=${(o) => this._setEn({ [i]: o.detail || void 0 })}></cp-entity-picker></label>`, s = (i, n, o = !1) => f`<label class="check"><input type="checkbox" .checked=${e[i] ?? o}
         @change=${(a) => this._setEn({ [i]: a.target.checked })} />${n}</label>`;
-    return g`<div class="card wrap">
+    return f`<div class="card wrap">
       <h2>${c("st.energy")}</h2>
       <p class="muted">${c("st.energy_hint")}</p>
       ${s("enabled", c("st.energy_enabled"))}
-      ${this.hass && !this.hass.__standalone ? g`<div class="row"><button @click=${this._detect}>${B("search")} ${c("st.energy_detect")}</button>
-            ${this._note ? g`<span class="muted">${this._note}</span>` : y}</div>` : y}
+      ${this.hass && !this.hass.__standalone ? f`<div class="row"><button @click=${this._detect}>${B("search")} ${c("st.energy_detect")}</button>
+            ${this._note ? f`<span class="muted">${this._note}</span>` : y}</div>` : y}
       <div class="grid2">
         ${t("pv", c("st.e_pv"))}
         <div>${t("grid", c("st.e_grid"))}${s("grid_invert", c("st.e_grid_invert"))}</div>
@@ -7511,7 +7540,7 @@ const jt = class jt extends se {
   }
   render() {
     const e = this.plant.settings;
-    return g`<div class="card wrap">
+    return f`<div class="card wrap">
       <h2>${c("st.title")}</h2>
       <label class="field">${c("st.style")}
         <select @change=${(t) => this._patch({ style: t.target.value })}>
@@ -7522,7 +7551,7 @@ const jt = class jt extends se {
         <span><b>${c("st.demo")}</b><br /><span class="muted">${c("st.demo_hint")}</span></span></label>
       <label class="field">${c("st.language")}
         <select @change=${(t) => this._patch({ language: t.target.value })}>
-          ${["auto", "de", "en"].map((t) => g`<option value=${t} ?selected=${(e.language || "auto") === t}>${t === "auto" ? c("st.lang.auto") : t === "de" ? "Deutsch" : "English"}</option>`)}
+          ${["auto", "de", "en"].map((t) => f`<option value=${t} ?selected=${(e.language || "auto") === t}>${t === "auto" ? c("st.lang.auto") : t === "de" ? "Deutsch" : "English"}</option>`)}
         </select></label>
       <label class="toggle"><input type="checkbox" .checked=${!!e.write_non_admin} @change=${(t) => this._patch({ write_non_admin: t.target.checked })} />
         <span><b>${c("st.write_non_admin")}</b><br /><span class="muted">${c("st.write_hint")}</span></span></label>
@@ -7587,7 +7616,7 @@ const Kt = class Kt extends se {
     super(...arguments), this._chartKey = "", this._costs = [], this._costKey = "", this.sim = null, this.version = 0, this._data = null, this._error = "", this._loadedAt = 0, this._loadedFor = null;
   }
   connectedCallback() {
-    super.connectedCallback(), Ii ??= import("./echart-EHwV5a73.js").catch((e) => {
+    super.connectedCallback(), Ii ??= import("./echart-BSVKwA22.js").catch((e) => {
       Ii = null, console.error("COPilot: chart module failed to load", e);
     });
   }
@@ -7606,7 +7635,7 @@ const Kt = class Kt extends se {
   }
   _live() {
     const e = hn(this.plant, this.src), t = 62, s = 2 * Math.PI * t, i = e ? Math.min(1, e.cop / 7) : 0, n = e ? Ce[e.ampel] : "var(--cp-muted)";
-    return g`<div class="card live">
+    return f`<div class="card live">
       <div class="cap">${c("eff.live")}</div>
       <div class="gauge">
         <svg viewBox="0 0 160 160">
@@ -7618,15 +7647,15 @@ const Kt = class Kt extends se {
           <span class="muted">COP</span>
         </div>
       </div>
-      ${e ? g`<div class="lv-row"><span>${c("eff.expected", { out: F(e.tOut, 0), flow: F(e.tFlow, 0) })}</span><b>${F(e.expected, 1)}</b></div>
+      ${e ? f`<div class="lv-row"><span>${c("eff.expected", { out: F(e.tOut, 0), flow: F(e.tFlow, 0) })}</span><b>${F(e.expected, 1)}</b></div>
             <div class="lv-row"><span>${c("eff.ratio")}</span><b style="color:${n}">${F(e.ratio * 100, 0)} %</b></div>
-            <div class="verdict" style="border-color:${n}">${c(`eff.ampel.${e.ampel}`)}</div>` : g`<p class="muted small">${c("eff.no_live")}</p>`}
+            <div class="verdict" style="border-color:${n}">${c(`eff.ampel.${e.ampel}`)}</div>` : f`<p class="muted small">${c("eff.no_live")}</p>`}
     </div>`;
   }
   _tile(e, t, s) {
     const i = Mi(t), n = t && t.heat > 0 ? t.heatDhw / t.heat : void 0, o = t && t.el > 0 ? t.aux / t.el : void 0;
-    return g`<div class="card tile">
-      <div class="cap">${c(`eff.${e}`)} ${s ? g`<span class="est">${c("eff.estimate")}</span>` : y}</div>
+    return f`<div class="card tile">
+      <div class="cap">${c(`eff.${e}`)} ${s ? f`<span class="est">${c("eff.estimate")}</span>` : y}</div>
       <div class="spf" style="color:${Ni(i)}">${i !== void 0 ? F(i, 2) : "–"}<small>${e === "today" || e === "yesterday" ? "AZ" : "JAZ"}</small></div>
       <div class="kv"><span>${c("eff.heat")}</span><b>${t ? F(t.heat, t.heat >= 100 ? 0 : 1) : "–"} kWh</b></div>
       <div class="kv"><span>${c("eff.el")}</span><b>${t ? F(t.el, t.el >= 100 ? 0 : 1) : "–"} kWh</b></div>
@@ -7731,22 +7760,22 @@ const Kt = class Kt extends se {
           }
         }
       ]
-    })), g`<div class="card chart">
+    })), f`<div class="card chart">
       <div class="cap">${c("eff.daily")}</div>
       <cp-echart .option=${this._chartOption}></cp-echart>
-      ${e.estimated.month ? g`<p class="muted small">${c("eff.demo_note")}</p>` : y}
+      ${e.estimated.month ? f`<p class="muted small">${c("eff.demo_note")}</p>` : y}
     </div>`;
   }
   // ------------------------------------------------------------ costs
   _costTile(e, t) {
     const s = (a) => `${F(a, a >= 100 ? 0 : 2)} €`, i = t && t.el > 0.05 && !t.noShare ? t.self / t.el : void 0, n = t && t.heat > 0.1 ? (t.cost + t.feedLoss) / t.heat : void 0, o = t && t.gas > 0.01 ? 1 - (t.cost + t.feedLoss) / t.gas : void 0;
-    return g`<div class="card tile">
-      <div class="cap">${c(`cost.${e}`)}${t?.estimated ? g` <span class="est">${c("eff.estimate")}</span>` : y}</div>
+    return f`<div class="card tile">
+      <div class="cap">${c(`cost.${e}`)}${t?.estimated ? f` <span class="est">${c("eff.estimate")}</span>` : y}</div>
       <div class="spf">${t ? s(t.cost) : "–"}<small>${c("cost.grid_cost")}</small></div>
       <div class="kv"><span>${c("cost.pv_share")}</span><b>${i !== void 0 ? F(i * 100, 0) + " %" : "–"}</b></div>
       <div class="kv"><span>${c("cost.feed_loss")}</span><b>${t && !t.noShare ? s(t.feedLoss) : "–"}</b></div>
       <div class="kv"><span>${c("cost.per_kwh")}</span><b>${n !== void 0 ? F(n * 100, 1) + " ct" : "–"}</b></div>
-      <div class="kv"><span>${c("cost.vs_gas")}</span><b class=${o !== void 0 && o >= 0 ? "good" : ""}>${t ? s(t.gas) : "–"}${o !== void 0 ? g` <small>(${o >= 0 ? "−" : "+"}${F(Math.abs(o) * 100, 0)} %)</small>` : y}</b></div>
+      <div class="kv"><span>${c("cost.vs_gas")}</span><b class=${o !== void 0 && o >= 0 ? "good" : ""}>${t ? s(t.gas) : "–"}${o !== void 0 ? f` <small>(${o >= 0 ? "−" : "+"}${F(Math.abs(o) * 100, 0)} %)</small>` : y}</b></div>
     </div>`;
   }
   _costSection() {
@@ -7782,7 +7811,7 @@ const Kt = class Kt extends se {
         ]
       });
     }
-    return g`
+    return f`
       <h3 class="sec">${c("cost.title")}</h3>
       <div class="tiles">
         ${this._costTile("today", hs([t]))}
@@ -7797,7 +7826,7 @@ const Kt = class Kt extends se {
   }
   render() {
     const e = this._data;
-    return g`
+    return f`
       <div class="grid">
         ${this._live()}
         <div class="tiles">
@@ -7807,8 +7836,8 @@ const Kt = class Kt extends se {
           ${this._tile("year", e?.year ?? null, !!e?.estimated.year)}
         </div>
       </div>
-      ${this._error ? g`<div class="card err">${this._error}</div>` : y}
-      ${e?.missing ? g`<div class="card hint">${c(`eff.missing.${e.missing}`)}</div>` : y}
+      ${this._error ? f`<div class="card err">${this._error}</div>` : y}
+      ${e?.missing ? f`<div class="card hint">${c(`eff.missing.${e.missing}`)}</div>` : y}
       ${e ? this._chart(e) : y}
       ${this._costSection()}
     `;
@@ -8012,35 +8041,35 @@ const Ft = class Ft extends se {
   }
   render() {
     const e = this._results, t = (s) => (e || []).filter((i) => i.ampel === s).length;
-    return g`
+    return f`
       <div class="card head">
         <div>
           <h2>${c("chk.title")}</h2>
           <p class="muted">${c("chk.subtitle")}${this.sim ? ` ${c("chk.demo")}` : ""}</p>
         </div>
         <span class="spacer"></span>
-        ${e ? g`<div class="sum">
-              ${["green", "yellow", "red"].map((s) => g`<span class="dot" style="background:${Ce[s]}"></span><b>${t(s)}</b>`)}
+        ${e ? f`<div class="sum">
+              ${["green", "yellow", "red"].map((s) => f`<span class="dot" style="background:${Ce[s]}"></span><b>${t(s)}</b>`)}
             </div>` : y}
         <button @click=${() => this._run()} ?disabled=${this._busy}>${c("chk.refresh")}</button>
       </div>
-      ${e ? g`<div class="list">
+      ${e ? f`<div class="list">
             ${e.map(
-      (s) => g`<div class="card item ${s.ampel}">
+      (s) => f`<div class="card item ${s.ampel}">
                 <span class="lamp" style="background:${s.ampel === "none" ? "var(--cp-muted)" : Ce[s.ampel]}"></span>
                 <div class="body">
                   <div class="row nowrap">
                     <b class="title">${c(`chk.${s.id}.title`)}</b>
                     <span class="spacer"></span>
-                    ${s.value ? g`<span class="val">${s.value}</span>` : y}
+                    ${s.value ? f`<span class="val">${s.value}</span>` : y}
                   </div>
                   <div class="detail">${c(s.detail, Fi(s.params))}</div>
-                  ${s.hint && (s.ampel === "yellow" || s.ampel === "red") ? g`<div class="hint">${c(s.hint, Fi(s.params))}</div>` : y}
-                  ${s.ampel === "green" ? g`<div class="ok">${c("chk.ok")}</div>` : y}
+                  ${s.hint && (s.ampel === "yellow" || s.ampel === "red") ? f`<div class="hint">${c(s.hint, Fi(s.params))}</div>` : y}
+                  ${s.ampel === "green" ? f`<div class="ok">${c("chk.ok")}</div>` : y}
                 </div>
               </div>`
     )}
-          </div>` : g`<div class="card muted">${c("chk.running")}</div>`}
+          </div>` : f`<div class="card muted">${c("chk.running")}</div>`}
     `;
   }
 };
@@ -8205,7 +8234,7 @@ const Ut = class Ut extends se {
       }
       return x;
     }, n = this._circuit, o = this.plant.components.find((v) => v.type === "outdoor_unit"), a = this.plant.components.find((v) => v.type === "indoor_unit"), l = o ? this.src.get(o, "outdoor_temp") : void 0, p = n && this.src.get(n, "flow_temp") || a && this.src.get(a, "supply_temp"), d = l?.available ? l.num : null, h = p?.available ? p.num : null, u = d !== null ? lt(e, d) : null, m = i(e), _ = t ? i(t) : [], w = (v) => `${F(v, Number.isInteger(v) ? 0 : 1)} °C`;
-    return g`<cp-echart class="curve-chart" .option=${(v) => ({
+    return f`<cp-echart class="curve-chart" .option=${(v) => ({
       animation: !1,
       textStyle: { fontFamily: "inherit" },
       grid: { left: 8, right: 16, top: 30, bottom: 8, containLabel: !0 },
@@ -8291,64 +8320,64 @@ const Ut = class Ut extends se {
     })}></cp-echart>`;
   }
   connectedCallback() {
-    super.connectedCallback(), Gi ??= import("./echart-EHwV5a73.js").catch((e) => {
+    super.connectedCallback(), Gi ??= import("./echart-BSVKwA22.js").catch((e) => {
       Gi = null, console.error("COPilot: chart module failed to load", e);
     });
   }
   render() {
     const e = this._current(), t = Object.keys(this._edit).length > 0, s = t ? { ...e, ...this._edit } : null, i = s || e, n = this._points || [], o = n.filter((h) => h.age < 0.5 && h.room !== void 0).map((h) => h.room), a = o.length ? o.reduce((h, u) => h + u, 0) / o.length : void 0, l = n.length ? n.reduce((h, u) => h + (u.flow - (lt(e, u.tOut) ?? u.flow)), 0) / n.length : void 0, p = a !== void 0 ? to(e, a) : 0, d = this._circuits;
-    return g`
+    return f`
       <div class="grid">
         <div class="card chart-card">
           <div class="row head">
             <h2>${c("cv.title")}</h2>
-            ${d.length > 1 ? g`<select @change=${(h) => this._hc = h.target.value}>
-                  ${d.map((h) => g`<option value=${h.id} ?selected=${h.id === this._circuit?.id}>${h.label}</option>`)}
-                </select>` : g`<span class="muted">${this._circuit?.label || ""}</span>`}
+            ${d.length > 1 ? f`<select @change=${(h) => this._hc = h.target.value}>
+                  ${d.map((h) => f`<option value=${h.id} ?selected=${h.id === this._circuit?.id}>${h.label}</option>`)}
+                </select>` : f`<span class="muted">${this._circuit?.label || ""}</span>`}
             <span class="spacer"></span>
             <span class="lg"><i class="l-curve"></i>${c("cv.curve")}</span>
-            ${s ? g`<span class="lg"><i class="l-next"></i>${c("cv.preview")}</span>` : y}
+            ${s ? f`<span class="lg"><i class="l-next"></i>${c("cv.preview")}</span>` : y}
             <span class="lg"><i class="l-pt"></i>${c("cv.points", { days: Ze })}</span>
             <span class="lg"><i class="l-live"></i>${c("cv.now")}</span>
           </div>
           ${this._chart(e, s, n)}
-          ${this.sim ? g`<p class="muted small">${c("cv.demo_note")}</p>` : y}
-          ${!this.sim && this._points && !n.length ? g`<p class="muted small">${c("cv.no_points")}</p>` : y}
+          ${this.sim ? f`<p class="muted small">${c("cv.demo_note")}</p>` : y}
+          ${!this.sim && this._points && !n.length ? f`<p class="muted small">${c("cv.no_points")}</p>` : y}
         </div>
         <div class="side">
           <div class="card">
             <div class="cap">${c("cv.params")}</div>
             ${rt.map((h) => {
       const u = i[h.key], m = h.key in this._edit, _ = this._writable(h.key);
-      return g`<label class="param ${m ? "changed" : ""}">
+      return f`<label class="param ${m ? "changed" : ""}">
                 <span class="pname">${c(`cv.p.${h.key}`)}</span>
                 <b>${F(u, h.step < 1 ? 1 : 0)} ${h.key === "offset" ? "K" : "°C"}</b>
                 <input type="range" min=${h.min} max=${h.max} step=${h.step} .value=${String(u)} ?disabled=${!_}
                   @input=${(w) => this._set(h.key, Number(w.target.value))} />
               </label>`;
     })}
-            ${!this.sim && !rt.some((h) => this._writable(h.key)) ? g`<p class="muted small">${c("cv.readonly")}</p>` : y}
+            ${!this.sim && !rt.some((h) => this._writable(h.key)) ? f`<p class="muted small">${c("cv.readonly")}</p>` : y}
             <div class="row actions">
               <button ?disabled=${!t} @click=${() => this._edit = {}}>${c("discard")}</button>
               <span class="spacer"></span>
               <button class="primary" ?disabled=${!t} @click=${() => this._confirm = !0}>${B("check")} ${c("apply")}</button>
             </div>
-            ${this._msg ? g`<p class="ok">${this._msg}</p>` : y}
+            ${this._msg ? f`<p class="ok">${this._msg}</p>` : y}
           </div>
           <div class="card">
             <div class="cap">${c("cv.analysis")}</div>
-            ${l !== void 0 ? g`<p class="small">${c(l >= 0 ? "cv.deviation_above" : "cv.deviation_below", { value: Math.abs(l) })}</p>` : y}
-            ${a !== void 0 ? g`<p class="small">${c("cv.room", { room: a, set: e.roomSet })}</p>
-                  ${Math.abs(p) >= 0.5 ? g`<div class="hint">${c(p < 0 ? "cv.suggest_down" : "cv.suggest_up", { value: Math.abs(p), target: e.offset + p })}
-                        <button class="small-btn" @click=${() => this._set("offset", e.offset + p)}>${c("cv.try")}</button></div>` : g`<p class="ok small">${c("cv.fits")}</p>`}` : g`<p class="muted small">${c("cv.no_room")}</p>`}
+            ${l !== void 0 ? f`<p class="small">${c(l >= 0 ? "cv.deviation_above" : "cv.deviation_below", { value: Math.abs(l) })}</p>` : y}
+            ${a !== void 0 ? f`<p class="small">${c("cv.room", { room: a, set: e.roomSet })}</p>
+                  ${Math.abs(p) >= 0.5 ? f`<div class="hint">${c(p < 0 ? "cv.suggest_down" : "cv.suggest_up", { value: Math.abs(p), target: e.offset + p })}
+                        <button class="small-btn" @click=${() => this._set("offset", e.offset + p)}>${c("cv.try")}</button></div>` : f`<p class="ok small">${c("cv.fits")}</p>`}` : f`<p class="muted small">${c("cv.no_room")}</p>`}
           </div>
         </div>
       </div>
-      ${this._confirm ? g`<div class="backdrop" @click=${() => this._confirm = !1}></div>
+      ${this._confirm ? f`<div class="backdrop" @click=${() => this._confirm = !1}></div>
             <div class="dialog card">
               <h3>${c("cv.confirm_title")}</h3>
               <ul>${Object.entries(this._edit).map(
-      ([h, u]) => g`<li>${c(`cv.p.${h}`)}: ${F(e[h], 1)} → <b>${F(u, 1)}</b></li>`
+      ([h, u]) => f`<li>${c(`cv.p.${h}`)}: ${F(e[h], 1)} → <b>${F(u, 1)}</b></li>`
     )}</ul>
               <p class="muted small">${this.sim ? c("cv.confirm_demo") : c("cv.confirm_live")}</p>
               <div class="row"><span class="spacer"></span>
@@ -8441,9 +8470,9 @@ const Gt = class Gt extends se {
   }
   render() {
     const e = this._config, t = this._ctl.plant, s = e.height || (this.isPanel ? "calc(100vh - var(--header-height, 56px) - 16px)" : "560px");
-    return g`<ha-card style="height:${s}">
-      ${this._ctl.error ? g`<div class="err">${this._ctl.error}</div>` : y}
-      ${t ? g`<cp-overview
+    return f`<ha-card style="height:${s}">
+      ${this._ctl.error ? f`<div class="err">${this._ctl.error}</div>` : y}
+      ${t ? f`<cp-overview
             .plant=${t}
             .src=${this._ctl.src}
             .icons=${this._ctl.icons}
@@ -8458,7 +8487,7 @@ const Gt = class Gt extends se {
             .showDemo=${!!e.show_demo_controls}
             ?narrow=${this.clientWidth < 700}
             @scenario=${(i) => this._ctl.scenario(i.detail)}
-          ></cp-overview>` : g`<div class="loading">${ws}</div>`}
+          ></cp-overview>` : f`<div class="loading">${ws}</div>`}
     </ha-card>`;
   }
 };
@@ -8500,10 +8529,10 @@ const Zt = class Zt extends se {
     (t === "" || t === void 0) && delete s[e], this._config = s, this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: s }, bubbles: !0, composed: !0 }));
   }
   render() {
-    const e = this._config, t = (s, i, n) => g`<label class="row">
+    const e = this._config, t = (s, i, n) => f`<label class="row">
       <input type="checkbox" .checked=${e[s] ?? n} @change=${(o) => this._set(s, o.target.checked)} />
       ${i}</label>`;
-    return g`<div class="ed">
+    return f`<div class="ed">
       ${t("show_kpis", c("card.show_kpis"), !0)}
       ${t("show_messages", c("card.show_messages"), !1)}
       ${t("show_demo_controls", c("card.show_demo"), !1)}
@@ -8580,35 +8609,35 @@ const Yt = class Yt extends se {
   }
   render() {
     const e = this._ctl.plant, t = this._ctl.messages.filter((s) => s.active && (s.level === "warning" || s.level === "error")).length;
-    return g`<div class="shell">
+    return f`<div class="shell">
       <header>
-        ${this.narrow ? g`<button class="ghost icon" title=${c("menu")} @click=${() => this.dispatchEvent(new Event("hass-toggle-menu", { bubbles: !0, composed: !0 }))}>${B("menu")}</button>` : y}
+        ${this.narrow ? f`<button class="ghost icon" title=${c("menu")} @click=${() => this.dispatchEvent(new Event("hass-toggle-menu", { bubbles: !0, composed: !0 }))}>${B("menu")}</button>` : y}
         <div class="brand">${ws}<span>COP<b>ilot</b></span></div>
         <nav>
           ${["overview", "efficiency", "check", "curve", "maintenance", "messages", "config"].map(
-      (s) => g`<button class="tab ${this._view === s ? "on" : ""}" title=${c(`nav.${s}`)} @click=${() => this._go(s)}>
+      (s) => f`<button class="tab ${this._view === s ? "on" : ""}" title=${c(`nav.${s}`)} @click=${() => this._go(s)}>
               ${B(s === "overview" ? "grid" : s === "efficiency" ? "chart" : s === "check" ? "check" : s === "curve" ? "curve" : s === "maintenance" ? "wrench" : s === "messages" ? "bell" : "gear")}
               <span class="tl">${c(`nav.${s}`)}</span>
-              ${s === "messages" && t ? g`<span class="badge">${t}</span>` : y}
+              ${s === "messages" && t ? f`<span class="badge">${t}</span>` : y}
             </button>`
     )}
         </nav>
         <span class="spacer"></span>
-        ${e?.settings.demo ? g`<span class="demo-pill">${B("flask")}<span class="tl">${c("demo")}</span></span>` : y}
+        ${e?.settings.demo ? f`<span class="demo-pill">${B("flask")}<span class="tl">${c("demo")}</span></span>` : y}
         <button class="ghost icon" title=${c("fullscreen")} @click=${this._fullscreen}>${B("expand")}</button>
       </header>
       <main>
-        ${this._ctl.error ? g`<div class="card err">${this._ctl.error}</div>` : y}
-        ${this._ctl.api?.standalone ? g`<div class="note muted">${c("standalone_hint")}</div>` : y}
-        ${e ? this._content(e) : g`<div class="loading">${ws}</div>`}
+        ${this._ctl.error ? f`<div class="card err">${this._ctl.error}</div>` : y}
+        ${this._ctl.api?.standalone ? f`<div class="note muted">${c("standalone_hint")}</div>` : y}
+        ${e ? this._content(e) : f`<div class="loading">${ws}</div>`}
       </main>
-      ${this._toast ? g`<div class="toast">${this._toast}</div>` : y}
+      ${this._toast ? f`<div class="toast">${this._toast}</div>` : y}
     </div>`;
   }
   _content(e) {
     const t = this._ctl.src;
     if (this._view === "overview")
-      return g`<cp-overview
+      return f`<cp-overview
         .plant=${e}
         .src=${t}
         .icons=${this._ctl.icons}
@@ -8622,7 +8651,7 @@ const Yt = class Yt extends se {
         @scenario=${(n) => this._ctl.scenario(n.detail)}
       ></cp-overview>`;
     if (this._view === "efficiency")
-      return g`<cp-efficiency
+      return f`<cp-efficiency
         .plant=${e}
         .src=${t}
         .hass=${this.hass}
@@ -8630,31 +8659,31 @@ const Yt = class Yt extends se {
         .version=${this._ctl.version}
       ></cp-efficiency>`;
     if (this._view === "check")
-      return g`<cp-check .plant=${e} .src=${t} .sim=${this._ctl.sim} .version=${this._ctl.version}></cp-check>`;
+      return f`<cp-check .plant=${e} .src=${t} .sim=${this._ctl.sim} .version=${this._ctl.version}></cp-check>`;
     if (this._view === "curve")
-      return g`<cp-curve .plant=${e} .src=${t} .hass=${this.hass} .sim=${this._ctl.sim} .version=${this._ctl.version} ?admin=${this._ctl.admin}></cp-curve>`;
+      return f`<cp-curve .plant=${e} .src=${t} .hass=${this.hass} .sim=${this._ctl.sim} .version=${this._ctl.version} ?admin=${this._ctl.admin}></cp-curve>`;
     if (this._view === "maintenance")
-      return g`<cp-maintenance .plant=${e} ?admin=${this._ctl.admin} @save=${(n) => this._save(n.detail)}></cp-maintenance>`;
+      return f`<cp-maintenance .plant=${e} ?admin=${this._ctl.admin} @save=${(n) => this._save(n.detail)}></cp-maintenance>`;
     if (this._view === "messages")
-      return g`<div class="card pad"><cp-messages
+      return f`<div class="card pad"><cp-messages
         .messages=${this._ctl.messages}
         ?canClear=${this._ctl.admin && !this._ctl.sim}
         @clear=${() => this._ctl.clearMessages()}
       ></cp-messages></div>`;
-    if (!this._ctl.admin) return g`<div class="card">${c("readonly_hint")}</div>`;
+    if (!this._ctl.admin) return f`<div class="card">${c("readonly_hint")}</div>`;
     const s = ["wizard", "editor", "mapping", "icons", "settings"], i = (n) => this._save(n.detail);
-    return g`
+    return f`
       <div class="subnav">
-        ${s.map((n) => g`<button class="sub ${this._sub === n ? "on" : ""}" @click=${() => this._go("config", n)}>${c(`cfg.${n}`)}</button>`)}
+        ${s.map((n) => f`<button class="sub ${this._sub === n ? "on" : ""}" @click=${() => this._go("config", n)}>${c(`cfg.${n}`)}</button>`)}
       </div>
       <div class="cfg ${this._sub === "editor" ? "fill" : ""}">
-        ${this._sub === "wizard" ? g`<cp-wizard .plant=${e} @plant-generated=${async (n) => {
+        ${this._sub === "wizard" ? f`<cp-wizard .plant=${e} @plant-generated=${async (n) => {
       await this._save(n.detail), this._showToast(c("wz.done")), this._go("config", "editor");
     }}></cp-wizard>` : y}
-        ${this._sub === "editor" ? g`<cp-editor .plant=${e} .hass=${this.hass} .src=${t} .icons=${this._ctl.icons} .version=${this._ctl.version} @save=${i}></cp-editor>` : y}
-        ${this._sub === "mapping" ? g`<cp-mapping .plant=${e} .hass=${this.hass} .api=${this._ctl.api} @save=${i}></cp-mapping>` : y}
-        ${this._sub === "icons" ? g`<cp-icons .plant=${e} .api=${this._ctl.api} .icons=${this._ctl.icons} @save=${i} @icons-changed=${() => this._ctl.loadIcons()}></cp-icons>` : y}
-        ${this._sub === "settings" ? g`<cp-settings .plant=${e} .hass=${this.hass} .api=${this._ctl.api} .version=${this._ctl.backendVersion} @save=${i}
+        ${this._sub === "editor" ? f`<cp-editor .plant=${e} .hass=${this.hass} .src=${t} .icons=${this._ctl.icons} .version=${this._ctl.version} @save=${i}></cp-editor>` : y}
+        ${this._sub === "mapping" ? f`<cp-mapping .plant=${e} .hass=${this.hass} .api=${this._ctl.api} @save=${i}></cp-mapping>` : y}
+        ${this._sub === "icons" ? f`<cp-icons .plant=${e} .api=${this._ctl.api} .icons=${this._ctl.icons} @save=${i} @icons-changed=${() => this._ctl.loadIcons()}></cp-icons>` : y}
+        ${this._sub === "settings" ? f`<cp-settings .plant=${e} .hass=${this.hass} .api=${this._ctl.api} .version=${this._ctl.backendVersion} @save=${i}
               @plant-restored=${(n) => {
       this._ctl.setPlant(n.detail), this._showToast(c("bk.restored"));
     }}
@@ -8745,6 +8774,6 @@ customElements.get("copilot-panel") || customElements.define("copilot-panel", Bs
 export {
   Bs as C,
   re as a,
-  g as b,
+  f as b,
   se as i
 };

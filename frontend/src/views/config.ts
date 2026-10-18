@@ -327,6 +327,31 @@ export class CpIcons extends LitElement {
     emit(this, "save", plant);
   }
 
+  /** Where an icon is in use: components with it as their own icon, types with it as default. */
+  private _usage(id: string) {
+    const comps = this.plant.components.filter((c) => c.icon === id).map((c) => c.label || t(`type.${c.type}`));
+    const types = Object.entries(this.plant.settings.typeIcons || {})
+      .filter(([, v]) => v === id)
+      .map(([k]) => t(`type.${k}`));
+    if (!comps.length && !types.length) return html`<div class="use muted">${t("ic.unused")}</div>`;
+    return html`<div class="use">
+      ${comps.length ? html`<div>${t("ic.used_by", { list: comps.join(", ") })}</div>` : nothing}
+      ${types.length ? html`<div>${t("ic.default_for", { list: types.join(", ") })}</div>` : nothing}
+    </div>`;
+  }
+
+  /** Components of this type that use an own icon (they override the type default). */
+  private _ownHint(type: ComponentType) {
+    const all = this.plant.components.filter((c) => c.type === type);
+    const own = all.filter((c) => c.icon && this.icons.has(c.icon));
+    if (!own.length) return nothing;
+    const text =
+      own.length === 1 && all.length === 1
+        ? t("ic.own_one", { name: this.icons.get(own[0].icon!)!.name })
+        : t("ic.own_some", { n: own.length, m: all.length });
+    return html`<span class="hint">${text}</span>`;
+  }
+
   render() {
     const icons = [...this.icons.values()];
     return html`<div class="card">
@@ -343,6 +368,7 @@ export class CpIcons extends LitElement {
             (i) => html`<div class="ic">
               <div class="prev"><img src=${i.data_url} alt=${i.name} /></div>
               <div class="name">${i.name}${i.iso ? html` <span class="muted">· iso</span>` : nothing}</div>
+              ${this._usage(i.id)}
               <button class="ghost danger icon" @click=${() => this._delete(i.id)}>${icon("trash")}</button>
             </div>`,
           )}</div>`
@@ -354,7 +380,7 @@ export class CpIcons extends LitElement {
             <select @change=${(e: Event) => this._typeDefault(type, (e.target as HTMLSelectElement).value)}>
               <option value="">${t("ed.icon_default")}</option>
               ${icons.map((i) => html`<option value=${i.id} ?selected=${this.plant.settings.typeIcons?.[type] === i.id}>${i.name}</option>`)}
-            </select></label>`,
+            </select>${this._ownHint(type)}</label>`,
         )}
       </div>
     </div>`;
@@ -372,6 +398,9 @@ export class CpIcons extends LitElement {
       .prev { height: 90px; display: grid; place-items: center; background: var(--cp-bg-2); border-radius: 8px; }
       .prev img { max-width: 90%; max-height: 80px; }
       .name { font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .use { font-size: 11px; color: var(--cp-accent); line-height: 1.35; }
+      .use.muted { color: var(--cp-muted); }
+      .hint { font-size: 11px; color: var(--cp-accent); font-weight: 500; }
       .defaults { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
     `,
   ];
