@@ -13,7 +13,7 @@ import {
   type ValueSource,
 } from "../data/values";
 import { renderDefaultIcon } from "./icons";
-import { bendHandle, pathD, routePipe, type Pt } from "./routing";
+import { pathD, routePipe, type Pt } from "./routing";
 
 export type Selection = { kind: "c" | "p"; id: string } | null;
 
@@ -101,7 +101,19 @@ export class CpSchematic extends LitElement {
     _view: { state: true },
     _drag: { state: true },
     _connect: { state: true },
+    _guides: { state: true },
+    gridStep: { type: Number },
+    showGrid: { type: Boolean },
+    snapGrid: { type: Boolean },
+    snapObjects: { type: Boolean },
   };
+  /** editor: grid spacing in cells, shown as lines, positions snap to it */
+  gridStep = 1;
+  showGrid = false;
+  snapGrid = true;
+  /** editor: align with ports and edges of other parts while dragging */
+  snapObjects = true;
+  private _guides: { x?: number; y?: number } = {};
 
   plant!: Plant;
   src!: ValueSource;
@@ -352,17 +364,45 @@ export class CpSchematic extends LitElement {
         </g>
         <g class="pills">${this._pills.map((p) => this._anchorPill(p))}</g>
         ${this.edit ? this._editOverlays(byId, routes) : nothing}
+        ${this.edit ? this._guideLines() : nothing}
       </svg>
     `;
   }
 
   private _grid(): SVGTemplateResult {
     const { w, h } = this.plant.grid;
+    if (!this.showGrid) {
+      return svg`
+        <defs><pattern id="cp-grid" width=${CELL} height=${CELL} patternUnits="userSpaceOnUse">
+          <circle cx="0" cy="0" r="1" class="grid-dot" />
+        </pattern></defs>
+        <rect class="grid-bg" x="0" y="0" width=${w * CELL} height=${h * CELL} fill="url(#cp-grid)" />`;
+    }
+    // lines every gridStep cells, every fifth line stronger
+    const s = Math.max(1, this.gridStep) * CELL;
+    const major = s * 5;
     return svg`
-      <defs><pattern id="cp-grid" width=${CELL} height=${CELL} patternUnits="userSpaceOnUse">
-        <circle cx="0" cy="0" r="1" class="grid-dot" />
-      </pattern></defs>
-      <rect class="grid-bg" x="0" y="0" width=${w * CELL} height=${h * CELL} fill="url(#cp-grid)" />`;
+      <defs>
+        <pattern id="cp-grid-minor" width=${s} height=${s} patternUnits="userSpaceOnUse">
+          <path d="M ${s} 0 L 0 0 0 ${s}" class="grid-line" />
+        </pattern>
+        <pattern id="cp-grid-major" width=${major} height=${major} patternUnits="userSpaceOnUse">
+          <rect width=${major} height=${major} fill="url(#cp-grid-minor)" />
+          <path d="M ${major} 0 L 0 0 0 ${major}" class="grid-line major" />
+        </pattern>
+      </defs>
+      <rect class="grid-bg" x="0" y="0" width=${w * CELL} height=${h * CELL} fill="url(#cp-grid-major)" />`;
+  }
+
+  /** Alignment guides of the object snap while dragging. */
+  private _guideLines(): SVGTemplateResult | typeof nothing {
+    const { x, y } = this._guides;
+    if (x === undefined && y === undefined) return nothing;
+    const { w, h } = this.plant.grid;
+    return svg`<g class="guides">
+      ${x !== undefined ? svg`<line x1=${x * CELL} x2=${x * CELL} y1="0" y2=${h * CELL} />` : nothing}
+      ${y !== undefined ? svg`<line x1="0" x2=${w * CELL} y1=${y * CELL} y2=${y * CELL} />` : nothing}
+    </g>`;
   }
 
   private get _iso(): boolean {
@@ -682,16 +722,26 @@ export class CpSchematic extends LitElement {
           @pointerdown=${(e: PointerEvent) => this._onPortDown(e, { c: c.id, p: p.id })}><title>${p.id}</title></circle>`);
       }
     }
-    let handle: SVGTemplateResult | typeof nothing = nothing;
+    // a handle on every straight run of the selected pipe (not on the short stubs at the ports)
+    const handles: SVGTemplateResult[] = [];
     if (this.selected?.kind === "p") {
-      const r = routes.find((x) => x.pipe.id === this.selected!.id)?.route;
-      const hp = r ? bendHandle(r.pts, r.horizontalStart) : null;
-      if (r && hp) {
-        handle = svg`<rect class="bend-handle ${r.horizontalStart ? "ew" : "ns"}" x=${hp.x * CELL - 7} y=${hp.y * CELL - 7} width="14" height="14" rx="4"
-          @pointerdown=${(e: PointerEvent) => this._onBendDown(e, this.selected!.id, r.horizontalStart)} />`;
+      const id = this.selected.id;
+      const r = routes.find((x) => x.pipe.id === id)?.route;
+      if (r) {
+        const n = r.pts.length;
+        for (let i = 0; i < n - 1; i++) {
+          const a = r.pts[i];
+          const b = r.pts[i + 1];
+          const len = Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+          // port stubs: first and last segment of a route with stubs
+          if ((i === 0 || i === n - 2) && len <= 1 && n > 2) continue;
+          const vertical = a.x === b.x;
+          handles.push(svg`<rect class="bend-handle ${vertical ? "ew" : "ns"}" x=${((a.x + b.x) / 2) * CELL - 7} y=${((a.y + b.y) / 2) * CELL - 7} width="14" height="14" rx="4"
+            @pointerdown=${(e: PointerEvent) => this._onSegmentDown(e, id, r.pts, i)} />`);
+        }
       }
     }
-    return svg`<g class="ports">${ports}</g>${handle}`;
+    return svg`<g class="ports">${ports}</g>${handles}`;
   }
 
   // ---------------------------------------------------------- interaction
@@ -752,11 +802,88 @@ export class CpSchematic extends LitElement {
     this._emit("cp-hint", "");
   }
 
-  private _onBendDown(e: PointerEvent, id: string, horizontalStart: boolean): void {
+  /**
+   * Object snap: align a dragged part with the ports and edges of the other parts (within ¾ cell, so a part can still be nudged by one cell).
+   * Ports first – aligned ports give straight pipes. Returns snapped positions and guide coordinates.
+   */
+  private _objectSnap(c: PlantComponent, fx: number, fy: number): { x?: number; y?: number; gx?: number; gy?: number } | null {
+    const TOL = 0.75;
+    const { w, h } = sizeOf(c);
+    const ownPorts = portsOf(c)
+      .map((pt) => portPos({ ...c, x: 0, y: 0 }, pt.id))
+      .filter((q): q is NonNullable<typeof q> => !!q);
+    const xs: { v: number; off: number }[] = [];
+    const ys: { v: number; off: number }[] = [];
+    for (const o of this.plant.components) {
+      if (o.id === c.id || o.type === "label") continue;
+      for (const pt of portsOf(o)) {
+        const q = portPos(o, pt.id);
+        if (!q) continue;
+        for (const own of ownPorts) {
+          xs.push({ v: q.x, off: own.x });
+          ys.push({ v: q.y, off: own.y });
+        }
+      }
+      const s = sizeOf(o);
+      // edges and centres
+      xs.push({ v: o.x, off: 0 }, { v: o.x + s.w, off: w }, { v: o.x + s.w / 2, off: w / 2 });
+      ys.push({ v: o.y, off: 0 }, { v: o.y + s.h, off: h }, { v: o.y + s.h / 2, off: h / 2 });
+    }
+    const best = (cands: { v: number; off: number }[], pos: number) => {
+      let r: { pos: number; guide: number; d: number } | null = null;
+      for (const k of cands) {
+        const target = k.v - k.off;
+        if (!Number.isInteger(target)) continue;
+        const d = Math.abs(target - pos);
+        if (d <= TOL && (!r || d < r.d)) r = { pos: target, guide: k.v, d };
+      }
+      return r;
+    };
+    const bx = best(xs, fx);
+    const by = best(ys, fy);
+    if (!bx && !by) return null;
+    return { x: bx?.pos, y: by?.pos, gx: bx?.guide, gy: by?.guide };
+  }
+
+  private _onSegmentDown(e: PointerEvent, id: string, pts: Pt[], index: number): void {
     e.stopPropagation();
-    this._gesture = { type: "bend", id, horizontalStart, moved: false };
+    this._gesture = { type: "segment", id, pts: pts.map((p) => ({ ...p })), index, moved: false, start: this._svgPoint(e) };
     this._capture(e);
   }
+
+  /** Move segment `index` of a route perpendicular by `delta` cells; returns the new waypoints. */
+  private _shiftSegment(pts: Pt[], index: number, delta: number): [number, number][] {
+    const p = pts.map((q) => ({ ...q }));
+    const vertical = p[index].x === p[index + 1].x;
+    const move = (q: Pt) => (vertical ? (q.x += delta) : (q.y += delta));
+    const towards = (from: Pt, to: Pt): Pt => ({ x: from.x + Math.sign(to.x - from.x), y: from.y + Math.sign(to.y - from.y) });
+    let a = index;
+    let b = index + 1;
+    // the segment touches a port: keep a one-cell stub and step aside after it
+    if (a === 0) {
+      const stub = towards(p[0], p[1]);
+      p.splice(1, 0, stub, { ...stub });
+      a = 2;
+      b = 3;
+    } else if (a === 1) {
+      p.splice(2, 0, { ...p[1] });
+      a = 2;
+      b = 3;
+    }
+    const last = p.length - 1;
+    if (b === last) {
+      const stub = towards(p[last], p[last - 1]);
+      p.splice(last, 0, { ...stub }, stub);
+    } else if (b === last - 1) {
+      p.splice(b, 0, { ...p[b] });
+    }
+    move(p[a]);
+    move(p[b]);
+    // waypoints: everything between the two stub ends
+    return p.slice(2, -2).map((q) => [q.x, q.y] as [number, number]);
+  }
+
+
 
   private _onBgDown(e: PointerEvent): void {
     this._pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -804,9 +931,15 @@ export class CpSchematic extends LitElement {
       const p = this._svgPoint(e);
       if (Math.abs(e.clientX - g.cx) + Math.abs(e.clientY - g.cy) > 3) g.moved = true;
       if (!g.moved) return;
-      const nx = Math.max(0, Math.round(g.ox + (p.x - g.start.x) / CELL));
-      const ny = Math.max(0, Math.round(g.oy + (p.y - g.start.y) / CELL));
-      this._drag = { id: g.id, dx: nx, dy: ny };
+      const free = !this.snapGrid || e.altKey;
+      const step = free ? 1 : Math.max(1, this.gridStep);
+      let nx = Math.max(0, Math.round((g.ox + (p.x - g.start.x) / CELL) / step) * step);
+      let ny = Math.max(0, Math.round((g.oy + (p.y - g.start.y) / CELL) / step) * step);
+      const snap = this.snapObjects && !e.altKey ? this._objectSnap(g.comp, g.ox + (p.x - g.start.x) / CELL, g.oy + (p.y - g.start.y) / CELL) : null;
+      if (snap?.x !== undefined) nx = snap.x;
+      if (snap?.y !== undefined) ny = snap.y;
+      this._guides = { x: snap?.gx, y: snap?.gy };
+      this._drag = { id: g.id, dx: Math.max(0, nx), dy: Math.max(0, ny) };
       return;
     }
     if (g.type === "tap") {
@@ -816,6 +949,21 @@ export class CpSchematic extends LitElement {
         this._capture(e);
         this._onMove(e);
       }
+      return;
+    }
+    if (g.type === "segment") {
+      const p = this._svgPoint(e);
+      const a = g.pts[g.index];
+      const vertical = a.x === g.pts[g.index + 1].x;
+      const raw = ((vertical ? p.x - g.start.x : p.y - g.start.y) / CELL);
+      const step = this.snapGrid && !e.altKey ? Math.max(1, this.gridStep) : 1;
+      // snap the segment position (not the offset) to the grid
+      const pos = Math.round(((vertical ? a.x : a.y) + raw) / step) * step;
+      const delta = pos - (vertical ? a.x : a.y);
+      if (delta === g.delta) return;
+      g.delta = delta;
+      g.moved = true;
+      this._emit("cp-segment", { id: g.id, via: this._shiftSegment(g.pts, g.index, delta), live: true });
       return;
     }
     if (g.type === "bend") {
@@ -835,6 +983,7 @@ export class CpSchematic extends LitElement {
     setTimeout(() => (this._lastMoved = false), 0);
     if (!g) return;
     if (g.type === "move") {
+      this._guides = {};
       if (g.moved && this._drag) {
         this._emit("cp-move", { id: g.id, x: this._drag.dx, y: this._drag.dy });
       } else {
@@ -845,6 +994,8 @@ export class CpSchematic extends LitElement {
       this._emit("cp-component-click", { component: g.comp, x: e.clientX, y: e.clientY });
     } else if (g.type === "bend" && g.moved) {
       this._emit("cp-bend", { id: g.id, live: false });
+    } else if (g.type === "segment" && g.moved) {
+      this._emit("cp-segment", { id: g.id, live: false });
     }
   }
 
@@ -1019,6 +1170,9 @@ export class CpSchematic extends LitElement {
     .port:hover, .port.src { fill: var(--cp-select); r: 8; }
     .port.target { fill: var(--cp-accent); }
     .bend-handle { fill: var(--cp-select); stroke: var(--cp-bg); stroke-width: 2; }
+    .grid-line { fill: none; stroke: var(--cp-grid); stroke-width: 1; }
+    .grid-line.major { stroke-width: 1.6; opacity: 1.6; }
+    .guides line { stroke: var(--cp-accent); stroke-width: 1.5; stroke-dasharray: 6 4; pointer-events: none; }
     .bend-handle.ew { cursor: ew-resize; }
     .bend-handle.ns { cursor: ns-resize; }
 

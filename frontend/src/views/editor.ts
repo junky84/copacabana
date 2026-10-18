@@ -89,7 +89,45 @@ export class CpEditor extends LitElement {
     _sel: { state: true },
     _hint: { state: true },
     _dirty: { state: true },
+    _gridCfg: { state: true },
   };
+  /** grid display and snapping (per browser, not part of the plant) */
+  private _gridCfg: { show: boolean; step: number; snap: boolean; osnap: boolean } = (() => {
+    const def = { show: false, step: 1, snap: true, osnap: true };
+    try {
+      return { ...def, ...JSON.parse(localStorage.getItem("copilot.editor.grid") || "{}") };
+    } catch {
+      return def;
+    }
+  })();
+
+  private _setGrid(patch: Partial<CpEditor["_gridCfg"]>) {
+    this._gridCfg = { ...this._gridCfg, ...patch };
+    try {
+      localStorage.setItem("copilot.editor.grid", JSON.stringify(this._gridCfg));
+    } catch {
+      /* private mode */
+    }
+  }
+
+  /** A straight run of a pipe was dragged: store its route as waypoints (undoable as one step). */
+  private _onSegment(e: CustomEvent) {
+    const { id, via, live } = e.detail;
+    if (live) {
+      if (!this._bendStart) this._bendStart = JSON.stringify(this._draft);
+      const next = clone(this._draft);
+      const x = next.pipes.find((p) => p.id === id);
+      if (x) {
+        x.via = via;
+        delete x.bend;
+      }
+      this._draft = next;
+    } else if (this._bendStart) {
+      this._undo.push(this._bendStart);
+      this._bendStart = undefined;
+      this._dirty = true;
+    }
+  }
   plant!: Plant;
   hass?: Hass;
   src!: ValueSource;
@@ -364,6 +402,15 @@ export class CpEditor extends LitElement {
               const on = (e.target as HTMLInputElement).checked;
               p.settings = { ...p.settings, building: { ...(p.settings.building || { floor: p.grid.h - 2 }), show: on } };
             })} /> ${t("ed.building")}</label>
+          <div class="cap">${t("ed.raster")}</div>
+          <label class="bld"><input type="checkbox" .checked=${this._gridCfg.show} @change=${(e: Event) => this._setGrid({ show: (e.target as HTMLInputElement).checked })} /> ${t("ed.grid_show")}</label>
+          <label class="field">${t("ed.grid_step")}
+            <select @change=${(e: Event) => this._setGrid({ step: Number((e.target as HTMLSelectElement).value) })}>
+              ${[1, 2, 5].map((v) => html`<option value=${v} ?selected=${this._gridCfg.step === v}>${t("ed.grid_cells", { n: v })}</option>`)}
+            </select></label>
+          <label class="bld"><input type="checkbox" .checked=${this._gridCfg.snap} @change=${(e: Event) => this._setGrid({ snap: (e.target as HTMLInputElement).checked })} /> ${t("ed.grid_snap")}</label>
+          <label class="bld"><input type="checkbox" .checked=${this._gridCfg.osnap} @change=${(e: Event) => this._setGrid({ osnap: (e.target as HTMLInputElement).checked })} /> ${t("ed.object_snap")}</label>
+          <p class="muted tiny">${t("ed.snap_hint")}</p>
         </aside>
         <div class="canvas card">
           <cp-schematic
@@ -383,6 +430,11 @@ export class CpEditor extends LitElement {
             })}
             @cp-connect=${(e: CustomEvent) => this._connect(e.detail.from, e.detail.to)}
             @cp-bend=${this._onBend}
+            @cp-segment=${this._onSegment}
+            .gridStep=${this._gridCfg.step}
+            ?showGrid=${this._gridCfg.show}
+            ?snapGrid=${this._gridCfg.snap}
+            ?snapObjects=${this._gridCfg.osnap}
             @cp-hint=${(e: CustomEvent) => (this._hint = e.detail)}
           ></cp-schematic>
         </div>
@@ -612,6 +664,7 @@ export class CpEditor extends LitElement {
       .bhead { display: flex; gap: 6px; align-items: center; font-size: 12px; }
       .bname { font-weight: 600; flex: 1; }
       .bval { color: var(--cp-muted); font-variant-numeric: tabular-nums; }
+      .tiny { font-size: 11px; margin: 6px 0 0; line-height: 1.4; }
       .bld { display: flex; gap: 8px; align-items: center; font-size: 13px; margin-top: 10px; }
       .bld input { width: auto; margin: 0; }
       .wr { display: inline-flex; align-items: center; gap: 2px; font-size: 12px; color: var(--cp-warn); cursor: pointer; }
